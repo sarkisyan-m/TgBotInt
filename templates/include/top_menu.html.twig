@@ -3,8 +3,11 @@
 <div class="top-menu">
     <div class="top-menu-left">
         <a href="{{ path('index') }}">{{ 'top_menu.items.index'|trans }}</a>
-        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <a href="{{ path('index') }}?getWebhookInfo">getWebhookInfo</a>
+        <a href="{{ path('index') }}?getUpdates">getUpdates</a>
+        <a href="{{ path('index') }}?Update">Update</a>
 
+        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
         {% endif %}
     </div>
     <div class="top-menu-right">
