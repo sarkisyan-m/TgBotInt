@@ -1,0 +1,5 @@
+# используйте это, чтобы отключить доставку писем
+#MAILER_URL=null://127.0.0.1
+
+# используйте это, чтобы сконфигурировать традиционный SMTP-сервер
+# MAILER_URL=smtp://127.0.0.1:25?encryption=ssl&auth_mode=login&username=&password=

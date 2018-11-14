@@ -1,0 +1,46 @@
+{% trans_default_domain 'index' %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <!-- Webpack Encore-->
+        <link rel="stylesheet" href="{{ asset('build/style.css') }}">
+        <script src="{{ asset('build/main.js') }}"></script>
+        <!-- /Webpack Encore-->
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+        <meta name="keywords" content="{% block keywords %}{{ 'meta.keywords'|trans }}{% endblock %}">
+        <meta name="description" content="{% block description %}{{ 'meta.description'|trans }}{% endblock %}">
+        {% block header %}{% endblock %}
+        <title>{% block title %}{{ 'index.title'|trans }}{% endblock %}</title>
+    </head>
+    <body>
+
+    <!-- wrapper-->
+    <div class="wrapper">
+
+        <!-- header-->
+        <div class="header">
+            {{ include('include/top_menu.html.twig')}}
+        </div>
+        <!-- /header-->
+
+        <!-- content-->
+        <div class="content">
+
+        {% block body %}
+            {{ 'index.lorem'|trans }}
+        {% endblock %}
+
+        </div>
+        <!-- /content-->
+
+        <!-- footer-->
+        <div class="footer">
+            {{ 'footer'|trans }}
+        </div>
+        <!-- /footer-->
+
+    </div>
+    <!-- wrapper-->
+
+    </body>
+</html>

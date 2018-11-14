@@ -1,0 +1,13 @@
+books_type:
+    name: 'Название книги'
+    author: 'Автор'
+    cover: 'Обложка'
+    file: 'Выбрать файл'
+    reading_date: 'Дата прочтения'
+    allow_download: 'Отобразить ссылку для скачивания?'
+    add: 'Добавить книгу'
+    edit: 'Редактировать книгу'
+
+    error_message:
+        cover:
+            mimeTypesMessage: 'Допустимые форматы: png, jpg'

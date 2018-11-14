@@ -1,0 +1,6 @@
+{% extends "index.html.twig" %}
+{% trans_default_domain 'index' %}
+
+{% block body %}
+{{ 'auth.is_not_auth' | trans({'%link_start%' : '<a href="'~path('fos_user_security_login')~'">', '%link_end%' : '</a>'}) | raw }}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "index.html.twig" %}
+{% trans_default_domain 'books' %}
+
+{% block title %}
+    {{ book.Name }} | {{ 'details.title'|trans }} | {{ parent() }}
+{% endblock %}
+
+{% block body %}
+    {{ book.Name }} <br>
+    {{ 'author'|trans }} {{ book.Author }} <br>
+
+    {% if book.Cover %}
+        {{ book.Cover|coverImage|raw }} <br>
+    {% endif %}
+
+    {% if book.AllowDownload and book.File %}
+        <a href="{{ book.File }}">{{ 'download_book'|trans }}</a><br>
+    {% endif %}
+
+    {% if book.ReadingDate %}
+        {{ 'reading_date'|trans }} {{ book.ReadingDate|dateFormat }} <br>
+    {% endif %}
+
+    <hr>
+    <a href="{{ path('books_list') }}">{{ 'details.go_to_back'|trans }}</a>
+    <hr>
+
+{% endblock %}

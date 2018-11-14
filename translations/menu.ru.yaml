@@ -1,0 +1,11 @@
+top_menu:
+    items:
+        index: 'Главная'
+        bookslist: 'Список книг'
+        item: 'Пункт'
+    is_auth:
+        add_book: 'Добавить книгу'
+        profile: 'Профиль'
+    is_not_auth:
+        auth: 'Авторизация'
+        register: 'Регистрация'

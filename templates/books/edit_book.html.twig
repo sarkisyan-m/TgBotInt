@@ -1,0 +1,75 @@
+{% extends "index.html.twig" %}
+{% trans_default_domain 'books' %}
+
+{% block title %}
+    {{ 'edit.title'|trans }} | {{ 'details.title'|trans }} | {{ parent() }}
+{% endblock %}
+
+{% block body %}
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <h1>{{ 'edit.title'|trans }}</h1>
+        {{ form_start(form) }}
+        <table>
+            <tr>
+                <td>{{ form_label(form.name) }}</td>
+                <td>{{ form_widget(form.name) }}</td>
+                <td>{{ form_errors(form.name) }}</td>
+            </tr>
+            <tr>
+                <td>{{ form_label(form.author) }}</td>
+                <td>{{ form_widget(form.author) }}</td>
+                <td>{{ form_errors(form.author) }}</td>
+            </tr>
+            <tr>
+                <td>{{ form_label(form.cover) }}</td>
+                <td>{{ form_widget(form.cover) }}</td>
+                <td>{{ form_errors(form.cover) }}</td>
+            </tr>
+            {% if book.Cover is not null and book.Cover %}
+                <tr id="cover">
+                    <td>{{ book.Cover|coverImage|raw }}</td>
+                    <td>
+                        [{{ 'edit.remove_book_file' |trans({'%link_start%' : '<a href="/" onclick="removeBookFile(\''~ path('books_remove_file', {'id': book.Id, 'type': 'image'})~'\', \'image\'); return false;">', '%link_end%' : '</a>'}) | raw }}]
+                    </td>
+                </tr>
+            {% endif %}
+            <tr>
+                <td>{{ form_label(form.file) }}</td>
+                <td>{{ form_widget(form.file) }}</td>
+                <td>{{ form_errors(form.file) }}</td>
+            </tr>
+            {% if book.File is not null %}
+                <tr id="file">
+                    <td><a href="{{ book.File }}">{{ book.File }}</a></td>
+                    <td>
+                        [{{ 'edit.remove_book_file' |trans({'%link_start%' : '<a href="/" onclick="removeBookFile(\''~ path('books_remove_file', {'id': book.Id, 'type': 'file'})~'\', \'file\'); return false;">', '%link_end%' : '</a>'}) | raw }}]
+                    </td>
+                </tr>
+            {% endif %}
+            <tr>
+                <td>{{ form_label(form.reading_date) }}</td>
+                <td>{{ form_widget(form.reading_date) }}</td>
+                <td>{{ form_errors(form.reading_date) }}</td>
+            </tr>
+            <tr>
+                <td>{{ form_label(form.allow_download) }}</td>
+                <td>{{ form_widget(form.allow_download) }}</td>
+                <td>{{ form_errors(form.allow_download) }}</td>
+            </tr>
+            <tr class="text-center">
+                <td colspan="2">
+                    {{ form_widget(form.submit, { 'label': 'books_type.edit' }) }}
+                    {{ 'remove_book' |trans({'%link_start%' : '<button href="/" onclick="removeBook(\''~ path('books_remove_id', {'id': book.Id})~'\', \''~ book.Name ~'\', \''~ book.Author ~'\', \'edit\', \''~ path('books_list') ~'\'); return false;">', '%link_end%' : '</button>'}) | raw }}
+                </td>
+            </tr>
+        </table>
+
+        {% if status is defined and status > 0 %}
+            <div class="status_success">
+                {{ 'edit.status_success'|trans({'%id%': status})}}
+            </div>
+        {% endif %}
+
+        {{ form_end(form) }}
+    {% endif %}
+{% endblock %}
