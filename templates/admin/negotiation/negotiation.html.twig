@@ -1,0 +1,42 @@
+{% extends "index.html.twig" %}
+{% trans_default_domain 'admin' %}
+
+{% block title %}
+    {{ 'admin.negotiation.index.title'|trans }} | {{ 'admin.negotiation.index.title'|trans }} | {{ parent() }}
+{% endblock %}
+
+{% block body %}
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <a href="{{ path('admin_negotiation_add') }}">{{ 'admin.negotiation.index.add'|trans }}</a>
+        <hr>
+
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Название</th>
+                <th>Ссылка</th>
+                <th>Комманда для бота</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in negotiation %}
+                <tr>
+                    <td><a href="{{ path('admin_negotiation_edit', {'id': item.id}) }}">{{ item.name }}</a></td>
+                    <td>
+                        {% if item.url is not null %}
+                            <a href="{{ item.url }}">{{ item.url }}</a>
+                        {% else %}
+                            Ссылка отсутствует
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ item.tgCommand }}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+
+    {% endif %}
+{% endblock %}

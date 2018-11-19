@@ -1,0 +1,12 @@
+{% extends "index.html.twig" %}
+{% trans_default_domain 'admin' %}
+
+{% block title %}
+    {{ 'admin.index.title'|trans }} | {{ 'admin.index.title'|trans }} | {{ parent() }}
+{% endblock %}
+
+{% block body %}
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <a href="{{ path('admin_negotiation') }}">{{ 'admin.index.negotiation_control'|trans }}</a>
+    {% endif %}
+{% endblock %}

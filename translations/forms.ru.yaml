@@ -11,3 +11,12 @@ books_type:
     error_message:
         cover:
             mimeTypesMessage: 'Допустимые форматы: png, jpg'
+
+negotiation_type:
+    name: 'Название переговорки'
+    url: 'Ссылка на переговорку'
+    tg_command: 'Команда для бота'
+    button:
+        add: 'Добавить'
+        save: 'Сохранить'
+        edit: 'Изменить'

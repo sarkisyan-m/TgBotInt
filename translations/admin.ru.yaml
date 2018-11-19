@@ -1,0 +1,13 @@
+admin:
+    index:
+        title: 'Админка'
+        negotiation_control: 'Управление переговорками'
+    negotiation:
+        index:
+            title: 'Управление переговорками'
+            add: 'Добавить переговорку'
+        add:
+            title: 'Добавить переговорку'
+            status_success: 'Переговорка успешно добавлена!'
+        edit:
+            title: 'Редактировать переговорку'

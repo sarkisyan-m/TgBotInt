@@ -8,7 +8,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20181113071536 extends AbstractMigration
+final class Version20181116070025 extends AbstractMigration
 {
     public function up(Schema $schema) : void
     {
@@ -28,7 +28,6 @@ final class Version20181113071536 extends AbstractMigration
         // this down() migration is auto-generated, please modify it to your needs
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'postgresql', 'Migration can only be executed safely on \'postgresql\'.');
 
-        $this->addSql('CREATE SCHEMA public');
         $this->addSql('DROP SEQUENCE fosuser_id_seq CASCADE');
         $this->addSql('DROP TABLE fosuser');
     }
