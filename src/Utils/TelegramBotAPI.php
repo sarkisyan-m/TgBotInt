@@ -180,6 +180,21 @@ class TelegramBotAPI
         return $this->curl(__FUNCTION__ , $args);
     }
 
+    /**
+     * @param $chat_id
+     * @param int $message_id
+     * @return mixed
+     */
+    public function deleteMessage($chat_id, int $message_id)
+    {
+        $args = [
+            "chat_id={$chat_id}",
+            "message_id={$message_id}",
+        ];
+
+        return $this->curl(__FUNCTION__ , $args);
+    }
+
     public function hideKeyboard()
     {
         return $this->jsonEncode(["hide_keyboard" => true]);
@@ -199,8 +214,11 @@ class TelegramBotAPI
 
         if (json_last_error() == JSON_ERROR_NONE)
             return $json;
-        else
+        else {
+            error_clear_last();
             return $val;
+        }
+
     }
 
 }
