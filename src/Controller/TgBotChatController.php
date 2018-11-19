@@ -25,11 +25,16 @@ class TgBotChatController extends Controller
 
     protected $calendar;
 
+    protected $workTimeStart;
+    protected $workTimeEnd;
+    protected $dateRange;
+
     const RESPONSE_MESSAGE = "message";
     const RESPONSE_CALLBACK_QUERY = "callback_query";
 
-//    const COMMAND_NEGOTIATION_LIST = "/nlist";
-    const COMMAND_NEGOTIATION_LIST = "1";
+    const COMMAND_MESSAGE_NEGOTIATION_LIST = "1";
+
+    const COMMAND_CALLBACK_QUERY_NEGOTIATION_ONE = "n1";
 
     function __construct(Container $container)
     {
@@ -48,6 +53,11 @@ class TgBotChatController extends Controller
         $this->cacheContainer["negotiation"] = $container->getParameter('cache_container_negotiation');
 
         $this->calendar = new Calendar;
+
+        $this->workTimeStart = $container->getParameter('work_time_start');
+        $this->workTimeEnd = $container->getParameter('work_time_end');
+        $this->dateRange = $container->getParameter('date_range');
+
     }
 
     public function debugVal($val = null, $flag = FILE_APPEND)
@@ -71,25 +81,22 @@ class TgBotChatController extends Controller
     public function tgWebhook()
     {
 
-        $this->debugLen(
-            [
-            "event" => ["calendar" => "previous"],
-            "d" => 0, "m" => -100, "y" => 0
-        ]
-        );
-
+//        $day = 0;
+//        $month = 0;
+//        $year = 0;
+//        $this->debugLen('{"e":{"calendar":"fol"},"d":0,"m":0,"y":0}');
 
         $this->debugVal();
 
-        if (isset($this->tgResponse["message"])) {
+
+
+        dump($this->calendar->getTimeDiff("13:12", "15:55", $this->workTimeStart, $this->workTimeEnd));
+
+        if (isset($this->tgResponse["message"]))
             $this->negotiation(self::RESPONSE_MESSAGE);
-
-        } elseif (isset($this->tgResponse["callback_query"])) {
+        elseif (isset($this->tgResponse["callback_query"]))
             $this->negotiation(self::RESPONSE_CALLBACK_QUERY);
-        }
 
-
-        dump("Конец файла");
         return new Response();
     }
 
@@ -100,70 +107,111 @@ class TgBotChatController extends Controller
     public function negotiation($responseType)
     {
         if ($responseType == self::RESPONSE_MESSAGE):
-            if ($this->tgResponse["message"]["text"] == "2"):
-                $this->tgBot->sendMessage(
-                    $this->tgResponse["message"]["from"]["id"],
-                    "Тест",
-                    null,
-                    false,
-                    false,
-                    null,
-                    $this->tgBot->hideKeyboard()
-                );
-            endif;
+            if (!isset($this->tgResponse["message"]["reply_to_message"])) {
+                if ($this->tgResponse["message"]["text"] == "/reg"):
 
-            if ($this->tgResponse["message"]["text"] == self::COMMAND_NEGOTIATION_LIST):
-                $this->negotiationList();
-            endif;
+                    $keyboard[][] = ["text" => "Выслать номер", "request_contact" => true];
+
+                    $replyMarkup = $this->tgBot->jsonEncode([
+                        'keyboard' => $keyboard,
+                    ]);
+
+                    $this->tgBot->sendMessage(
+                        $this->tgResponse["message"]["from"]["id"],
+                        "Для продолжения необходимо зарегистрироваться!",
+                        null,
+                        false,
+                        false,
+                        null,
+                        $replyMarkup
+                    );
+                endif;
+
+                if ($this->tgResponse["message"]["text"] == self::COMMAND_MESSAGE_NEGOTIATION_LIST):
+                    $this->negotiationList();
+                endif;
+
+            } else {
+                if ($this->calendar->validateDate($this->tgResponse["message"]["reply_to_message"]["text"], $this->dateRange)) {
+
+                    $time = explode(" ", $this->tgResponse["message"]["text"]);
+                    if ($this->calendar->validateTime($time[0], $this->workTimeStart, $this->workTimeEnd) &&
+                        $this->calendar->validateTime($time[1], $this->workTimeStart, $this->workTimeEnd)) {
+                        $this->tgBot->sendMessage(
+                            $this->tgResponse["message"]["from"]["id"],
+                            "Ок"
+                        );
+                    } else {
+                        $this->tgBot->sendMessage(
+                            $this->tgResponse["message"]["from"]["id"],
+                            "Время имеет неверный формат! Пожалуйста, выберите еще раз дату выше и введите корректные данные!"
+                        );
+                    }
+                }
+
+            }
+
         endif;
 
         if ($responseType == self::RESPONSE_CALLBACK_QUERY):
 
             $data = $this->tgBot->jsonDecode($this->tgResponse["callback_query"]["data"], true);
 
-            if (isset($data["event"])):
+            if (isset($data["e"])):
 
                 /*
                  * Callback события Календарь
                  */
 
-                if (isset($data["event"]["calendar"])) {
+                if (isset($data["e"]["calendar"])) {
 
-                    $keyboard = [];
+                    if ($data["e"]["calendar"] == "pre" ||
+                        $data["e"]["calendar"] == "fol" ||
+                        $data["e"]["calendar"] == "cur") {
 
-                    if ($data["event"]["calendar"] == "previous") {
-                        $keyboard = $this->calendar->keyboard($data["d"], ++$data["m"], $data["y"]);
+                        $keyboard = [];
+                        switch ($data["e"]["calendar"]) {
+                            case "pre":
+                                $keyboard = $this->calendar->keyboard($data["d"], ++$data["m"], $data["y"]);
+                                break;
+                            case "fol":
+                                $keyboard = $this->calendar->keyboard($data["d"], --$data["m"], $data["y"]);
+                                break;
+                            case "cur":
+                                $keyboard = $this->calendar->keyboard(0, 0, 0);
+                                break;
+                        }
+
+                        $this->pickDateTime($keyboard);
                     }
 
-                    if ($data["event"]["calendar"] == "following") {
-                        $keyboard = $this->calendar->keyboard($data["d"], --$data["m"], $data["y"]);
+                    if ($data["e"]["calendar"] == "sDay") {
+                        $date = sprintf("%02d.%s.%s", $data["d"], $data["m"], $data["y"]);
+
+                        if ($this->calendar->validateDate($date, $this->dateRange)) {
+                            $replyMarkup = $this->tgBot->jsonEncode([
+                                'force_reply' => true,
+                            ]);
+
+                            $this->tgBot->sendMessage(
+                                $this->tgResponse["callback_query"]["message"]["chat"]["id"],
+                                "{$date}",
+                                null,
+                                false,
+                                false,
+                                null,
+                                $replyMarkup
+                            );
+                        }
                     }
-
-                    if ($data["event"]["calendar"] == "current") {
-                        $keyboard = $this->calendar->keyboard(0, 0, 0);
-                    }
-
-                    $replyMarkup = $this->tgBot->jsonEncode([
-                        'inline_keyboard' => $keyboard,
-                    ]);
-
-                    $this->tgBot->editMessageText(
-                        "Выберите желаемую дату",
-                        $this->tgResponse["callback_query"]["message"]["chat"]["id"],
-                        $this->tgResponse["callback_query"]["message"]["message_id"],
-                        null,
-                        null,
-                        false,
-                        $replyMarkup
-                    );
                 }
 
                 /*
                  * Callback события Переговорка
                  */
 
-                if (isset($data["event"]["negotiation"])) {
-                    if ($data["event"]["negotiation"] == "switch") {
+                if (isset($data["e"]["n"])) {
+                    if ($data["e"]["n"] == "switch") {
                         $this->tgBot->deleteMessage(
                             $this->tgResponse["callback_query"]["message"]["chat"]["id"],
                             $this->tgResponse["callback_query"]["message"]["message_id"]
@@ -173,28 +221,15 @@ class TgBotChatController extends Controller
                 }
             endif;
 
-            if ($data == "/n1"):
-                $keyboard = $this->calendar->keyboard();
-
-                $replyMarkup = $this->tgBot->jsonEncode([
-                    'inline_keyboard' => $keyboard,
-                ]);
-
-                $this->tgBot->editMessageText(
-                    "Выберите желаемую дату",
-                    $this->tgResponse["callback_query"]["message"]["chat"]["id"],
-                    $this->tgResponse["callback_query"]["message"]["message_id"],
-                    null,
-                    null,
-                    false,
-                    $replyMarkup
-                );
+            if ($data == self::COMMAND_CALLBACK_QUERY_NEGOTIATION_ONE):
+                $keyboard = $this->calendar->keyboard(0, 0, 0, self::COMMAND_CALLBACK_QUERY_NEGOTIATION_ONE);
+                $this->pickDateTime($keyboard);
             endif;
         endif;
     }
 
     /*
-     * Событие Список переговорок
+     * Сообщение Список переговорок
      */
     /**
      * @param string $type
@@ -202,6 +237,7 @@ class TgBotChatController extends Controller
      */
     public function negotiationList($type = self::RESPONSE_MESSAGE)
     {
+        $this->cache->delete($this->cacheContainer["negotiation"]);
         if (!$this->cache->get($this->cacheContainer["negotiation"])) {
             $repository = $this->getDoctrine()->getRepository(Negotiation::class);
             $negotiation = $repository->findBy([]);
@@ -221,7 +257,7 @@ class TgBotChatController extends Controller
 
         $this->tgBot->sendMessage(
             $this->tgResponse[$type]["from"]["id"],
-            "*Вы*_бери_[те](http://www.example.com/)(эти две буквы - ссылка) `желаемую` ```переговорку!``` ([прямая ссылка tg://](tg://user?id={$this->tgResponse[$type]["from"]["id"]}) в тг на админа)",
+            "`Выберите переговорку`",
             "Markdown",
             false,
             false,
@@ -233,7 +269,7 @@ class TgBotChatController extends Controller
             ['7', '8', '9'],
             ['4', '5', '6'],
             ['1', '2', '3'],
-            ['0']
+            ['0', ':', ' ']
         ];
 
         $replyMarkup = $this->tgBot->jsonEncode([
@@ -241,14 +277,24 @@ class TgBotChatController extends Controller
             'resize_keyboard' => true,
             'one_time_keyboard' => true
         ]);
+    }
 
-        $this->tgBot->sendMessage(
-            $this->tgResponse["message"]["from"]["id"],
-            "Циферки на клаве",
+    /*
+     * Событие Выбрать дату и время
+     */
+    public function pickDateTime($keyboard)
+    {
+        $replyMarkup = $this->tgBot->jsonEncode([
+            'inline_keyboard' => $keyboard,
+        ]);
+
+        $this->tgBot->editMessageText(
+            urlencode("`Необходимо сначала выбрать дату (минимум {$this->calendar->getDay()} число текущего месяца и до {$this->dateRange} дн.), потом написать время (к примеру, 11:30 13:00).\nКстати, сегодня " . date("d.m.Y")) . "`",
+            $this->tgResponse["callback_query"]["message"]["chat"]["id"],
+            $this->tgResponse["callback_query"]["message"]["message_id"],
             null,
+            "Markdown",
             false,
-            false,
-            null,
             $replyMarkup
         );
     }

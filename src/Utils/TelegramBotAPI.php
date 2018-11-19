@@ -79,6 +79,32 @@ class TelegramBotAPI
         return $this->curl(__FUNCTION__ , $args);
     }
 
+    public function hideKeyboard()
+    {
+        return $this->jsonEncode(["hide_keyboard" => true]);
+    }
+
+    function jsonDecode($val, bool $assoc = false) {
+        $json = json_decode($val, $assoc);
+
+        if (json_last_error() == JSON_ERROR_NONE)
+            return $json;
+        else
+            return $val;
+    }
+
+    function jsonEncode($val, bool $assoc = false) {
+        $json = json_encode($val, $assoc);
+
+        if (json_last_error() == JSON_ERROR_NONE)
+            return $json;
+        else {
+            error_clear_last();
+            return $val;
+        }
+
+    }
+
     /**
      * @param string $url
      * @param null $certificate
@@ -194,31 +220,4 @@ class TelegramBotAPI
 
         return $this->curl(__FUNCTION__ , $args);
     }
-
-    public function hideKeyboard()
-    {
-        return $this->jsonEncode(["hide_keyboard" => true]);
-    }
-
-    function jsonDecode($val, bool $assoc = false) {
-        $json = json_decode($val, $assoc);
-
-        if (json_last_error() == JSON_ERROR_NONE)
-            return $json;
-        else
-            return $val;
-    }
-
-    function jsonEncode($val, bool $assoc = false) {
-        $json = json_encode($val, $assoc);
-
-        if (json_last_error() == JSON_ERROR_NONE)
-            return $json;
-        else {
-            error_clear_last();
-            return $val;
-        }
-
-    }
-
 }
