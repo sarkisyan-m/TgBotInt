@@ -7,6 +7,6 @@
 
 {% block body %}
     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
-        <a href="{{ path('admin_negotiation') }}">{{ 'admin.index.negotiation_control'|trans }}</a>
+        <a href="{{ path('admin_meeting_room') }}">{{ 'admin.index.meeting_room_control'|trans }}</a>
     {% endif %}
 {% endblock %}

@@ -1,0 +1,34 @@
+{% extends "index.html.twig" %}
+{% trans_default_domain 'admin' %}
+
+{% block title %}
+    {{ 'admin.meeting_room.add.title'|trans }} | {{ 'admin.meeting_room.add.title'|trans }} | {{ parent() }}
+{% endblock %}
+
+{% block body %}
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <strong>
+            {{ 'admin.meeting_room.add.title'|trans }}
+        </strong>
+        <hr>
+        {{ form_start(form) }}
+        <table>
+            <tr>
+                <td>{{ form_label(form.name) }}</td>
+                <td>{{ form_widget(form.name) }}</td>
+                <td>{{ form_errors(form.name) }}</td>
+            </tr>
+            <tr>
+                <td>{{ form_label(form.url) }}</td>
+                <td>{{ form_widget(form.url) }}</td>
+                <td>{{ form_errors(form.url) }}</td>
+            </tr>
+            <tr class="text-center">
+                <td colspan="2">{{ form_widget(form.submit, { 'label': 'meeting_room_type.button.add' }) }}</td>
+            </tr>
+        </table>
+
+
+        {{ form_end(form) }}
+    {% endif %}
+{% endblock %}

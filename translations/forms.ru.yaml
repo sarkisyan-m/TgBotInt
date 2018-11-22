@@ -1,21 +1,7 @@
-books_type:
-    name: 'Название книги'
-    author: 'Автор'
-    cover: 'Обложка'
-    file: 'Выбрать файл'
-    reading_date: 'Дата прочтения'
-    allow_download: 'Отобразить ссылку для скачивания?'
-    add: 'Добавить книгу'
-    edit: 'Редактировать книгу'
-
-    error_message:
-        cover:
-            mimeTypesMessage: 'Допустимые форматы: png, jpg'
-
-negotiation_type:
+meeting_room_type:
     name: 'Название переговорки'
     url: 'Ссылка на переговорку'
-    tg_command: 'Команда для бота'
+    tg_callback: 'Команда для бота'
     button:
         add: 'Добавить'
         save: 'Сохранить'

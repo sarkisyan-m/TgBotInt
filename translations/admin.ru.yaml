@@ -1,8 +1,8 @@
 admin:
     index:
         title: 'Админка'
-        negotiation_control: 'Управление переговорками'
-    negotiation:
+        meeting_room_control: 'Управление переговорками'
+    meeting_room:
         index:
             title: 'Управление переговорками'
             add: 'Добавить переговорку'
