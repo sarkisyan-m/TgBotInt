@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\TgCommandMeetingRoom;
+use App\Entity\TgUsers;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 
 class TelegramDb
@@ -45,13 +46,13 @@ class TelegramDb
     {
         $repository = $this->doctrine->getRepository(TgCommandMeetingRoom::class);
 
-        if (empty($user = $repository->findBy(["chat_id" => $chatId]))) {
-            $user = new TgCommandMeetingRoom;
-            $user->setChatId($chatId);
-            $user->setCreated(new \DateTime);
-            $this->insert($user);
+        if (empty($meetingRoomUser = $repository->findBy(["chat_id" => $chatId]))) {
+            $meetingRoomUser = new TgCommandMeetingRoom;
+            $meetingRoomUser->setChatId($chatId);
+            $meetingRoomUser->setCreated(new \DateTime);
+            $this->insert($meetingRoomUser);
 
-            return $user;
+            return $meetingRoomUser;
         }
 
         return false;
@@ -61,8 +62,8 @@ class TelegramDb
     {
         $repository = $this->doctrine->getRepository(TgCommandMeetingRoom::class);
 
-        if (!empty($user = $repository->findBy(["chat_id" => $chatId]))) {
-            $this->delete($user);
+        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $chatId]))) {
+            $this->delete($meetingRoomUser);
 
             return true;
         }
@@ -73,26 +74,44 @@ class TelegramDb
     public function getMeetingRoomUser($chatId, $start = false, $refresh = false)
     {
         /**
-         * @var $user TgCommandMeetingRoom
+         * @var $meetingRoomUser TgCommandMeetingRoom
          */
 
         $repository = $this->doctrine->getRepository(TgCommandMeetingRoom::class);
 
-        if (!empty($user = $repository->findBy(["chat_id" => $chatId], ["created" => "DESC"]))) {
-            $user = $user[0];
+        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $chatId], ["created" => "DESC"]))) {
+            $meetingRoomUser = $meetingRoomUser[0];
 
-            if ($start && !$this->getTimeDiff($user->getCreated()->getTimestamp()) || $refresh) {
+            if ($start && !$this->getTimeDiff($meetingRoomUser->getCreated()->getTimestamp()) || $refresh) {
                 $this->removeMeetingRoomUser($chatId);
-                $user = $this->setMeetingRoomUser($chatId);
+                $meetingRoomUser = $this->setMeetingRoomUser($chatId);
 
-                return $user;
+                return $meetingRoomUser;
             }
 
-            return $user;
+            return $meetingRoomUser;
         } else {
             $this->setMeetingRoomUser($chatId);
 
-            return $user;
+            return $meetingRoomUser;
         }
     }
+
+    public function userAuth($chatId)
+    {
+        $repository = $this->doctrine->getRepository(TgUsers::class);
+        $user = $repository->findBy(["chat_id" => $chatId], ["created" => "DESC"]);
+
+        if ($user)
+            return true;
+
+        return false;
+    }
+
+    public function userRegister($chatId)
+    {
+
+    }
+    
+    
 }

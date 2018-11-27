@@ -2,22 +2,37 @@
 
 namespace App\Service;
 
+use App\Service\Methods as MethodsService;
+
 class TelegramAPI
 {
     protected $tgBotApiUrl = 'https://api.telegram.org/bot';
     protected $tgToken;
     protected $proxy;
+    protected $methods;
 
+    /**
+     * TelegramAPI constructor.
+     * @param $tgToken
+     * @param array $proxy
+     */
     public function __construct($tgToken, array $proxy)
     {
         $this->tgToken = $tgToken;
         $this->proxy = $proxy;
         $this->tgBotApiUrl .= "{$this->tgToken}/";
+        $this->methods = new MethodsService;
     }
 
-    public function curl($method, $args = null)
+    /**
+     * @param $method
+     * @param null $args
+     * @return mixed
+     */
+    public function curlTgProxy($method, $args = null)
     {
-        $args = $this->getRender($args);
+        $args = $this->methods->getRender($args);
+
         $url = $this->tgBotApiUrl . $method . $args;
         $ch = curl_init();
         $parameter = [
@@ -33,48 +48,124 @@ class TelegramAPI
         curl_setopt_array($ch, $parameter);
         $data = curl_exec($ch);
         curl_close($ch);
-        return json_decode($data);
-    }
 
-    public function getRender(array $args = null)
+        return $this->methods->jsonDecode($data);
+    }
+    
+    /*
+     * __________________________Переменные типа Markup__________________________
+     */
+
+    /**
+     * @param array $inline_keyboard
+     * @return string
+     */
+    public function InlineKeyboardMarkup(array $inline_keyboard)
     {
-        if (!$args)
-            return false;
-        $get = "?";
-        foreach ($args as $arg) {
-            $get .= $arg;
-            if (next($args))
-                $get .= "&";
-        }
-
-        return $get;
+        return $this->methods->jsonEncode([
+            "inline_keyboard" => $inline_keyboard
+        ]);
     }
 
-//    public function hideKeyboard()
-//    {
-//        return $this->jsonEncode(["hide_keyboard" => true]);
-//    }
-
-    function jsonDecode($val, bool $assoc = false) {
-        $json = json_decode($val, $assoc);
-
-        if (json_last_error() == JSON_ERROR_NONE)
-            return $json;
-        else
-            return $val;
+    /**
+     * @param $keyboard
+     * @param bool $resize_keyboard
+     * @param bool $one_time_keyboard
+     * @param bool $selective
+     * @return string
+     */
+    public function ReplyKeyboardMarkup(array $keyboard, bool $resize_keyboard = false, bool $one_time_keyboard = false, bool $selective = false)
+    {
+        return $this->methods->jsonEncode([
+            "keyboard" => $keyboard,
+            "resize_keyboard" => $resize_keyboard,
+            "one_time_keyboard" => $one_time_keyboard,
+            "selective" => $selective
+        ]);
     }
 
-    function jsonEncode($val, bool $assoc = false) {
-        $json = json_encode($val, $assoc);
-
-        if (json_last_error() == JSON_ERROR_NONE)
-            return $json;
-        else {
-            error_clear_last();
-            return $val;
-        }
-
+    /**
+     * @param bool $remove_keyboard
+     * @param bool $selective
+     * @return string
+     */
+    public function ReplyKeyboardRemove(bool $remove_keyboard = true, bool $selective = false)
+    {
+        return $this->methods->jsonEncode([
+            "remove_keyboard" => $remove_keyboard,
+            "selective" => $selective
+        ]);
     }
+
+    /**
+     * @param bool $force_reply
+     * @param bool $selective
+     * @return string
+     */
+    public function ForceReply(bool $force_reply = true, bool $selective = false)
+    {
+        return $this->methods->jsonEncode([
+            "force_reply" => $force_reply,
+            "selective" => $selective
+        ]);
+    }
+
+    /*
+     * __________________________Переменные типа Keyboard__________________________
+     */
+
+    /**
+     * @param string $text
+     * @param null $callback_data
+     * @param string|null $url
+     * @param string|null $switch_inline_query
+     * @param string|null $switch_inline_query_current_chat
+     * @param null $callback_game
+     * @param bool $pay
+     * @return array
+     */
+    public function InlineKeyboardButton(string $text, $callback_data = null, string $url = null, string $switch_inline_query = null, string $switch_inline_query_current_chat = null, $callback_game = null, bool $pay = false)
+    {
+        if (is_string($callback_data))
+            $callback_data = explode(' ', $callback_data);
+
+        $callback_data = $this->methods->jsonEncode($callback_data);
+        $url = urlencode($url);
+
+        return [
+            "text" => $text,
+            "callback_data" => $callback_data,
+            "url" => $url,
+            "switch_inline_query" => $switch_inline_query,
+            "switch_inline_query_current_chat" => $switch_inline_query_current_chat,
+            "callback_game" => $callback_game,
+            "pay" => $pay
+        ];
+    }
+
+    public function keyboardButton(string $text, bool $request_contact = false, bool $request_location = false)
+    {
+        return [
+            "text" => $text,
+            "request_contact" => $request_contact,
+            "request_location" => $request_location
+        ];
+    }
+
+    /**
+     * @param bool $hide_keyboard
+     * @return string
+     */
+    public function hideKeyboard(bool $hide_keyboard = true)
+    {
+        return $this->methods->jsonEncode([
+            "hide_keyboard" => $hide_keyboard
+        ]);
+    }
+
+    /*
+     * __________________________Методы телеграма__________________________
+     */
 
     public function getResponse()
     {
@@ -97,7 +188,7 @@ class TelegramAPI
             "allowed_updates={$allowed_updates}"
         ];
 
-        return $this->curl(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__ , $args);
     }
 
     /**
@@ -116,17 +207,17 @@ class TelegramAPI
             "allowed_updates={$allowed_updates}"
         ];
 
-        return $this->curl(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__ , $args);
     }
 
     public function deleteWebhook()
     {
-        return $this->curl(__FUNCTION__);
+        return $this->curlTgProxy(__FUNCTION__);
     }
 
     public function getWebhookInfo()
     {
-        return $this->curl(__FUNCTION__);
+        return $this->curlTgProxy(__FUNCTION__);
     }
 
     /**
@@ -152,7 +243,7 @@ class TelegramAPI
             "reply_markup={$reply_markup}"
         ];
 
-        return $this->curl(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__ , $args);
     }
 
     /**
@@ -173,7 +264,7 @@ class TelegramAPI
             "cache_time={$cache_time}"
         ];
 
-        return $this->curl(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__ , $args);
     }
 
     /**
@@ -188,6 +279,7 @@ class TelegramAPI
      */
     public function editMessageText(string $text, $chat_id = null, int $message_id = null, string $inline_message_id = null, string $parse_mode = null, bool $disable_web_page_preview = false, $reply_markup = null)
     {
+        $text = urlencode($text);
         $args = [
             "text={$text}",
             "chat_id={$chat_id}",
@@ -198,7 +290,7 @@ class TelegramAPI
             "reply_markup={$reply_markup}",
         ];
 
-        return $this->curl(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__ , $args);
     }
 
     /**
@@ -213,6 +305,6 @@ class TelegramAPI
             "message_id={$message_id}",
         ];
 
-        return $this->curl(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__ , $args);
     }
 }
