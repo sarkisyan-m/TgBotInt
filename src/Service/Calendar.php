@@ -57,7 +57,7 @@ class Calendar
         return date("Y", strtotime("-{$day} day -{$month} month -{$year} year"));
     }
 
-    public function getDateTime(int $day = 0, int $month = 0, int $year = 0)
+    public function getDate(int $day = 0, int $month = 0, int $year = 0)
     {
         return date("d.m.Y", strtotime("-{$day} day -{$month} month -{$year} year"));
     }
@@ -100,7 +100,7 @@ class Calendar
             $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDay, ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $curDay, "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
 
             // создаем пустые ячейки в конце
-            if ($curDay == $this->getDays($day, $month, $year) /*&& $this->getDays($day, $month, $year) != 28*/) {
+            if ($curDay == $this->getDays($day, $month, $year)) {
                 $emptyCell = count($keyboard[$ln]);
                 for ($k = 0; $k < 7 - $emptyCell; $k++) {
                     $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(".", "none");
@@ -189,6 +189,7 @@ class Calendar
         }
 
         foreach ($times as $time) {
+
             $time["timeStart"] = strtotime($time["timeStart"]);
             $time["timeEnd"] = strtotime($time["timeEnd"]);
 
@@ -217,12 +218,12 @@ class Calendar
             }
 
             if ($tempTime) {
-                if ($time["timeStart"] > $tempTime["timeEnd"] && $time["timeStart"] <= $workTimeEnd) {
+                if ($time["timeStart"] >= $tempTime["timeEnd"] && $time["timeStart"] <= $workTimeEnd) {
                     $result[] = $this->makeAvailableTime($tempTime["timeEnd"], $time["timeStart"]);
                 }
 
             } else {
-                if ($time["timeStart"] > $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
+                if ($time["timeStart"] >= $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
                     $result[] = $this->makeAvailableTime($workTimeStart, $time["timeStart"]);
                 }
             }
@@ -236,7 +237,9 @@ class Calendar
             }
 
             $tempTime = $time;
+
         }
+
 
         if ($returnString) {
             $text = null;

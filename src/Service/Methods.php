@@ -70,4 +70,16 @@ class Methods
 
         return $this->jsonDecode($data, $assoc);
     }
+
+    public function getDateStr($dateStr) {
+        if (!$dateStr)
+            return null;
+        return date("d.m.Y", strtotime($dateStr));
+    }
+
+    public function getTimeStr($timeStr) {
+        if (!$timeStr)
+            return "00:00";
+        return date("H:i", strtotime($timeStr));
+    }
 }

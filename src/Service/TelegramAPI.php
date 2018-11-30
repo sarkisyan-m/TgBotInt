@@ -60,8 +60,11 @@ class TelegramAPI
      * @param array $inline_keyboard
      * @return string
      */
-    public function InlineKeyboardMarkup(array $inline_keyboard)
+    public function InlineKeyboardMarkup(array $inline_keyboard = null)
     {
+        if (!$inline_keyboard)
+            return null;
+
         return $this->methods->jsonEncode([
             "inline_keyboard" => $inline_keyboard
         ]);
