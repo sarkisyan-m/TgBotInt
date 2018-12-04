@@ -41,7 +41,7 @@ class GoogleCalendarAPI
             }
         }
 
-        $filter = $this->methods->jsonEncode($resultFilter);
+        $filter = json_encode($resultFilter);
 
         $args = ["filter={$filter}"];
 
@@ -79,7 +79,7 @@ class GoogleCalendarAPI
             ],
         ];
 
-        $event = urlencode($this->methods->jsonEncode($event));
+        $event = urlencode(json_encode($event));
 
 
         $args = [
@@ -89,5 +89,4 @@ class GoogleCalendarAPI
 
         return $this->methods->curl($url, $args, true);
     }
-
 }

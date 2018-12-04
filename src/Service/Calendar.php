@@ -76,7 +76,7 @@ class Calendar
         $ln++;
         $dWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         for ($i = 0; $i < count($dWeek); $i++)
-            $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($dWeek[$i], "none");
+            $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($dWeek[$i], ["empty" => 1]);
 
         $ln++;
         $dWeekCount = 0;
@@ -91,7 +91,7 @@ class Calendar
             if ($curDay == 1) {
                 $emptyCell = $this->getWeekText($this->getDay($day, $month, $year), $month, $year, true);
                 for ($k = 0; $k < $emptyCell; $k++) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(".", "none");
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', ["empty" => 1]);
                 }
                 $dWeekCount += $emptyCell;
             }
@@ -103,7 +103,7 @@ class Calendar
             if ($curDay == $this->getDays($day, $month, $year)) {
                 $emptyCell = count($keyboard[$ln]);
                 for ($k = 0; $k < 7 - $emptyCell; $k++) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(".", "none");
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', ["empty" => 1]);
                 }
             }
 
@@ -114,9 +114,9 @@ class Calendar
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("\u{2192}", ["e" => ["cal" => "fol"],  "mr" => $meetingRoom, "d" => $day, "m" => $month, "y" => $year]);
 
         $ln++;
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Сегодня", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("0"), "m" => $this->getMonth(), "y" => $this->getYear()]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Завтра", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("-1"), "m" => $this->getMonth(), "y" => $this->getYear()]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Послезавтра", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("-2"), "m" => $this->getMonth(), "y" => $this->getYear()]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Сегодня", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("0"), "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Завтра", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("-1"), "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Послезавтра", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("-2"), "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
 
         $ln++;
 //        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Выбрать другую переговорку", ["e" => ["mr" => "switch"], "d" => $day, "m" => $month, "y" => $year]);
@@ -155,7 +155,8 @@ class Calendar
     public function validateTime($timeStart, $timeEnd, $workTimeStart, $workTimeEnd)
     {
         if (strtotime($timeStart) < strtotime($workTimeStart) ||
-            strtotime($timeEnd) > strtotime($workTimeEnd))
+            strtotime($timeEnd) > strtotime($workTimeEnd) ||
+            strlen($timeStart) != 5 || strlen($timeEnd) != 5)
             return false;
 
         $timeDiff = (strtotime($timeEnd) - strtotime($timeStart)) / 60;
@@ -187,59 +188,96 @@ class Calendar
         if (!$times) {
             $result[] = $this->makeAvailableTime($workTimeStart, $workTimeEnd);
         }
-
-        foreach ($times as $time) {
-
+        $total = count($times);
+        $counter = 0;
+        foreach ($times as $timeKey => $time) {
+            $counter++;
+            
             $time["timeStart"] = strtotime($time["timeStart"]);
             $time["timeEnd"] = strtotime($time["timeEnd"]);
 
-            if ($time["timeStart"] < $workTimeStart) {
-                if ($time["timeEnd"] >= $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
-                    $workTimeStart = $time["timeEnd"];
-                    continue;
+            if ($time["timeStart"] <= $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
+                if ($time["timeEnd"] >= $workTimeStart && $counter < $total) {
+                    $tempTime = $time;
+                } elseif ($time["timeEnd"] >= $workTimeStart && $counter == $total) {
+                    $result[] = $this->makeAvailableTime($time["timeEnd"], $workTimeEnd);
                 }
                 continue;
+            }
+
+            if ($time["timeStart"] < $workTimeStart) {
+                if ($time["timeEnd"] > $workTimeStart && $time["timeEnd"] < $workTimeEnd && $counter < $total) {
+                    $workTimeStart = $time["timeEnd"];
+                    continue;
+                } elseif ($time["timeEnd"] >= $workTimeStart && $time["timeEnd"] <= $workTimeEnd && $counter == $total) {
+                    break;
+                }
             }
 
             if ($time["timeStart"] > $workTimeEnd && $time["timeEnd"] > $workTimeEnd) {
                 if ($tempTime) {
                     if ($tempTime["timeEnd"] < $workTimeEnd) {
-                        $result[] = $this->makeAvailableTime($tempTime["timeEnd"], $tempTime["timeEnd"]);
+//                        $result[] = $this->makeAvailableTime($tempTime["timeEnd"], $tempTime["timeEnd"]);
                     }
                 }
                 continue;
             } elseif ($time["timeStart"] <= $workTimeEnd && $time["timeEnd"] > $workTimeEnd) {
                 if ($tempTime) {
-                    if ($tempTime["timeEnd"] < $workTimeEnd) {
+                    if ($tempTime["timeEnd"] < $workTimeEnd && $time["timeStart"] > $tempTime["timeEnd"]) {
                         $result[] = $this->makeAvailableTime($tempTime["timeEnd"], $time["timeStart"]);
                     }
+                } else {
+                    $result[] = $this->makeAvailableTime($workTimeStart, $time["timeStart"]);
                 }
+
                 continue;
             }
 
             if ($tempTime) {
-                if ($time["timeStart"] >= $tempTime["timeEnd"] && $time["timeStart"] <= $workTimeEnd) {
+                if ($time["timeStart"] > $tempTime["timeEnd"] && $time["timeStart"] <= $workTimeEnd) {
                     $result[] = $this->makeAvailableTime($tempTime["timeEnd"], $time["timeStart"]);
                 }
-
             } else {
-                if ($time["timeStart"] >= $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
+                if ($time["timeStart"] > $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
+                    $result[] = $this->makeAvailableTime($workTimeStart, $time["timeStart"]);
+                } elseif ($time["timeStart"] == $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
                     $result[] = $this->makeAvailableTime($workTimeStart, $time["timeStart"]);
                 }
             }
 
-            if ($time["timeStart"] <= $workTimeEnd && $time["timeEnd"] <= $workTimeEnd && !next($times)) {
-                if ($time["timeEnd"] < $workTimeEnd) {
-                    if ($tempTime["timeEnd"] < $workTimeEnd) {
-                        $result[] = $this->makeAvailableTime($time["timeEnd"], $workTimeEnd);
-                    }
+            if ($counter == $total && $time["timeEnd"] < $workTimeEnd) {
+
+                if ($tempTime["timeEnd"] < $workTimeEnd && $time["timeStart"] > $tempTime["timeEnd"]) {
+                    $result[] = $this->makeAvailableTime($time["timeEnd"], $workTimeEnd);
+                } elseif ($time["timeEnd"] < $workTimeEnd) {
+                    $result[] = $this->makeAvailableTime($time["timeEnd"], $workTimeEnd);
                 }
             }
 
             $tempTime = $time;
 
+
+
+            $filename = $this->container->getParameter('kernel.project_dir') . "/public/eventlist.txt";
+            file_put_contents($filename, print_r(($times), true));
+
         }
 
+        // Пустой результат бывает либо когда день полностью занят, либо события,
+        // нахохдящиеся не в промежутке workTimeStart - workTimeEnd
+        if ($times && !$result) {
+            $allDay = false;
+            foreach ($times as $time) {
+                $time["timeStart"] = strtotime($time["timeStart"]);
+                $time["timeEnd"] = strtotime($time["timeEnd"]);
+
+                if ($time["timeStart"] >= $workTimeStart && $time["timeStart"] < $workTimeEnd
+                || !$time["timeStart"] && !$time["timeEnd"])
+                    $allDay = true;
+            }
+            if (!$allDay)
+                $result[] = $this->makeAvailableTime($workTimeStart, $workTimeEnd);
+        }
 
         if ($returnString) {
             $text = null;

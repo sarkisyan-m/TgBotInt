@@ -4,9 +4,11 @@ namespace App\Controller;
 
 use App\Entity\TgCommandMeetingRoom;
 use App\Entity\TgUsers;
+use App\Entity\Verification;
 use App\Service\Bitrix24API;
 use App\Service\Calendar;
 use App\Service\GoogleCalendarAPI;
+use App\Service\Hash;
 use App\Service\Methods;
 use App\Service\TelegramDb;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
@@ -17,7 +19,7 @@ use App\Service\TelegramAPI;
 
 use App\Entity\MeetingRoom;
 use Symfony\Component\Cache\Simple\FilesystemCache;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\Serializer;
 
 class TelegramController extends Controller
 {
@@ -44,6 +46,8 @@ class TelegramController extends Controller
 
     protected $meetingRoom;
 
+    protected $hashSalt;
+
     const RESPONSE_MESSAGE = "message";
     const RESPONSE_CALLBACK_QUERY = "callback_query";
 
@@ -62,7 +66,10 @@ class TelegramController extends Controller
 
         $this->bitrix24 = new Bitrix24API($container);
 
-        $this->tgGlobalCommands = [["\u{1F525} Забронировать переговорку"], ["\u{1F680} Выйти"]];
+        $this->tgGlobalCommands = [
+            ["\u{1F525} Забронировать переговорку", "\u{1F4C4} Список моих событий"],
+            ["\u{1F680} Завершить сеанс"]
+        ];
 
         $this->cache = new FilesystemCache;
         $this->cacheTime = $container->getParameter('cache_time');
@@ -74,6 +81,8 @@ class TelegramController extends Controller
         $this->calendar = new Calendar($container, $this->tgBot);
         $this->googleCalendar = new GoogleCalendarAPI($container);
         $this->methods = new Methods;
+
+        $this->hashSalt = $container->getParameter('hash_salt');
     }
 
     public function debugVal($val = null, $flag = FILE_APPEND)
@@ -112,7 +121,7 @@ class TelegramController extends Controller
                     $this->isResponseMessage();
                 elseif ($this->getResponseType() == self::RESPONSE_CALLBACK_QUERY)
                     $this->isResponseCallbackQuery();
-                $this->errorRequest($this->getResponseType());
+                $this->errorRequest();
                 // Если пользователь отправил нам номер, то ищем его в bitrix24 и регаем
             } elseif (isset($this->tgResponse[self::RESPONSE_MESSAGE]["contact"]["phone_number"])) {
                 $this->userRegistration("registration");
@@ -125,6 +134,51 @@ class TelegramController extends Controller
         return new Response();
     }
 
+    public function googleCalendarDescriptionParse($membersText)
+    {
+        $members = preg_split('/<[^>]*[^\/]>/i', $membersText, -1, PREG_SPLIT_NO_EMPTY);
+        $memberType = null;
+        $membersList = [];
+        foreach ($members as $key => $member) {
+            if ($member == "- ") {
+                unset($members[$key]);
+                continue;
+            } elseif ($member == "Участники") {
+                $memberType = "found";
+                unset($members[$key]);
+                continue;
+            } elseif ($member == "Организатор") {
+                $memberType = "organizer";
+                unset($members[$key]);
+                continue;
+            }
+
+            $member = str_replace(" id#", ", ", $member);
+            $membersList[$memberType][] = explode(", ", $member);
+        }
+        $members["users"] = $membersList;
+
+        $membersChatId = [];
+        foreach ($members["users"] as $membersType => $membersValue) {
+            foreach ($membersValue as $memberValue) {
+                $membersChatId[$membersType][] = $memberValue[1];
+            }
+        }
+
+        $serializer = $this->container->get('serializer');
+        $repository = $this->getDoctrine()->getRepository(TgUsers::class);
+
+        $members = $repository->findBy(["chat_id" => $membersChatId["found"]]);
+        $members = json_decode($serializer->serialize($members, 'json'), true);
+        $organizer = $repository->findBy(["chat_id" => $membersChatId["organizer"]]);
+        $organizer = json_decode($serializer->serialize($organizer, 'json'), true);
+
+        $data["users"]["found"] = $members;
+        $data["users"]["organizer"] = $organizer;
+
+        return $this->membersList($data, false, true);
+    }
+
     public function getResponseType()
     {
         if (isset($this->tgResponse[self::RESPONSE_MESSAGE]))
@@ -132,6 +186,19 @@ class TelegramController extends Controller
         elseif (isset($this->tgResponse[self::RESPONSE_CALLBACK_QUERY]))
             return self::RESPONSE_CALLBACK_QUERY;
         return null;
+    }
+
+    public function commandHelp()
+    {
+        $this->tgBot->sendMessage(
+            $this->tgResponse[$this->getResponseType()]["from"]["id"],
+            "Введена команда /help. Какая-то инфа про нашего бота",
+            null,
+            false,
+            false,
+            null,
+            $this->tgBot->replyKeyboardMarkup($this->tgGlobalCommands, true)
+        );
     }
 
     // Определяем id сообщения.
@@ -148,32 +215,39 @@ class TelegramController extends Controller
 
     // Любые необработанные запросы идут сюда. Эта функция вызывается всегда в конце функции-ответов
     // (isResponseMessage() и isResponseCallbackQuery())
-    public function errorRequest($responseType)
+    public function errorRequest()
     {
         $this->tgBot->sendMessage(
-            $this->tgResponse[$responseType]["from"]["id"],
-            "Не удалось распознать запрос!",
+            $this->tgResponse[$this->getResponseType()]["from"]["id"],
+            "Не удалось обработать запрос!",
             null,
             false,
             false,
             null,
-            $this->tgBot->ReplyKeyboardMarkup($this->tgGlobalCommands, true, false)
+            $this->tgBot->replyKeyboardMarkup($this->tgGlobalCommands, true)
         );
 
         exit();
     }
 
     // Обнуляем введенные пользовательские данные
-    public function exitButton()
+    public function commandCancel($feedback = false)
     {
         $this->tgDb->getMeetingRoomUser($this->tgResponse[$this->getResponseType()]["from"]["id"], false, true);
         // .. еще какая-то функция, которая обнуляет уже другую таблицу
         // и т.д.
 
-        $this->tgBot->sendMessage(
-            $this->tgResponse[$this->getResponseType()]["from"]["id"],
-            "\u{1F413} Сеанс завершен!"
-        );
+        if ($feedback) {
+            $this->tgBot->sendMessage(
+                $this->tgResponse[$this->getResponseType()]["from"]["id"],
+                "\u{1F413} Сеанс завершен!",
+                null,
+                false,
+                false,
+                null,
+                $this->tgBot->replyKeyboardMarkup($this->tgGlobalCommands, true)
+            );
+        }
     }
 
     // Сообщение о регистрации и сама регистрация через bitrix24 webhook
@@ -190,7 +264,7 @@ class TelegramController extends Controller
                 false,
                 false,
                 null,
-                $this->tgBot->ReplyKeyboardMarkup($keyboard, true, false)
+                $this->tgBot->replyKeyboardMarkup($keyboard, true, false)
             );
 
             exit();
@@ -229,7 +303,7 @@ class TelegramController extends Controller
                     false,
                     false,
                     null,
-                    $this->tgBot->ReplyKeyboardMarkup($this->tgGlobalCommands, true, false)
+                    $this->tgBot->replyKeyboardMarkup($this->tgGlobalCommands, true)
                 );
             } else {
                 $this->tgBot->sendMessage(
@@ -248,42 +322,58 @@ class TelegramController extends Controller
         // Нужна проверка на существование ключа text, т.к. при получении, к примеру, фото - ответ не имеет ключа text
         if (isset($this->tgResponse[$this->getResponseType()]["text"])) {
 
-            // Если пользователь только запустил бота, отправляем клавиатуру с глобальными командами
-            if ($this->tgResponse[$this->getResponseType()]["text"] == "/start") {
-                $this->tgBot->sendMessage(
-                    $this->tgResponse[$this->getResponseType()]["from"]["id"],
-                    "Привет!",
-                    "Markdown",
-                    false,
-                    false,
-                    null,
-                    $this->tgBot->ReplyKeyboardMarkup($this->tgGlobalCommands, true, false)
-                );
+            // Обработчик глобальных команд
+            if ($this->tgResponse[$this->getResponseType()]["text"] == "/help" ||
+                $this->tgResponse[$this->getResponseType()]["text"] == "/start") {
+                $this->commandHelp();
 
                 exit();
             }
 
-            // Обработчик глобальных команд
-            if ($this->tgResponse[$this->getResponseType()]["text"] == "\u{1F525} Забронировать переговорку") {
+            if ($this->tgResponse[$this->getResponseType()]["text"] == "/mr" ||
+                $this->tgResponse[$this->getResponseType()]["text"] == "\u{1F525} Забронировать переговорку") {
                 // meetingRoomSelect при true обнуляет все пользовательские вводы и отображает заново список переговорок
                 $this->meetingRoomSelect(true);
 
                 exit();
                 // Обнуляем пользовательский ввод.
                 // Будет дополняться по мере добавления других нововведений (помимо переговорки)
-            } elseif ($this->tgResponse[$this->getResponseType()]["text"] == "\u{1F680} Выйти") {
-                $this->exitButton();
+            }
+
+            if ($this->tgResponse[$this->getResponseType()]["text"] == "/mrlist" ||
+                $this->tgResponse[$this->getResponseType()]["text"] == "\u{1F4C4} Список моих событий") {
+                // meetingRoomSelect при true обнуляет все пользовательские вводы и отображает заново список переговорок
+                $this->userMeetingRoomList();
+
+                exit();
+                // Обнуляем пользовательский ввод.
+                // Будет дополняться по мере добавления других нововведений (помимо переговорки)
+            }
+
+
+            if ($this->tgResponse[$this->getResponseType()]["text"] == "/ce") {
+                $this->cancelEvent();
+                exit();
+            }
+
+
+            if ($this->tgResponse[$this->getResponseType()]["text"] == "/cancel" ||
+                $this->tgResponse[$this->getResponseType()]["text"] == "\u{1F680} Завершить сеанс") {
+                $this->commandCancel(true);
 
                 exit();
             }
 
+            /*
+             * Начало бронирования переговорки
+             */
             // Вытаскиваем сущность и проверяем срок годности. При флажке true сбрасываются данные, если они просрочены.
             $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse[$this->getResponseType()]["from"]["id"], false, false);
 
             // Отсюда пользователь начинает пошагово заполнять данные
             if ($meetingRoomUser->getMeetingRoom()) {
                 if (!$meetingRoomUser->getDate()) {
-                    // Дата выбирается через колбек.
+                    // Дата выбирается через коллбек.
                     // Если пользователь что-нибудь введет при выборе даты через календарь, то отправляем ему сообщение
                     $this->tgBot->sendMessage(
                         $this->tgResponse[$this->getResponseType()]["from"]["id"],
@@ -301,9 +391,12 @@ class TelegramController extends Controller
                     exit();
                 }
             }
+            /*
+             * Конец бронирования переговорки
+             */
         }
 
-        $this->errorRequest($this->getResponseType());
+        $this->errorRequest();
     }
 
     // Если тип ответа callback_query
@@ -312,9 +405,9 @@ class TelegramController extends Controller
         // у callback_query всегда есть ключ data
         // Не всегда data приходит в json формате, поэтому пришлось написать свой костыль, который возвращает обычные
         // данные в случае, если это не json.
-        $data = $this->methods->jsonDecode($this->tgResponse[$this->getResponseType()]["data"], true);
+        $data = json_decode($this->tgResponse[$this->getResponseType()]["data"], true);
 
-        // Если есть ключ e. e - event. Данные в data указываю только я. И во всех последующих колбеках всегда идет проврека
+        // Если есть ключ e. e - event. Данные в data указываю только я. И во всех последующих коллбеках всегда идет проврека
         // сначала на этот ключ. Т.к. в data умещаются только 64 байта, пришлось так сильно сократить все ключи их значения.
         // Однако, по моему мнению, лучшим решением будет запись uniqid в data и отправка пользователю,
         // сам сгенерированный uniqid в кещ/базу +туда же все необходимые данные.
@@ -393,6 +486,10 @@ class TelegramController extends Controller
                 exit();
             }
         }
+
+        // Т.к. коллбек не может быть пустым, пришлось ввести такой ключ.
+        if (isset($data["empty"]))
+            exit();
     }
 
     public function meetingRoomSelect($switch = false)
@@ -405,7 +502,7 @@ class TelegramController extends Controller
          */
         $keyboard = [];
         foreach ($this->meetingRoom as $item) {
-            $keyboard[] = [$this->tgBot->InlineKeyboardButton($item->getName(), ["e" => ["mr" => $item->getTgCallback()]])];
+            $keyboard[] = [$this->tgBot->inlineKeyboardButton($item->getName(), ["e" => ["mr" => $item->getTgCallback()]])];
         }
 
         $this->tgBot->sendMessage(
@@ -415,7 +512,7 @@ class TelegramController extends Controller
             false,
             false,
             null,
-            $this->tgBot->InlineKeyboardMarkup($keyboard)
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
     }
 
@@ -428,10 +525,10 @@ class TelegramController extends Controller
             null,
             null,
             false,
-            $this->tgBot->InlineKeyboardMarkup($keyboard)
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
 
-        $data = $this->methods->jsonDecode($this->tgResponse[$this->getResponseType()]["data"], true);
+        $data = json_decode($this->tgResponse[$this->getResponseType()]["data"], true);
         if (isset($data["e"]["mr"])) {
             $this->tgBot->sendMessage(
                 $this->tgResponse[$this->getResponseType()]["message"]["chat"]["id"],
@@ -482,6 +579,15 @@ class TelegramController extends Controller
         }
     }
 
+    public function isGoogleCalendarBotEmail($email)
+    {
+        $googleBotEmail = ".iam.gserviceaccount.com";
+        $email = substr($email, strpos($email, "."));
+        if ($email == $googleBotEmail)
+            return true;
+        return false;
+    }
+
     public function googleEventCurDay($date, $meetingRoomName)
     {
         $filter = ["startDateTime" => $date, "calendarName" => $meetingRoomName];
@@ -493,12 +599,76 @@ class TelegramController extends Controller
             foreach ($eventListCurDay["listEvents"] as $event) {
                 $timeStart = $this->methods->getTimeStr($event["dateTimeStart"]);
                 $timeEnd = $this->methods->getTimeStr($event["dateTimeEnd"]);
+
+                // если забронировали сразу на несколько дней, но при этом они неполные (1 день с 10:22 до 3 дня 17:15)
+                // то считаем, что это кривое бронирование и просто игнорируем
+                if ($this->methods->getDateStr($event["dateTimeStart"]) != $this->methods->getDateStr($event["dateTimeEnd"]))
+                    continue;
+
                 $timeDate = $this->methods->getDateStr($event["dateStart"]);
                 $times[] = ["timeStart" => $timeStart, "timeEnd" => $timeEnd, "dateStart" => $timeDate];
 
-                $text .= "*{$timeStart}-{$timeEnd}* Название: _{$event["calendarEventName"]}_. Участники: _{$event["description"]}_ _[орг. {$event["organizerName"]}]_\n";
 
+                /**
+                 * @todo tyt
+                 */
+
+                $hashService = new Hash;
+                $hash = $hashService->hash($event["description"], $event["dateTimeStart"]);
+                $repository = $this->getDoctrine()->getRepository(Verification::class);
+                $hash = $repository->findBy(["hash" => $hash]);
+
+                $textTime = null;
+
+                $textOrganizer = null;
+                $textMembers = null;
+                $textName = null;
+
+                if ($hash) {
+                    $description = $this->googleCalendarDescriptionParse($event["description"]);
+
+                    $textMembers = " Участники: {$description["found"]}";
+                    $textOrganizer = "Орг. {$description["organizer"]}";
+                } else {
+                    if ($this->isGoogleCalendarBotEmail($event["organizerEmail"])) {
+                        if ($event["attendees"]) {
+                            $event["organizerEmail"] = $event["attendees"][0];
+                            $repository = $this->getDoctrine()->getRepository(Tgusers::class);
+                            $tgUser = $repository->findBy(["email" => $event["organizerEmail"]])[0];
+
+                            if ($tgUser) {
+                                $organizer["users"]["organizer"][] = $this->membersFormat(
+                                    $tgUser->getChatId(),
+                                    $tgUser->getName(),
+                                    $tgUser->getPhone(),
+                                    $tgUser->getEmail()
+                                );
+                                $organizer = $this->membersList($organizer, false, true);
+                                if (isset($organizer["organizer"])) {
+                                    $event["organizerEmail"] = $organizer["organizer"];
+                                } else {
+                                    $event["organizerEmail"] = time();
+                                }
+                            }
+
+                        } else {
+                            $event["organizerEmail"] = "Неизвестно";
+                        }
+                    }
+                    $textOrganizer = "Орг. {$event["organizerEmail"]}";
+                }
+                $textName = "Название: {$event["calendarEventName"]}.";
+                $textTime = "_{$textName}{$textMembers}_ {$textOrganizer}";
+
+                // если существует $timeDate, то элемент всегда будет на первом месте
+                if ($timeDate) {
+                    $text .= "*{$this->workTimeStart}-{$this->workTimeEnd}* {$textTime}\n";
+                    break;
+                }
+
+                $text .= "*{$timeStart}-{$timeEnd}* {$textTime}\n";
             }
+
         } else {
             $text .= "Список событий на этот день пуст!\n";
         }
@@ -513,8 +683,6 @@ class TelegramController extends Controller
 
         $text .= "\n\u{23F0} *Доступные времена в этот день*\n{$times}\n{$example}";
 
-
-
         $this->tgBot->editMessageText(
             $text,
             $this->tgResponse[$this->getResponseType()]["message"]["chat"]["id"],
@@ -522,6 +690,8 @@ class TelegramController extends Controller
             null,
             "Markdown"
         );
+
+
     }
 
     public function meetingRoomSelectedTime()
@@ -558,14 +728,12 @@ class TelegramController extends Controller
                 $meetingRoomUser->setTime("{$time[0]}-{$time[1]}");
                 $this->tgDb->insert($meetingRoomUser);
 
+                $text = "Выбрано время _{$time[0]}-{$time[1]} ({$timeDiff})_\n\n";
+                $text .= "*Введите название события*";
                 $this->tgBot->sendMessage(
                     $this->tgResponse[$this->getResponseType()]["from"]["id"],
-                    "Выбрано время {$time[0]}-{$time[1]} ({$timeDiff})"
-                );
-
-                $this->tgBot->sendMessage(
-                    $this->tgResponse[$this->getResponseType()]["from"]["id"],
-                    "Введите название события"
+                    $text,
+                    "Markdown"
                 );
             } else {
                 $this->tgBot->sendMessage(
@@ -599,28 +767,39 @@ class TelegramController extends Controller
         }
     }
 
-    public function membersList($meetingRoomUserData)
+    public function membersList($meetingRoomUserData, $italic = true, $tgLink = false)
     {
         $result["found"] = null;
         $result["duplicate"] = null;
         $result["not_found"] = null;
         $result["organizer"] = null;
 
+        $italic ? $italic = "_" : $italic = null;
+        $tgLink ? $tgLink = "[#name#](tg://user?id=#id#)" : $tgLink = null;
+
         foreach ($meetingRoomUserData["users"] as $status => $users) {
             foreach ($users as $user) {
                 if ($status) {
+                    if (isset($user["chatId"]))
+                        $user["chat_id"] = $user["chatId"];
+
+                    if ($tgLink && $status == "organizer" && isset($user["chat_id"])) {
+                        $user["name"] = str_replace("#name#", $user["name"], $tgLink);
+                        $user["name"] = str_replace("#id#", $user["chat_id"], $user["name"]);
+                    }
+
                     if ($status == "found") {
                         if (isset($user["name"]) && isset($user["phone"]) && isset($user["email"]))
-                            $result[$status] .= "{$user["name"]} (_{$user["phone"]}, {$user["email"]}_)";
+                            $result[$status] .= "{$user["name"]} ({$italic}{$user["phone"]}, {$user["email"]}{$italic})";
                         else
                             $result[$status] .= "{$user["name"]}";
                     }
                     if ($status == "duplicate")
-                        $result[$status] .= "{$user["name"]} (_{$user["count"]} совп._)";
+                        $result[$status] .= "{$user["name"]} ({$italic}{$user["count"]} совп.{$italic})";
                     if ($status == "not_found")
                         $result[$status] .= "{$user["name"]}";
                     if ($status == "organizer")
-                        $result[$status] .= "{$user["name"]} (_{$user["phone"]}, {$user["email"]}_)";
+                        $result[$status] .= "{$user["name"]} ({$italic}{$user["phone"]}, {$user["email"]}{$italic})";
 
                     next($users) ? $result[$status] .= ", " : $result[$status] .= ".";
                 }
@@ -628,6 +807,16 @@ class TelegramController extends Controller
         }
 
         return $result;
+    }
+
+    public function membersFormat($chatId, $name, $phone, $email)
+    {
+        return [
+            "chat_id" => $chatId,
+            "name" => $name,
+            "phone" => $phone,
+            "email" => $email
+        ];
     }
 
     // Работа с участинками. Лучше не разделять на отдельные методы, иначе будет неудобно.
@@ -658,12 +847,12 @@ class TelegramController extends Controller
             // Добавляем найденных пользователь в массив
             foreach ($tgUsers as $tgUser) {
                 if (!array_key_exists($tgUser->getName(), $membersDuplicate)) {
-                    $meetingRoomUserData["users"]["found"][] = [
-                        "chat_id" => $tgUser->getChatId(),
-                        "name" => $tgUser->getName(),
-                        "phone" => $tgUser->getPhone(),
-                        "email" => $tgUser->getEmail()
-                    ];
+                    $meetingRoomUserData["users"]["found"][] = $this->membersFormat(
+                        $tgUser->getChatId(),
+                        $tgUser->getName(),
+                        $tgUser->getPhone(),
+                        $tgUser->getEmail()
+                    );
                 }
             }
             // Добавляем дубликатов и неизвестных
@@ -675,14 +864,15 @@ class TelegramController extends Controller
             // Добавляем организатора (себя)
             $organizer = $repository->findBy(["chat_id" => $this->tgResponse[$this->getResponseType()]["from"]["id"]]);
             $organizer = $organizer[0];
-            $meetingRoomUserData["users"]["organizer"][] = [
-                "chat_id" => $organizer->getChatId(),
-                "name" => $organizer->getName(),
-                "phone" => $organizer->getPhone(),
-                "email" => $organizer->getEmail()
-            ];
 
-            $meetingRoomUser->setEventMembers($this->methods->jsonEncode($meetingRoomUserData));
+            $meetingRoomUserData["users"]["organizer"][] = $this->membersFormat(
+                $organizer->getChatId(),
+                $organizer->getName(),
+                $organizer->getPhone(),
+                $organizer->getEmail()
+            );
+
+            $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
             $this->tgDb->insert($meetingRoomUser);
 
             $this->tgBot->sendMessage(
@@ -703,7 +893,7 @@ class TelegramController extends Controller
             $tgUsers = $repository->findBy(["chat_id" => $this->tgResponse[$this->getResponseType()]["from"]["id"]]);
             if ($tgUsers) {
                 if ($meetingRoomUser->getEventMembers()) {
-                    $meetingRoomUserData = $this->methods->jsonDecode($meetingRoomUser->getEventMembers(), true);
+                    $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
 
                     // Если мы нашли какие-то совпадения в базе, то идем сюда.
                     // foreach идет по одному хиту для каждого найденого участника
@@ -719,19 +909,19 @@ class TelegramController extends Controller
 
                             foreach ($tgUsers as $tgUser) {
                                 $text = "{$tgUser->getName()}, тел.: {$tgUser->getPhone()}, email: {$tgUser->getEmail()}";
-                                $keyboard[][] = $this->tgBot->InlineKeyboardButton($text, ["e" => ["m" => "dup"], "chatId" => $tgUser->getChatId()]);
+                                $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, ["e" => ["m" => "dup"], "chatId" => $tgUser->getChatId()]);
 
-                                // попадаем сюда по колбеку после выбора кнопки пользователем
+                                // попадаем сюда по коллбеку после выбора кнопки пользователем
                                 if (isset($data) && $data && $data["e"]["m"] == "dup" && $data["chatId"] == $tgUser->getChatId()) {
-                                    $meetingRoomUserData["users"]["found"][] = [
-                                        "chat_id" => $tgUser->getChatId(),
-                                        "name" => $tgUser->getName(),
-                                        "phone" => $tgUser->getPhone(),
-                                        "email" => $tgUser->getEmail()
-                                    ];
+                                    $meetingRoomUserData["users"]["found"][] = $this->membersFormat(
+                                        $tgUser->getChatId(),
+                                        $tgUser->getName(),
+                                        $tgUser->getPhone(),
+                                        $tgUser->getEmail()
+                                    );
                                     unset($meetingRoomUserData["users"]["duplicate"][$id]);
                                     unset($data);
-                                    $meetingRoomUser->setEventMembers($this->methods->jsonEncode($meetingRoomUserData));
+                                    $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
                                     $this->tgDb->insert($meetingRoomUser);
 
                                     break;
@@ -741,10 +931,14 @@ class TelegramController extends Controller
                             // Если успешно уточнили, то просто отправляем пользователю еще набор кнопок для дальнейшего уточнения,
                             // Иначе просто выходим из цикла и идем дальше искать другие типы - not_found, fount (сейчас duplicate)
                             // После опустошения идем вниз по ветке
-                            if (!$meetingRoomUserData["users"]["duplicate"])
+                            if (!$meetingRoomUserData["users"]["duplicate"]) {
+                                unset($meetingRoomUserData["users"]["duplicate"]);
+                                $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                                $this->tgDb->insert($meetingRoomUser);
                                 break;
-                            elseif (!isset($meetingRoomUserData["users"]["duplicate"][$id]))
+                            } elseif (!isset($meetingRoomUserData["users"]["duplicate"][$id])) {
                                 continue;
+                            }
 
                             $members = $this->membersList($meetingRoomUserData);
 
@@ -763,7 +957,7 @@ class TelegramController extends Controller
                                 null,
                                 "Markdown",
                                 false,
-                                $this->tgBot->InlineKeyboardMarkup($keyboard)
+                                $this->tgBot->inlineKeyboardMarkup($keyboard)
                             );
 
                             exit();
@@ -783,7 +977,8 @@ class TelegramController extends Controller
                                     ];
                                     unset($meetingRoomUserData["users"]["not_found"][$id]);
                                 }
-                                $meetingRoomUser->setEventMembers($this->methods->jsonEncode($meetingRoomUserData));
+                                unset($meetingRoomUserData["users"]["not_found"]);
+                                $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
                                 $this->tgDb->insert($meetingRoomUser);
                             }
 
@@ -804,8 +999,8 @@ class TelegramController extends Controller
                             $members = $this->membersList($meetingRoomUserData);
                             $keyboard = [];
                             $keyboard[] = [
-                                $this->tgBot->InlineKeyboardButton("Продолжить", ["e" => ["m" => "not_found"], "r" => "y"]),
-                                $this->tgBot->InlineKeyboardButton("Назад", ["e" => ["m" => "not_found"], "r" => "n"])
+                                $this->tgBot->inlineKeyboardButton("Продолжить", ["e" => ["m" => "not_found"], "r" => "y"]),
+                                $this->tgBot->inlineKeyboardButton("Назад", ["e" => ["m" => "not_found"], "r" => "n"])
                             ];
 
                             $text = "*Поиск участников...*\n\n";
@@ -817,13 +1012,13 @@ class TelegramController extends Controller
                                 $text .= "*Не найдено:* {$members["not_found"]}\n";
 
                             $this->tgBot->editMessageText(
-                                "{$text}\nНе все участники были найдены! Они не смогут получать уведомления!\n",
+                                "{$text}\n*Не все участники были найдены!* Они не смогут получить уведомления!\n",
                                 $this->tgResponse[$this->getResponseType()]["from"]["id"],
                                 $messageId,
                                 null,
                                 "Markdown",
                                 false,
-                                $this->tgBot->InlineKeyboardMarkup($keyboard)
+                                $this->tgBot->inlineKeyboardMarkup($keyboard)
                             );
 
                             exit();
@@ -866,8 +1061,8 @@ class TelegramController extends Controller
 
                         $keyboard = [];
                         $keyboard[] = [
-                            $this->tgBot->InlineKeyboardButton("Продолжить", ["e" => ["m" => "found"], "r" => "y"]),
-                            $this->tgBot->InlineKeyboardButton("Назад", ["e" => ["m" => "found"], "r" => "n"])
+                            $this->tgBot->inlineKeyboardButton("Продолжить", ["e" => ["m" => "found"], "r" => "y"]),
+                            $this->tgBot->inlineKeyboardButton("Назад", ["e" => ["m" => "found"], "r" => "n"])
                         ];
 
                         $this->tgBot->editMessageText(
@@ -877,7 +1072,7 @@ class TelegramController extends Controller
                             null,
                             "Markdown",
                             false,
-                            $this->tgBot->InlineKeyboardMarkup($keyboard)
+                            $this->tgBot->inlineKeyboardMarkup($keyboard)
                         );
 
                         exit();
@@ -893,7 +1088,7 @@ class TelegramController extends Controller
     public function meetingRoomConfirm($data = null)
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse[$this->getResponseType()]["from"]["id"]);
-        $members = $this->membersList($this->methods->jsonDecode($meetingRoomUser->getEventMembers(), true));
+        $members = $this->membersList(json_decode($meetingRoomUser->getEventMembers(), true));
         $text = null;
 
         if (!isset($data["e"]["confirm"]))
@@ -908,8 +1103,8 @@ class TelegramController extends Controller
 
         $keyboard = [];
         $keyboard[] = [
-            $this->tgBot->InlineKeyboardButton("Отправить", ["e" => ["confirm" => "end"], "r" => "y"]),
-            $this->tgBot->InlineKeyboardButton("Отменить", ["e" => ["confirm" => "end"], "r" => "n"])
+            $this->tgBot->inlineKeyboardButton("Отправить", ["e" => ["confirm" => "end"], "r" => "y"]),
+            $this->tgBot->inlineKeyboardButton("Отменить", ["e" => ["confirm" => "end"], "r" => "n"])
         ];
 
         if ($data) {
@@ -917,6 +1112,75 @@ class TelegramController extends Controller
                 if ($data["r"] == "y") {
                     $text .= "\n*Данные успешно отправлены!*";
                     $keyboard = null;
+
+
+                    $repository = $this->getDoctrine()->getRepository(TgCommandMeetingRoom::class);
+                    $meetingRoom = $repository->findBy(["chat_id" => $this->tgResponse[$this->getResponseType()]["from"]["id"]])[0];
+
+                    $meetingRoomDate = $meetingRoom->getDate();
+                    $meetingRoomTime = explode("-", $meetingRoom->getTime());
+                    $meetingRoomDateTimeStart = (new \DateTime("{$meetingRoomDate} {$meetingRoomTime[0]}"))->format(\DateTime::RFC3339);
+                    $meetingRoomDateTimeEnd = (new \DateTime("{$meetingRoomDate} {$meetingRoomTime[1]}"))->format(\DateTime::RFC3339);
+                    $meetingRoomEventName = $meetingRoom->getEventName();
+                    $meetingRoomMembers = json_decode($meetingRoom->getEventMembers(), true);
+                    $meetingRoomName = $meetingRoom->getMeetingRoom();
+
+                    $filter = ["calendarName" => $meetingRoomName];
+                    $calendarId = $this->googleCalendar->getList($filter)[0]["calendarId"];
+
+
+                    $textMembers = null;
+                    $meetingRoomMembers["users"] = array_reverse($meetingRoomMembers["users"]);
+                    $emailList = [];
+
+                    $textMembersFound = null;
+                    $textMembersOrganizer = null;
+                    $textMembers = null;
+
+                    foreach ($meetingRoomMembers["users"] as $memberType => $memberList) {
+                        foreach ($memberList as $member) {
+                            if (isset($member["email"]))
+                                $emailList[] = $member["email"];
+                            if ($memberType == "found") {
+                                if (isset($member["chat_id"]))
+                                    $textMembersFound .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
+                                else
+                                    $textMembersFound .= "<br>- <i>{$member["name"]} id#none</i>";
+                            }
+                            if ($memberType == "organizer")
+                                $textMembersOrganizer .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
+                        }
+                    }
+
+                    if (isset($meetingRoomMembers["users"]["found"])) {
+                        $textMembers .= "<b>Участники</b>";
+                        $textMembers .= $textMembersFound;
+                        $textMembers .= "<br><br>";
+                    }
+                    $textMembers .= "<b>Организатор</b>";
+                    $textMembers .= $textMembersOrganizer;
+
+                    $attendees = [];
+                    foreach ($emailList as $email)
+                        $attendees[] = ['email' => $email];
+
+                    $hash = new Verification;
+                    $hashService = new Hash;
+                    $hashKey = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
+                    $hash->setHash($hashKey);
+                    $hash->setCreated(new \DateTime);
+                    $this->tgDb->insert($hash);
+
+//                    $calendarId = "iloec6jf1h4rop33877ns95v44@group.calendar.google.com";
+//                    $calendarId = "m3dli34k5foskeiq52ummh839g@group.calendar.google.com";
+                    $this->googleCalendar->addEvent(
+                        $calendarId,
+                        $meetingRoomEventName,
+                        $textMembers,
+                        $meetingRoomDateTimeStart,
+                        $meetingRoomDateTimeEnd,
+                        $attendees
+                    );
 
                     $this->tgDb->getMeetingRoomUser($this->tgResponse[$this->getResponseType()]["from"]["id"], false, false);
                 }
@@ -936,9 +1200,62 @@ class TelegramController extends Controller
             null,
             "Markdown",
             false,
-            $this->tgBot->InlineKeyboardMarkup($keyboard)
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
 
         exit();
+    }
+
+    public function userMeetingRoomList()
+    {
+        $repository = $this->getDoctrine()->getRepository(TgUsers::class);
+        $tgUser = $repository->findBy(["chat_id" => $this->tgResponse[$this->getResponseType()]["from"]["id"]])[0];
+
+        if ($tgUser) {
+            $dateToday = date("d.m.Y", strtotime("today"));
+            $dateRange = date("d.m.Y", strtotime("+{$this->dateRange} day"));
+
+            $filter = ["startDateTime" => $dateToday, "endDateTime" => $dateRange, "attendees" => $tgUser->getEmail()];
+            $eventListCurDay = $this->googleCalendar->getList($filter);
+
+            $text = null;
+            foreach ($eventListCurDay as $calendar) {
+                $text .= "\n*{$calendar["calendarName"]}*\n";
+                if ($calendar["listEvents"]) {
+                    $dateTemp = null;
+                    foreach ($calendar["listEvents"] as $event) {
+                        $date = (new \DateTime($event["dateTimeStart"]))->format("d.m.Y");
+                        if ($date != $dateTemp) {
+                            $text .= "`{$date}`\n";
+                        }
+                        $timeStart = (new \DateTime($event["dateTimeStart"]))->format("H:i");
+                        $timeEnd = (new \DateTime($event["dateTimeEnd"]))->format("H:i");
+                        $text .= "*{$timeStart}-{$timeEnd}* _{$event["calendarEventName"]}_\n";
+                        $dateTemp = $date;
+                    }
+                } else {
+                    $text .= "Не найдено событий!\n";
+                }
+            }
+
+            $this->tgBot->sendMessage(
+                $this->tgResponse[$this->getResponseType()]["from"]["id"],
+                $text,
+                "Markdown"
+            );
+        }
+    }
+
+    public function cancelEvent()
+    {
+        $text = "Для отмены своего события нобходимо ввести команду */ce* с датой и временем в формате *дд.мм.гггг м:с-м:с*.\n";
+        $text .= "Например: `/ce 01.01.2019 12:00-13:00`.\n";
+
+        $this->tgBot->sendMessage(
+            $this->tgResponse[$this->getResponseType()]["from"]["id"],
+            $text,
+            "Markdown"
+        );
+
     }
 }

@@ -79,7 +79,7 @@ class Methods
 
     public function getTimeStr($timeStr) {
         if (!$timeStr)
-            return "00:00";
+            return null;
         return date("H:i", strtotime($timeStr));
     }
 }

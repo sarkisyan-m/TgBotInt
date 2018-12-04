@@ -17,40 +17,40 @@ class Verification
     private $id;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
-    private $key;
+    private $hash;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="datetime")
      */
-    private $salt;
+    private $created;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getKey(): ?string
+    public function getHash(): ?string
     {
-        return $this->key;
+        return $this->hash;
     }
 
-    public function setKey(string $key): self
+    public function setHash(?string $hash): self
     {
-        $this->key = $key;
+        $this->hash = $hash;
 
         return $this;
     }
 
-    public function getSalt(): ?string
+    public function getCreated(): ?\DateTimeInterface
     {
-        return $this->salt;
+        return $this->created;
     }
 
-    public function setSalt(string $salt): self
+    public function setCreated(\DateTimeInterface $created): self
     {
-        $this->salt = $salt;
+        $this->created = $created;
 
         return $this;
     }

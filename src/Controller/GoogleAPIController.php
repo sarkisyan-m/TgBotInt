@@ -66,6 +66,8 @@ class GoogleAPIController extends Controller
         // Список фильтров
         $filter["calendarName"] = null;
         $filter["startDateTime"] = null;
+        $filter["endDateTime"] = null;
+        $filter["attendees"] = null;
 
         // Получение списка фильтров
         if ($request->get('filter') == "getList")
@@ -82,28 +84,45 @@ class GoogleAPIController extends Controller
          */
         $calendarListResult = [];
         foreach ($calendarList->getItems() as $calendarListEntry) {
-            /**
-             * @var $event Google_Service_Calendar_Event
-             */
 
-            // Если нет нужного календаря
+                /**
+                 * @var $event Google_Service_Calendar_Event
+                 */
+
+                // Если нет нужного календаря
             if ($filter["calendarName"] && $filter["calendarName"] != $calendarListEntry->getSummary())
                 continue;
 
             $calendarEventResult = [];
-            foreach ($service->events->listEvents($calendarListEntry->getId(), ["orderBy" => "startTime", "singleEvents" => "true"])->getItems() as $event) {
+
+            $startDateTime = null;
+            $endDateTime = null;
+
+            if ($filter["startDateTime"]) {
+                $startDateTime = (new \DateTime("{$filter["startDateTime"]}"))->format(\DateTime::RFC3339);
+                if (!$filter["endDateTime"])
+                    $endDateTime = (new \DateTime("{$filter["startDateTime"]}"))->modify("+1 day")->format(\DateTime::RFC3339);
+                else
+                    $endDateTime = (new \DateTime("{$filter["endDateTime"]}"))->format(\DateTime::RFC3339);
+
+            }
+
+
+            $eventsList = $service->events->listEvents($calendarListEntry->getId(), ["maxResults" => 2500, "timeMin" => $startDateTime, "timeMax" => $endDateTime, "orderBy" => "startTime", "singleEvents" => "true"]);
+
+            foreach ($eventsList->getItems() as $event) {
 
                 // Если нет нужного дня
                 // У событий может быть только один ключ с датами:либо date (когда на весь день занимают),
                 // либо dateTime на определенный промежуток
-                if ($filter["startDateTime"]) {
-                    $dateTime = $event->getStart()->getDateTime();
-                    $date = $event->getStart()->getDate();
-                    if (isset($dateTime) && $this->methods->getDateStr($filter["startDateTime"]) != $this->methods->getDateStr($dateTime))
-                        continue;
-                    elseif (isset($date) && $this->methods->getDateStr($filter["startDateTime"]) != $this->methods->getDateStr($date))
-                        continue;
-                }
+//                if ($filter["startDateTime"]) {
+//                    $dateTime = $event->getStart()->getDateTime();
+//                    $date = $event->getStart()->getDate();
+//                    if (isset($dateTime) && $this->methods->getDateStr($filter["startDateTime"]) != $this->methods->getDateStr($dateTime))
+//                        continue;
+//                    elseif (isset($date) && $this->methods->getDateStr($filter["startDateTime"]) != $this->methods->getDateStr($date))
+//                        continue;
+//                }
 
                 if (!$event->getSummary())
                     $event->setSummary('<Без названия>');
@@ -111,22 +130,29 @@ class GoogleAPIController extends Controller
 //                if ($this->isGoogleCalendarBotEmail($event->getCreator()->getEmail()))
 //                    dump("OK");
 
+//                if (!$event->getStart()->getDateTime() && !$event->getEnd()->getDateTime()) {
+//                    break;
+//                }
+
+                $attendeesEmail = [];
+                foreach ($event->getAttendees() as $member)
+                    $attendeesEmail[] = implode(" ",(array)$member["email"]);
+
+                if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0]))
+                    continue;
+
                 $calendarEventResult[] = [
                     "calendarEventName" => $event->getSummary(),
                     "description" => $event->getDescription(),
-                    "organizerName" =>  $event->getCreator()->getDisplayName(),
-                    "organizerEmail" =>  $event->getCreator()->getEmail(),
+                    "organizerName" => $event->getCreator()->getDisplayName(),
+                    "organizerEmail" => $event->getCreator()->getEmail(),
                     "dateCreated" => $event->getCreated(),
                     "dateTimeStart" => $event->getStart()->getDateTime(),
                     "dateTimeEnd" => $event->getEnd()->getDateTime(),
                     "dateStart" => $event->getStart()->getDate(),
                     "dateEnd" => $event->getEnd()->getDate(),
+                    "attendees" => $attendeesEmail,
                 ];
-
-                if (!$event->getStart()->getDateTime() && !$event->getEnd()->getDateTime()) {
-                    break;
-                }
-
             }
 
             $calendarListResult[] = [
@@ -135,6 +161,8 @@ class GoogleAPIController extends Controller
                 "listEvents" => $calendarEventResult
             ];
         }
+//        dump($calendarListResult);
+
 
         return new JsonResponse($calendarListResult);
     }
@@ -230,7 +258,7 @@ class GoogleAPIController extends Controller
 
             $calendarEventResult = [];
             foreach ($service->events->listEvents($calendarListEntry->getId(), ["orderBy" => "startTime", "singleEvents" => "true"])->getItems() as $event) {
-//                dump($event->getDescription());
+//                dump($event->getAttendees());
 
                 // Если есть фильтр и нет нужного дня - ищем дальше
                 if (isset($filter["startDateTime"])) {
@@ -261,6 +289,7 @@ class GoogleAPIController extends Controller
                     "dateTimeEnd" => $event->getEnd()->getDateTime(),
                     "dateStart" => $event->getStart()->getDate(),
                     "dateEnd" => $event->getEnd()->getDate(),
+                    "attendees" => $event->getAttendees(),
                 ];
             }
 

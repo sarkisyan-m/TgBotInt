@@ -60,7 +60,7 @@ class TelegramAPI
      * @param array $inline_keyboard
      * @return string
      */
-    public function InlineKeyboardMarkup(array $inline_keyboard = null)
+    public function inlineKeyboardMarkup(array $inline_keyboard = null)
     {
         if (!$inline_keyboard)
             return null;
@@ -77,7 +77,7 @@ class TelegramAPI
      * @param bool $selective
      * @return string
      */
-    public function ReplyKeyboardMarkup(array $keyboard, bool $resize_keyboard = false, bool $one_time_keyboard = false, bool $selective = false)
+    public function replyKeyboardMarkup(array $keyboard, bool $resize_keyboard = false, bool $one_time_keyboard = false, bool $selective = false)
     {
         return $this->methods->jsonEncode([
             "keyboard" => $keyboard,
@@ -92,7 +92,7 @@ class TelegramAPI
      * @param bool $selective
      * @return string
      */
-    public function ReplyKeyboardRemove(bool $remove_keyboard = true, bool $selective = false)
+    public function replyKeyboardRemove(bool $remove_keyboard = true, bool $selective = false)
     {
         return $this->methods->jsonEncode([
             "remove_keyboard" => $remove_keyboard,
@@ -105,7 +105,7 @@ class TelegramAPI
      * @param bool $selective
      * @return string
      */
-    public function ForceReply(bool $force_reply = true, bool $selective = false)
+    public function forceReply(bool $force_reply = true, bool $selective = false)
     {
         return $this->methods->jsonEncode([
             "force_reply" => $force_reply,
@@ -127,7 +127,7 @@ class TelegramAPI
      * @param bool $pay
      * @return array
      */
-    public function InlineKeyboardButton(string $text, $callback_data = null, string $url = null, string $switch_inline_query = null, string $switch_inline_query_current_chat = null, $callback_game = null, bool $pay = false)
+    public function inlineKeyboardButton(string $text, $callback_data = null, string $url = null, string $switch_inline_query = null, string $switch_inline_query_current_chat = null, $callback_game = null, bool $pay = false)
     {
         if (is_string($callback_data))
             $callback_data = explode(' ', $callback_data);
