@@ -1218,7 +1218,11 @@ class TelegramController extends Controller
             $filter = ["startDateTime" => $dateToday, "endDateTime" => $dateRange, "attendees" => $tgUser->getEmail()];
             $eventListCurDay = $this->googleCalendar->getList($filter);
 
-            $text = null;
+            $pseudoId = "abcdefghij";
+            $text = "\n*Удалить* событие: _/ce {$pseudoId}_\n";
+            $text .= "*Редактировать* событие: _/ee {$pseudoId}_\n";
+            $text .= "_{$pseudoId}_ - id события\n";
+
             foreach ($eventListCurDay as $calendar) {
                 $text .= "\n*{$calendar["calendarName"]}*\n";
                 if ($calendar["listEvents"]) {
@@ -1230,11 +1234,14 @@ class TelegramController extends Controller
                         }
                         $timeStart = (new \DateTime($event["dateTimeStart"]))->format("H:i");
                         $timeEnd = (new \DateTime($event["dateTimeEnd"]))->format("H:i");
-                        $text .= "*{$timeStart}-{$timeEnd}* _{$event["calendarEventName"]}_\n";
+
+                        $eventId = substr($event["eventId"], 0, 10);
+
+                        $text .= "*{$timeStart}-{$timeEnd} (id#{$eventId})* _{$event["calendarEventName"]}_\n";
                         $dateTemp = $date;
                     }
                 } else {
-                    $text .= "Не найдено событий!\n";
+                    $text .= "Событий не найдено!\n";
                 }
             }
 

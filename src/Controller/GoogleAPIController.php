@@ -142,6 +142,7 @@ class GoogleAPIController extends Controller
                     continue;
 
                 $calendarEventResult[] = [
+                    "eventId" => $event->getId(),
                     "calendarEventName" => $event->getSummary(),
                     "description" => $event->getDescription(),
                     "organizerName" => $event->getCreator()->getDisplayName(),
@@ -225,6 +226,28 @@ class GoogleAPIController extends Controller
 //        return new JsonResponse();
     }
 
+    /**
+     * @Route("/google/service/calendar/event/update", name="google_service_calendar_event_add")
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function googleServiceCalendarEventUpdate(Request $request)
+    {
+        $service = new Google_Service_Calendar($this->googleClient);
+
+        $calendarId = "m3dli34k5foskeiq52ummh839g@group.calendar.google.com";
+        $eventId = "2j9b05qf2p116vakkb97ahdhro";
+
+        // First retrieve the event from the API.
+        $event = $service->events->get($calendarId, $eventId);
+
+        $event->setSummary("Тест 2");
+        $updatedEvent = $service->events->update($calendarId, $event->getId(), $event);
+
+        echo $updatedEvent->getUpdated();
+        return new JsonResponse();
+    }
+
         /*
          * __________________________TEST__________________________
          */
@@ -280,6 +303,7 @@ class GoogleAPIController extends Controller
                     $event->setSummary('<Без названия>');
 
                 $calendarEventResult[] = [
+                    "eventId" => $event->getId(),
                     "calendarEventName" => $event->getSummary(),
                     "description" => $event->getDescription(),
                     "organizerName" =>  $event->getCreator()->getDisplayName(),
