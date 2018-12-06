@@ -26,11 +26,6 @@ class TelegramResponse
         return $this->responseData;
     }
 
-    public function validateData($data)
-    {
-        return isset($data) ? $data : null;
-    }
-
     public function getResponseType()
     {
         if (isset($this->responseData[self::RESPONSE_MESSAGE]))

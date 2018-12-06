@@ -70,6 +70,8 @@ class TelegramController extends Controller
         $this->calendar = new Calendar($container, $this->tgBot, $this->tgDb, $this->tgResponse);
         $this->googleCalendar = new GoogleCalendarAPI($container);
         $this->methods = new Methods;
+
+        $this->meetingRoom = $this->googleCalendar->getCalendarNameList();
     }
 
     /**
@@ -78,8 +80,6 @@ class TelegramController extends Controller
      */
     public function tgWebhook()
     {
-        $this->meetingRoom = $this->googleCalendar->getCalendarNameList();
-
         // Если это известный нам ответ от телеграма
         if ($this->tgResponse->getResponseType()) {
             // Если пользователь найден, то не предлагаем ему регистрацию.
@@ -647,6 +647,8 @@ class TelegramController extends Controller
                 $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse->getChatId());
                 $meetingRoomUser->setTime("{$time[0]}-{$time[1]}");
                 $this->tgDb->insert($meetingRoomUser);
+
+                $this->tgDb->clearCallbackQuery();
 
                 $text = "Выбрано время _{$time[0]}-{$time[1]} ({$timeDiff})_\n\n";
                 $text .= "*Введите название события*";

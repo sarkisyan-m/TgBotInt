@@ -127,6 +127,7 @@ class TelegramDb
     public function userRegister()
     {
 
+
     }
 
     public function prepareCallbackQuery($data, $start = false)
@@ -161,6 +162,26 @@ class TelegramDb
             $callbackQueryEntity->setCreated(new \DateTime);
         }
         $this->insert($callbackQueryEntity);
+
+        if ($callbackQueryEntity->getId())
+            return true;
+        return false;
+    }
+
+    public function clearCallbackQuery()
+    {
+        $callBackQueryRepository = $this->doctrine->getRepository(CallbackQuery::class);
+        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgResponse->getChatId()], ["created" => "DESC"]);
+
+        /**
+         * @var $callbackQueryEntity CallbackQuery
+         */
+        if ($callbackQueryEntity) {
+            $callbackQueryEntity = $callbackQueryEntity[0];
+            $callbackQueryEntity->setData('');
+            $callbackQueryEntity->setCreated(new \DateTime);
+            $this->insert($callbackQueryEntity);
+        }
 
         if ($callbackQueryEntity->getId())
             return true;
