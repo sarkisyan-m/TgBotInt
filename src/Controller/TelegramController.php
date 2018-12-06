@@ -175,7 +175,7 @@ class TelegramController extends Controller
             $this->tgBot->replyKeyboardMarkup($this->tgGlobalCommands, true)
         );
 
-        exit();
+        return new Response();
     }
 
     // Обнуляем введенные пользовательские данные
@@ -215,7 +215,7 @@ class TelegramController extends Controller
                 $this->tgBot->replyKeyboardMarkup($keyboard, true, false)
             );
 
-            exit();
+            return new Response();
         }
 
         if ($stage == "registration") {
@@ -238,7 +238,7 @@ class TelegramController extends Controller
                             "\u{26A0} Регистрация отклонена! *Номер найден*, но необходимо обязательно указать Email в bitrix24 для получения уведомлений!",
                             "Markdown"
                         );
-                        exit();
+                        return new Response();
                     }
                 }
             }
@@ -260,7 +260,7 @@ class TelegramController extends Controller
                 );
             }
 
-            exit();
+            return new Response();
         }
     }
 
@@ -275,7 +275,7 @@ class TelegramController extends Controller
                 $this->tgResponse->getText() == "/start") {
                 $this->commandHelp();
 
-                exit();
+                return new Response();
             }
 
             if ($this->tgResponse->getText() == "/mr" ||
@@ -283,7 +283,7 @@ class TelegramController extends Controller
                 // meetingRoomSelect при true обнуляет все пользовательские вводы и отображает заново список переговорок
                 $this->meetingRoomSelect(true);
 
-                exit();
+                return new Response();
                 // Обнуляем пользовательский ввод.
                 // Будет дополняться по мере добавления других нововведений (помимо переговорки)
             }
@@ -293,7 +293,7 @@ class TelegramController extends Controller
                 // meetingRoomSelect при true обнуляет все пользовательские вводы и отображает заново список переговорок
                 $this->userMeetingRoomList();
 
-                exit();
+                return new Response();
                 // Обнуляем пользовательский ввод.
                 // Будет дополняться по мере добавления других нововведений (помимо переговорки)
             }
@@ -301,7 +301,7 @@ class TelegramController extends Controller
 
             if ($this->tgResponse->getText() == "/ce") {
                 $this->cancelEvent();
-                exit();
+                return new Response();
             }
 
 
@@ -309,7 +309,7 @@ class TelegramController extends Controller
                 $this->tgResponse->getText() == "\u{1F680} Завершить сеанс") {
                 $this->commandCancel(true);
 
-                exit();
+                return new Response();
             }
 
             /*
@@ -327,16 +327,16 @@ class TelegramController extends Controller
                         $this->tgResponse->getChatId(),
                         "Необходимо выбрать дату!"
                     );
-                    exit();
+                    return new Response();
                 } elseif (!$meetingRoomUser->getTime()) {
                     $this->meetingRoomSelectedTime();
-                    exit();
+                    return new Response();
                 } elseif (!$meetingRoomUser->getEventName()) {
                     $this->meetingRoomSelectEventName();
-                    exit();
+                    return new Response();
                 } elseif (!$meetingRoomUser->getEventMembers()) {
                     $this->meetingRoomSelectEventMembers();
-                    exit();
+                    return new Response();
                 }
             }
             /*
@@ -376,14 +376,14 @@ class TelegramController extends Controller
                 "Доступны только даты в промежутке *[{$this->calendar->getDate()}-{$this->calendar->getDate(-$this->dateRange)}]*",
                 "Markdown"
             );
-            exit();
+            return new Response();
         }
 
         if (isset($data["event"]["calendar"])) {
 
             if ($data["event"]["calendar"] == "selectDay") {
                 $this->meetingRoomSelectTime($data);
-                exit();
+                return new Response();
             }
 
             if ($data["event"]["calendar"] == "previous" ||
@@ -402,7 +402,7 @@ class TelegramController extends Controller
                         break;
                 }
                 $this->meetingRoomSelectDate($keyboard);
-                exit();
+                return new Response();
             }
         }
 
@@ -411,17 +411,17 @@ class TelegramController extends Controller
                 $this->meetingRoomSelectEventMembers($data);
             }
 
-            exit();
+            return new Response();
         }
 
         if (isset($data["event"]["confirm"])) {
             $this->meetingRoomConfirm($data);
 
-            exit();
+            return new Response();
         }
 
         if (isset($data["empty"]))
-            exit();
+            return new Response();
     }
 
     public function meetingRoomSelect($switch = false)
@@ -807,7 +807,7 @@ class TelegramController extends Controller
                     false,
                     $this->tgBot->inlineKeyboardMarkup($keyboard)
                 );
-                exit();
+                return new Response();
             }
         }
     }
@@ -842,7 +842,7 @@ class TelegramController extends Controller
                         null,
                         "Markdown"
                     );
-                    exit();
+                    return new Response();
                 }
             } else {
                 $members = $this->membersList($meetingRoomUserData);
@@ -873,7 +873,7 @@ class TelegramController extends Controller
                     $this->tgBot->inlineKeyboardMarkup($keyboard)
                 );
 
-                exit();
+                return new Response();
             }
         }
     }
@@ -898,7 +898,7 @@ class TelegramController extends Controller
                         null,
                         "Markdown"
                     );
-                    exit();
+                    return new Response();
                 }
             }
 
@@ -930,7 +930,7 @@ class TelegramController extends Controller
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
 
-            exit();
+            return new Response();
         }
     }
 
@@ -1146,7 +1146,7 @@ class TelegramController extends Controller
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
 
-        exit();
+        return new Response();
     }
 
     public function userMeetingRoomList()
