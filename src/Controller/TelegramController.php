@@ -15,6 +15,7 @@ use App\Service\TelegramDb;
 use App\Service\TelegramAPI;
 use App\Service\TelegramResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
@@ -52,7 +53,6 @@ class TelegramController extends Controller
 
         $this->tgBot = new TelegramAPI($this->tgToken, [$proxyName, $proxyPort, $proxyLogPass]);
         $this->tgResponse = new TelegramResponse;
-        $this->tgResponse->setResponseData(json_decode(file_get_contents('php://input'), true));
         $this->tgDb = new TelegramDb($container, $this->tgBot, $this->tgResponse);
 
         $this->bitrix24 = new Bitrix24API($container);
@@ -76,10 +76,13 @@ class TelegramController extends Controller
 
     /**
      * @Route("/tgWebhook", name="tg_webhook")
+     * @param Request $request
      * @return Response
      */
-    public function tgWebhook()
+    public function tgWebhook(Request $request)
     {
+        $this->tgResponse->setResponseData(json_decode($request->getContent(), true));
+
         // Если это известный нам ответ от телеграма
         if ($this->tgResponse->getResponseType()) {
             // Если пользователь найден, то не предлагаем ему регистрацию.
