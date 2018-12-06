@@ -16,7 +16,7 @@ use Google_Service_Calendar_CalendarListEntry;
 
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 
-class GoogleAPIController extends Controller
+class GoogleCalendarAPIController extends Controller
 {
     protected $methods;
 
@@ -68,6 +68,7 @@ class GoogleAPIController extends Controller
         $filter["startDateTime"] = null;
         $filter["endDateTime"] = null;
         $filter["attendees"] = null;
+        $filter["get"] = null;
 
         // Получение списка фильтров
         if ($request->get('filter') == "getList")
@@ -110,11 +111,12 @@ class GoogleAPIController extends Controller
 
             $eventsList = $service->events->listEvents($calendarListEntry->getId(), ["maxResults" => 2500, "timeMin" => $startDateTime, "timeMax" => $endDateTime, "orderBy" => "startTime", "singleEvents" => "true"]);
 
-            foreach ($eventsList->getItems() as $event) {
+            if ($filter["get"] != "calendars") {
+                foreach ($eventsList->getItems() as $event) {
 
-                // Если нет нужного дня
-                // У событий может быть только один ключ с датами:либо date (когда на весь день занимают),
-                // либо dateTime на определенный промежуток
+                    // Если нет нужного дня
+                    // У событий может быть только один ключ с датами:либо date (когда на весь день занимают),
+                    // либо dateTime на определенный промежуток
 //                if ($filter["startDateTime"]) {
 //                    $dateTime = $event->getStart()->getDateTime();
 //                    $date = $event->getStart()->getDate();
@@ -124,8 +126,8 @@ class GoogleAPIController extends Controller
 //                        continue;
 //                }
 
-                if (!$event->getSummary())
-                    $event->setSummary('<Без названия>');
+                    if (!$event->getSummary())
+                        $event->setSummary('<Без названия>');
 
 //                if ($this->isGoogleCalendarBotEmail($event->getCreator()->getEmail()))
 //                    dump("OK");
@@ -134,26 +136,27 @@ class GoogleAPIController extends Controller
 //                    break;
 //                }
 
-                $attendeesEmail = [];
-                foreach ($event->getAttendees() as $member)
-                    $attendeesEmail[] = implode(" ",(array)$member["email"]);
+                    $attendeesEmail = [];
+                    foreach ($event->getAttendees() as $member)
+                        $attendeesEmail[] = implode(" ",(array)$member["email"]);
 
-                if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0]))
-                    continue;
+                    if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0]))
+                        continue;
 
-                $calendarEventResult[] = [
-                    "eventId" => $event->getId(),
-                    "calendarEventName" => $event->getSummary(),
-                    "description" => $event->getDescription(),
-                    "organizerName" => $event->getCreator()->getDisplayName(),
-                    "organizerEmail" => $event->getCreator()->getEmail(),
-                    "dateCreated" => $event->getCreated(),
-                    "dateTimeStart" => $event->getStart()->getDateTime(),
-                    "dateTimeEnd" => $event->getEnd()->getDateTime(),
-                    "dateStart" => $event->getStart()->getDate(),
-                    "dateEnd" => $event->getEnd()->getDate(),
-                    "attendees" => $attendeesEmail,
-                ];
+                    $calendarEventResult[] = [
+                        "eventId" => $event->getId(),
+                        "calendarEventName" => $event->getSummary(),
+                        "description" => $event->getDescription(),
+                        "organizerName" => $event->getCreator()->getDisplayName(),
+                        "organizerEmail" => $event->getCreator()->getEmail(),
+                        "dateCreated" => $event->getCreated(),
+                        "dateTimeStart" => $event->getStart()->getDateTime(),
+                        "dateTimeEnd" => $event->getEnd()->getDateTime(),
+                        "dateStart" => $event->getStart()->getDate(),
+                        "dateEnd" => $event->getEnd()->getDate(),
+                        "attendees" => $attendeesEmail,
+                    ];
+                }
             }
 
             $calendarListResult[] = [
@@ -227,7 +230,7 @@ class GoogleAPIController extends Controller
     }
 
     /**
-     * @Route("/google/service/calendar/event/update", name="google_service_calendar_event_add")
+     * @Route("/google/service/calendar/event/update", name="google_service_calendar_event_update")
      * @param Request $request
      * @return JsonResponse
      */

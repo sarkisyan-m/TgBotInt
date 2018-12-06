@@ -2,21 +2,28 @@
 
 namespace App\Service;
 
+use Rhumsaa\Uuid\Uuid;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 
 class Calendar
 {
     protected $container;
     protected $tgBot;
+    protected $tgDb;
+    protected $tgResponse;
 
-    function __construct(Container $container, $tgBot)
+    function __construct(Container $container, $tgBot, $tgDb, $tgResponse)
     {
         $this->container = $container;
 
         /**
          * @var $tgBot TelegramAPI
+         * @var $tgDb TelegramDb
+         * @var $tgResponse TelegramResponse
          */
         $this->tgBot = $tgBot;
+        $this->tgDb = $tgDb;
+        $this->tgResponse = $tgResponse;
     }
 
     public function getDays(int $day = 0, int $month = 0, int $year = 0)
@@ -62,21 +69,25 @@ class Calendar
         return date("d.m.Y", strtotime("-{$day} day -{$month} month -{$year} year"));
     }
 
-    public function keyboard(int $day = 0, int $month = 0, int $year = 0, string $meetingRoom = null)
+    public function keyboard(int $day = 0, int $month = 0, int $year = 0)
     {
         $keyboard = [];
         $curDay = null;
+        $emptyCallback = ["empty" => true];
+        $eventName = "calendar";
+        $data = [];
 
         $ln = 0;
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(
-            $this->getMonthText($day, $month, $year) . ", " . $this->getYear($day, $month, $year),
-            ["e" => ["cal" => "cur"], "mr" => $meetingRoom, "day" => $day, "month" => $month, "year" => $year]
-        );
+
+//        $callback = $this->tgDb->prepareCallbackQuery();
+
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "current"], "data" => ["day" => $day, "month" => $month, "year" => $year]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("{$this->getMonthText($day, $month, $year)}, {$this->getYear($day, $month, $year)}", $callback);
 
         $ln++;
         $dWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         for ($i = 0; $i < count($dWeek); $i++)
-            $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($dWeek[$i], ["empty" => 1]);
+            $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($dWeek[$i], $emptyCallback);
 
         $ln++;
         $dWeekCount = 0;
@@ -91,35 +102,44 @@ class Calendar
             if ($curDay == 1) {
                 $emptyCell = $this->getWeekText($this->getDay($day, $month, $year), $month, $year, true);
                 for ($k = 0; $k < $emptyCell; $k++) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', ["empty" => 1]);
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', $emptyCallback);
                 }
                 $dWeekCount += $emptyCell;
             }
 
             // создаем ячейки из чисел
-            $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDay, ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $curDay, "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
+
+            $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => [ "day" => $curDay, "month" => $this->getMonth($day, $month, $year), "year" => $this->getYear($day, $month, $year)]]);
+            $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDay, $callback);
 
             // создаем пустые ячейки в конце
             if ($curDay == $this->getDays($day, $month, $year)) {
                 $emptyCell = count($keyboard[$ln]);
                 for ($k = 0; $k < 7 - $emptyCell; $k++) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', ["empty" => 1]);
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', $emptyCallback);
                 }
             }
 
             $dWeekCount++;
         }
         $ln++;
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("\u{2190}", ["e" => ["cal" => "pre"],  "mr" => $meetingRoom, "d" => $day, "m" => $month, "y" => $year]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("\u{2192}", ["e" => ["cal" => "fol"],  "mr" => $meetingRoom, "d" => $day, "m" => $month, "y" => $year]);
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "previous"], "data" => ["day" => $day, "month" => $month, "year" => $year]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("\u{2190}", $callback);
+
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "following"], "data" => ["day" => $day, "month" => $month, "year" => $year]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("\u{2192}", $callback);
 
         $ln++;
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Сегодня", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("0"), "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Завтра", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("-1"), "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Послезавтра", ["e" => ["cal" => "sDay"], "mr" => $meetingRoom, "d" => $this->getDay("-2"), "m" => $this->getMonth($day, $month, $year), "y" => $this->getYear($day, $month, $year)]);
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("0"), "month" => $this->getMonth($day, $month, $year), "year" => $this->getYear($day, $month, $year)]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Сегодня", $callback);
 
-        $ln++;
-//        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Выбрать другую переговорку", ["e" => ["mr" => "switch"], "d" => $day, "m" => $month, "y" => $year]);
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("-1"), "month" => $this->getMonth($day, $month, $year), "year" => $this->getYear($day, $month, $year)]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Завтра", $callback);
+
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("-2"), "month" => $this->getMonth($day, $month, $year), "year" => $this->getYear($day, $month, $year)]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Послезавтра", $callback);
+
+        $this->tgDb->setCallbackQuery();
 
         return $keyboard;
     }

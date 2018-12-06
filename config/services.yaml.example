@@ -5,10 +5,9 @@
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
     locale: 'ru'
-    date_format: 'd.m.Y H:i:s'
 
     # postgresql
-    database_driver:
+    database_driver: pdo_pgsql
     database_host:
     database_port:
     database_name:
@@ -16,13 +15,17 @@ parameters:
     database_password:
     server_version:
 
-    # cache
-    cache_time: 86400
-
     root_path: '%kernel.project_dir%/public'
 
     # telegram
     tg_token:
+
+    # bitrix24
+    bitrix24_api: 'abcabcabcabcabca'
+    bitrix24_user_id: '111'
+
+    # для того, чтобы не иметь доступ к апи напрямую / random 256-bit WEP
+    google_token: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 
     # proxy
     proxy_name:

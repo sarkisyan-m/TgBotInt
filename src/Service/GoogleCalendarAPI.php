@@ -48,6 +48,41 @@ class GoogleCalendarAPI
         return $this->methods->curl($url, $args, true);
     }
 
+    public function getCalendars($calendarName = null)
+    {
+        $url = $this->container->get('router')->generate('google_service_calendar_list', [], 0);
+
+        $filter = ["get" => "calendars"];
+        if ($calendarName)
+            $filter += ["calendarName" => $calendarName];
+
+        $filter = json_encode($filter);
+        $args = ["filter={$filter}"];
+
+        return $this->methods->curl($url, $args, true);
+    }
+
+    public function getCalendarId($calendarName)
+    {
+        $data = $this->getCalendars($calendarName);
+
+        if (isset($data[0]["calendarId"]))
+            return $data[0]["calendarId"];
+
+        return null;
+    }
+
+    public function getCalendarNameList()
+    {
+        $calendarNameList = [];
+        $calendars = $this->getCalendars();
+        if ($calendars) {
+            foreach ($calendars as $calendar)
+                $calendarNameList[] = $calendar["calendarName"];
+        }
+        return $calendarNameList;
+    }
+
     /**
      * @param string $calendarId
      * @param string|null $summary
