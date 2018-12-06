@@ -19,4 +19,3 @@ yarn-error.log
 /phpunit.xml
 ###< symfony/phpunit-bridge ###
 /tgbot/
-/config/services.yaml

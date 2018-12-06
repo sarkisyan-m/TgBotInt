@@ -4,22 +4,20 @@ namespace App\Service;
 
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use App\Service\Methods as MethodsService;
+use Symfony\Component\Routing\Router;
 
 class GoogleCalendarAPI
 {
     protected $container;
     protected $methods;
-    protected $isGoogle;
     protected $googleToken;
+    protected $router;
 
-    function __construct(Container $container)
+    function __construct($token, Router $router, MethodsService $methods)
     {
-        $this->container = $container;
-
-        $this->googleToken = $container->getParameter('google_token');
-        $this->isGoogle = isset($_GET[$this->googleToken]);
-        
-        $this->methods = new MethodsService;
+        $this->googleToken = $token;
+        $this->router = $router;
+        $this->methods = $methods;
     }
 
     /**
@@ -28,7 +26,7 @@ class GoogleCalendarAPI
      */
     public function getList(array $filter = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_list', [], 0);
+        $url = $this->router->generate('google_service_calendar_list', [], 0);
 
         $filterAvailableKeys = array_keys($this->methods->curl($url, ["filter=getList"], true));
         $resultFilter = [];
@@ -50,7 +48,7 @@ class GoogleCalendarAPI
 
     public function getCalendars($calendarName = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_list', [], 0);
+        $url = $this->router->generate('google_service_calendar_list', [], 0);
 
         $filter = ["get" => "calendars"];
         if ($calendarName)
@@ -94,7 +92,7 @@ class GoogleCalendarAPI
      */
     public function addEvent(string $calendarId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_event_add', [], 0);
+        $url = $this->router->generate('google_service_calendar_event_add', [], 0);
 
         $event = [
             'summary' => $summary,

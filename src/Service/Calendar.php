@@ -11,19 +11,14 @@ class Calendar
     protected $tgBot;
     protected $tgDb;
     protected $tgResponse;
+    protected $fileName;
 
-    function __construct(Container $container, $tgBot, $tgDb, $tgResponse)
+    function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramResponse $tgResponse, $fileName)
     {
-        $this->container = $container;
-
-        /**
-         * @var $tgBot TelegramAPI
-         * @var $tgDb TelegramDb
-         * @var $tgResponse TelegramResponse
-         */
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->tgResponse = $tgResponse;
+        $this->fileName = $fileName;
     }
 
     public function getDays(int $day = 0, int $month = 0, int $year = 0)
@@ -278,7 +273,7 @@ class Calendar
 
 
 
-            $filename = $this->container->getParameter('kernel.project_dir') . "/public/eventlist.txt";
+            $filename = $this->fileName;
             file_put_contents($filename, print_r(($times), true));
 
         }

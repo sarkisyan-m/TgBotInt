@@ -10,11 +10,11 @@ class Bitrix24API
     protected $bitrix24Url = 'https://intaro.bitrix24.ru/rest/';
     protected $methods;
 
-    function __construct(Container $container)
+    function __construct($bitrix24UserId, $bitrix24Api)
     {
         $this->methods = new MethodsService;
-        $this->bitrix24Url .= $container->getParameter('bitrix24_user_id') . "/";
-        $this->bitrix24Url .= $container->getParameter('bitrix24_api') . "/";
+        $this->bitrix24Url .= $bitrix24UserId . "/";
+        $this->bitrix24Url .= $bitrix24Api . "/";
     }
 
     /**

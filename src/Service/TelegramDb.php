@@ -5,32 +5,27 @@ namespace App\Service;
 use App\Entity\CallbackQuery;
 use App\Entity\TgCommandMeetingRoom;
 use App\Entity\TgUsers;
+use Doctrine\Bundle\DoctrineBundle\Registry;
 use Rhumsaa\Uuid\Uuid;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 
 class TelegramDb
 {
     protected $doctrine;
-    protected $container;
 
     protected $tgBot;
     protected $tgResponse;
 
     protected $dataCallbackQuery;
 
-    function __construct(Container $container, $tgBot, $tgResponse)
-    {
-        $this->container = $container;
-        $this->doctrine = $container->get('doctrine');
-        $this->tgResponse = new TelegramResponse;
+    protected $roomActualDate;
 
-        /**
-         * @var $tgBot TelegramAPI
-         * @var $tgDb TelegramDb
-         * @var $tgResponse TelegramResponse
-         */
+    function __construct(TelegramAPI $tgBot, TelegramResponse $tgResponse, Registry $doctrine, $roomActualDate)
+    {
         $this->tgBot = $tgBot;
         $this->tgResponse = $tgResponse;
+        $this->doctrine = $doctrine;
+        $this->roomActualDate = $roomActualDate;
     }
 
     public function insert($entity)
@@ -50,7 +45,7 @@ class TelegramDb
 
     public function getTimeDiff($time)
     {
-        $actualDate = $this->container->getParameter('meeting_room_actual_date');
+        $actualDate = $this->roomActualDate;
 
         if ((time() - $time) / 60 <= $actualDate)
             return true;

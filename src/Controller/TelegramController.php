@@ -15,19 +15,20 @@ use App\Service\TelegramDb;
 use App\Service\TelegramAPI;
 use App\Service\TelegramResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\DependencyInjection\ContainerInterface as Container;
+use Symfony\Component\Serializer\Serializer;
 
 class TelegramController extends Controller
 {
     protected $methods;
+    protected $serializer;
     
     protected $tgBot;
     protected $tgDb;
-    protected $tgToken;
     protected $tgResponse;
-    protected $isTg;
     protected $tgUser;
     protected $tgGlobalCommands;
 
@@ -41,21 +42,21 @@ class TelegramController extends Controller
 
     protected $meetingRoom;
 
-    function __construct(Container $container)
+    function __construct(
+        TelegramAPI $tgBot,
+        TelegramResponse $tgResponse,
+        TelegramDb $tgDb,
+        Bitrix24API $bitrix24,
+        Calendar $calendar,
+        GoogleCalendarAPI $googleCalendar,
+        Methods $methods,
+        Serializer $serializer
+    )
     {
-        $this->tgToken = $container->getParameter('tg_token');
-        $this->isTg = isset($_GET[$this->tgToken]);
-
-        $proxyName = $container->getParameter('proxy_name');
-        $proxyPort = $container->getParameter('proxy_port');
-        $proxyLogPass = $container->getParameter('proxy_logpass');
-
-        $this->tgBot = new TelegramAPI($this->tgToken, [$proxyName, $proxyPort, $proxyLogPass]);
-        $this->tgResponse = new TelegramResponse;
-        $this->tgResponse->setResponseData(json_decode(file_get_contents('php://input'), true));
-        $this->tgDb = new TelegramDb($container, $this->tgBot, $this->tgResponse);
-
-        $this->bitrix24 = new Bitrix24API($container);
+        $this->tgBot = $tgBot;
+        $this->tgResponse = $tgResponse;
+        $this->tgDb = $tgDb;
+        $this->bitrix24 = $bitrix24;
 
         $this->tgGlobalCommands = [
             ["\u{1F525} Забронировать переговорку"],
@@ -63,23 +64,27 @@ class TelegramController extends Controller
             ["\u{1F680} Завершить сеанс"]
         ];
 
-        $this->workTimeStart = $container->getParameter('work_time_start');
-        $this->workTimeEnd = $container->getParameter('work_time_end');
-        $this->dateRange = $container->getParameter('date_range');
+        $this->workTimeStart = $this->container->getParameter('work_time_start');
+        $this->workTimeEnd = $this->container->getParameter('work_time_end');
+        $this->dateRange = $this->container->getParameter('date_range');
 
-        $this->calendar = new Calendar($container, $this->tgBot, $this->tgDb, $this->tgResponse);
-        $this->googleCalendar = new GoogleCalendarAPI($container);
-        $this->methods = new Methods;
+        $this->calendar = $calendar;
+        $this->googleCalendar = $googleCalendar;
+        $this->methods = $methods;
+        $this->serializer = $serializer;
 
         $this->meetingRoom = $this->googleCalendar->getCalendarNameList();
     }
 
     /**
      * @Route("/tgWebhook", name="tg_webhook")
+     * @param Request $request
      * @return Response
      */
-    public function tgWebhook()
+    public function tgWebhook(Request $request)
     {
+        $this->tgResponse->setResponseData(json_decode($request->getContent(), true));
+
         // Если это известный нам ответ от телеграма
         if ($this->tgResponse->getResponseType()) {
             // Если пользователь найден, то не предлагаем ему регистрацию.
@@ -133,7 +138,7 @@ class TelegramController extends Controller
             }
         }
 
-        $serializer = $this->container->get('serializer');
+        $serializer = $this->serializer;
         $repository = $this->getDoctrine()->getRepository(TgUsers::class);
 
         $members = $repository->findBy(["chat_id" => $membersChatId["found"]]);

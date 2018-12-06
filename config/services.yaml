@@ -7,30 +7,15 @@ parameters:
     locale: 'ru'
 
     # postgresql
-    database_driver: pdo_pgsql
-    database_host:
-    database_port:
-    database_name:
-    database_user:
-    database_password:
-    server_version:
+    database_driver: '%env(PDO_DRIVER)%'
+    database_host: '%env(PDO_HOST)%'
+    database_port: '%env(PDO_PORT)%'
+    database_name: '%env(PDO_NAME)%'
+    database_user: '%env(PDO_USER)%'
+    database_password: '%env(PDO_PASSWORD)%'
+    server_version: '%env(SERVER_VERSION)%'
 
     root_path: '%kernel.project_dir%/public'
-
-    # telegram
-    tg_token:
-
-    # bitrix24
-    bitrix24_api: 'abcabcabcabcabca'
-    bitrix24_user_id: '111'
-
-    # для того, чтобы не иметь доступ к апи напрямую / random 256-bit WEP
-    google_token: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-
-    # proxy
-    proxy_name:
-    proxy_port:
-    proxy_logpass:
 
     # work_time
     work_time_start: '08:00'
@@ -63,3 +48,28 @@ services:
         tags: ['controller.service_arguments']
 
     # add more service definitions when explicit configuration is needed
+
+    App\Service\TelegramAPI:
+        arguments:
+            $tgToken: '%env(TG_TOKEN)%'
+            $proxy:
+                - '%env(PROXY_NAME)%'
+                - '%env(PROXY_PORT)%'
+                - '%env(PROXY_LOGPASS)%'
+
+    App\Service\TelegramDb:
+        arguments:
+            $roomActualDate: '%meeting_room_actual_date%'
+
+    App\Service\Bitrix24API:
+        arguments:
+            $bitrix24UserId: '%env(BITRIX24_USER_ID)%'
+            $bitrix24Api: '%env(BITRIX24_API)%'
+
+    App\Service\Calendar:
+        arguments:
+            $fileName: '%kernel.project_dir%/public/eventlist.txt'
+
+    App\Service\GoogleCalendarAPI:
+        arguments:
+            $token: '%env(GOOGLE_TOKEN)%'
