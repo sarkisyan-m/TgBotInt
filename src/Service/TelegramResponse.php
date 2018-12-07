@@ -86,4 +86,15 @@ class TelegramResponse
             return json_decode($this->getResponseData()[$this->getResponseType()]["data"], true);
         return null;
     }
+
+    public function isBotCommand()
+    {
+        if (isset($this->getResponseData()[$this->getResponseType()]["entities"])) {
+            foreach ($this->getResponseData()[$this->getResponseType()]["entities"] as $entity) {
+                if (isset($entity["type"]) && $entity["type"] == "bot_command")
+                    return true;
+            }
+        }
+        return false;
+    }
 }

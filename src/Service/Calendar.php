@@ -212,24 +212,28 @@ class Calendar
         $counter = 0;
         foreach ($times as $timeKey => $time) {
             $counter++;
-            
+            $end = $counter == $total;
+            $notEnd = $counter < $total;
+
             $time["timeStart"] = strtotime($time["timeStart"]);
             $time["timeEnd"] = strtotime($time["timeEnd"]);
 
             if ($time["timeStart"] <= $workTimeStart && $time["timeEnd"] <= $workTimeEnd) {
-                if ($time["timeEnd"] >= $workTimeStart && $counter < $total) {
+                if ($time["timeStart"] == $workTimeStart && $time["timeEnd"] == $workTimeEnd && $end) {
+                    break;
+                } elseif ($time["timeEnd"] >= $workTimeStart && $notEnd) {
                     $tempTime = $time;
-                } elseif ($time["timeEnd"] >= $workTimeStart && $counter == $total) {
+                } elseif ($time["timeEnd"] >= $workTimeStart && $end) {
                     $result[] = $this->makeAvailableTime($time["timeEnd"], $workTimeEnd);
                 }
                 continue;
             }
 
             if ($time["timeStart"] < $workTimeStart) {
-                if ($time["timeEnd"] > $workTimeStart && $time["timeEnd"] < $workTimeEnd && $counter < $total) {
+                if ($time["timeEnd"] > $workTimeStart && $time["timeEnd"] < $workTimeEnd && $notEnd) {
                     $workTimeStart = $time["timeEnd"];
                     continue;
-                } elseif ($time["timeEnd"] >= $workTimeStart && $time["timeEnd"] <= $workTimeEnd && $counter == $total) {
+                } elseif ($time["timeEnd"] >= $workTimeStart && $time["timeEnd"] <= $workTimeEnd && $end) {
                     break;
                 }
             }
@@ -265,7 +269,7 @@ class Calendar
                 }
             }
 
-            if ($counter == $total && $time["timeEnd"] < $workTimeEnd) {
+            if ($end && $time["timeEnd"] < $workTimeEnd) {
 
                 if ($tempTime["timeEnd"] < $workTimeEnd && $time["timeStart"] > $tempTime["timeEnd"]) {
                     $result[] = $this->makeAvailableTime($time["timeEnd"], $workTimeEnd);

@@ -17,9 +17,14 @@ class Verification
     private $id;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="string", length=255)
      */
     private $hash;
+
+    /**
+     * @ORM\Column(type="datetime")
+     */
+    private $date;
 
     /**
      * @ORM\Column(type="datetime")
@@ -36,9 +41,21 @@ class Verification
         return $this->hash;
     }
 
-    public function setHash(?string $hash): self
+    public function setHash(string $hash): self
     {
         $this->hash = $hash;
+
+        return $this;
+    }
+
+    public function getDate(): ?\DateTimeInterface
+    {
+        return $this->date;
+    }
+
+    public function setDate(\DateTimeInterface $date): self
+    {
+        $this->date = $date;
 
         return $this;
     }

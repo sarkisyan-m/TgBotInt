@@ -124,4 +124,16 @@ class GoogleCalendarAPI
 
         return $this->methods->curl($url, $args, true);
     }
+
+    public function removeEvent($calendarId = null, $eventId = null)
+    {
+        $url = $this->container->get('router')->generate('google_service_calendar_event_remove', [], 0);
+
+        $args = [
+            "calendarId={$calendarId}",
+            "eventId={$eventId}"
+        ];
+
+        return $this->methods->curl($url, $args, true);
+    }
 }

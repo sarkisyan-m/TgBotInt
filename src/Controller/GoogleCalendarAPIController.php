@@ -69,13 +69,14 @@ class GoogleCalendarAPIController extends Controller
         $filter["endDateTime"] = null;
         $filter["attendees"] = null;
         $filter["get"] = null;
+        $filter["eventIdShort"] = null;
 
         // Получение списка фильтров
         if ($request->get('filter') == "getList")
             return new JsonResponse($filter);
 
-        if ($this->methods->jsonDecode($request->get('filter')))
-            $filter = array_merge($filter, $this->methods->jsonDecode($request->get('filter'), true));
+        if (json_decode($request->get('filter')))
+            $filter = array_merge($filter, json_decode($request->get('filter'), true));
 
         $service = new Google_Service_Calendar($this->googleClient);
         $calendarList = $service->calendarList->listCalendarList();
@@ -143,9 +144,12 @@ class GoogleCalendarAPIController extends Controller
                     if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0]))
                         continue;
 
-                    $calendarEventResult[] = [
+
+                    $eventArray = [
                         "eventId" => $event->getId(),
                         "calendarEventName" => $event->getSummary(),
+                        "calendarId" => $calendarListEntry->getId(),
+                        "calendarName" => $calendarListEntry->getSummary(),
                         "description" => $event->getDescription(),
                         "organizerName" => $event->getCreator()->getDisplayName(),
                         "organizerEmail" => $event->getCreator()->getEmail(),
@@ -156,6 +160,13 @@ class GoogleCalendarAPIController extends Controller
                         "dateEnd" => $event->getEnd()->getDate(),
                         "attendees" => $attendeesEmail,
                     ];
+
+                    if ($filter["eventIdShort"]) {
+                        if (substr($eventArray["eventId"], 0, strlen($filter["eventIdShort"])) == $filter["eventIdShort"])
+                            return new JsonResponse($eventArray);
+                    }
+
+                    $calendarEventResult[] = $eventArray;
                 }
             }
 
@@ -187,46 +198,32 @@ class GoogleCalendarAPIController extends Controller
             return new JsonResponse(json_encode(["error" => "data not found!"]));
 
 
-        $event = $this->methods->jsonDecode($event, true);
+        $event = json_decode($event, true);
         $event = new Google_Service_Calendar_Event($event);
         $service = new Google_Service_Calendar($this->googleClient);
         $event = $service->events->insert($calendarId, $event);
 
-        printf("Создано событие: %s", $event->htmlLink);
+        return new JsonResponse(["success" => "Event created!", "url" => $event->htmlLink]);
+    }
 
-        return new JsonResponse();
+    /**
+     * @Route("/google/service/calendar/event/remove", name="google_service_calendar_event_remove")
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function googleServiceCalendarEventRemove(Request $request)
+    {
+        $calendarId = $request->get('calendarId');
+        $eventId = $request->get('eventId');
 
+        if (!$calendarId)
+            return new JsonResponse(json_encode(["error" => "calendarId not found!"]));
+        elseif (!$eventId)
+            return new JsonResponse(json_encode(["error" => "eventId not found!"]));
 
-
-//        $event = new Google_Service_Calendar_Event([
-//            'summary' => 'Название события',
-//            'description' => 'Описание события',
-//            'start' => [
-//                'dateTime' => '2018-11-30T11:45:00+03:00',
-//            ],
-//            'end' => [
-//                'dateTime' => '2018-11-30T13:45:00+03:00',
-//            ],
-//            'attendees' => [
-//                ['email' => 'sarkisyan@intaro.email'],
-//                ['email' => 'sbrin@example.com'],
-//            ],
-//            'reminders' => [
-//                'useDefault' => false,
-//                'overrides' => [
-//                    ['method' => 'email', 'minutes' => 24 * 60],
-//                ],
-//            ],
-//        ]);
-
-//        $calendarId = "iloec6jf1h4rop33877ns95v44@group.calendar.google.com";
-//        $service = new Google_Service_Calendar($this->googleClient);
-//        $event = $service->events->insert($calendarId, $event);
-//        dump(sprintf("Создано событие: %s", $event->htmlLink));
-
-
-
-//        return new JsonResponse();
+        $service = new Google_Service_Calendar($this->googleClient);
+        $service->events->delete($calendarId, $eventId);
+        return new JsonResponse(["success" => "Event deleted!"]);
     }
 
     /**
@@ -262,7 +259,7 @@ class GoogleCalendarAPIController extends Controller
      */
     public function test(Request $request)
     {
-        $filter = $this->methods->jsonDecode($request->get('filter'), true);
+        $filter = json_decode($request->get('filter'), true);
 //        $filter = ["startDateTime" => "28.11.2018", "calendarName" => "Первая переговорка"];
 
         $service = new Google_Service_Calendar($this->googleClient);
