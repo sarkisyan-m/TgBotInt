@@ -125,6 +125,40 @@ class GoogleCalendarAPI
         return $this->methods->curl($url, $args, true);
     }
 
+    public function editEvent(string $calendarId, string $eventId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
+    {
+        $url = $this->container->get('router')->generate('google_service_calendar_event_edit', [], 0);
+
+        $event = [
+            'summary' => $summary,
+            'description' => $description,
+            'start' => [
+                'dateTime' => $startDateTime,
+            ],
+            'end' => [
+                'dateTime' => $endDateTime,
+            ],
+            'attendees' => $attendees,
+            'reminders' => [
+                'useDefault' => false,
+                'overrides' => [
+                    ['method' => 'email', 'minutes' => 24 * 60],
+                ],
+            ],
+        ];
+
+        $event = urlencode(json_encode($event));
+
+
+        $args = [
+            "calendarId={$calendarId}",
+            "eventId={$eventId}",
+            "event={$event}"
+        ];
+
+        return $this->methods->curl($url, $args, true);
+    }
+
     public function removeEvent($calendarId = null, $eventId = null)
     {
         $url = $this->container->get('router')->generate('google_service_calendar_event_remove', [], 0);

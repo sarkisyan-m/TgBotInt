@@ -127,13 +127,10 @@ class TelegramDb
     public function userRegister()
     {
 
-
     }
 
-    public function prepareCallbackQuery($data, $start = false)
+    public function prepareCallbackQuery($data)
     {
-        if ($start)
-            $this->dataCallbackQuery = null;
         $uuid = Uuid::uuid4()->toString();
         $this->dataCallbackQuery[$uuid] = $data;
 
@@ -163,28 +160,11 @@ class TelegramDb
         }
         $this->insert($callbackQueryEntity);
 
-        if ($callbackQueryEntity->getId())
+        if ($callbackQueryEntity->getId()) {
+            $this->dataCallbackQuery = null;
             return true;
-        return false;
-    }
-
-    public function clearCallbackQuery()
-    {
-        $callBackQueryRepository = $this->doctrine->getRepository(CallbackQuery::class);
-        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgResponse->getChatId()], ["created" => "DESC"]);
-
-        /**
-         * @var $callbackQueryEntity CallbackQuery
-         */
-        if ($callbackQueryEntity) {
-            $callbackQueryEntity = $callbackQueryEntity[0];
-            $callbackQueryEntity->setData('');
-            $callbackQueryEntity->setCreated(new \DateTime);
-            $this->insert($callbackQueryEntity);
         }
 
-        if ($callbackQueryEntity->getId())
-            return true;
         return false;
     }
 
@@ -204,12 +184,12 @@ class TelegramDb
         return false;
     }
 
-    public function getUser()
+    public function isAuth()
     {
         $tgUsersRepository = $this->doctrine->getRepository(TgUsers::class);
         $tgUsersEntity = $tgUsersRepository->findBy(["chat_id" => $this->tgResponse->getChatId()]);
         if ($tgUsersEntity)
-            return $tgUsersEntity[0];
+            return true;
 
         return false;
     }

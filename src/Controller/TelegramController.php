@@ -14,6 +14,8 @@ use App\Service\Methods;
 use App\Service\TelegramDb;
 use App\Service\TelegramAPI;
 use App\Service\TelegramResponse;
+use Monolog\ErrorHandler;
+use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -71,11 +73,11 @@ class TelegramController extends Controller
         $this->botCommands = [
             "/meetingroomlist" => "\u{1F525} Забронировать переговорку",
             "/eventlist" => "\u{1F4C4} Список моих событий",
+            "/help" => "\u{2049} Помощь",
             "/exit" => "\u{1F680} Завершить сеанс",
             "/e_" => "",
             "/d_" => "",
-            "/start" => "",
-            "/help" => ""
+            "/start" => ""
         ];
     }
 
@@ -97,6 +99,7 @@ class TelegramController extends Controller
         return dump(strlen($val));
     }
 
+
     /**
      * @Route("/tgWebhook", name="tg_webhook")
      * @param Request $request
@@ -108,12 +111,137 @@ class TelegramController extends Controller
 
         $this->debugVal($this->tgResponse->getResponseData());
 
+        $text1 = null;
+        $text1 .= "Участники\n";
+        $text1 .= "- Михаил Саркисян id#338308809, +79102502002, sarkisyan@intaro.email\n";
+        $text1 .= "- Иван Иванов id#111111, 111111, test@example.com\n";
+        $text1 .= "- Петр Петров id#111115, 111115, test@example.com\n";
+        $text1 .= "- Сергей Сергеев id#none\n";
+        $text1 .= "\n";
+        $text1 .= "Организатор\n";
+        $text1 .= "- Михаил Саркисян id#338308809, +79102502002, sarkisyan@intaro.email";
+
+        $filter = ["dateTimeStart" => "11.12.2018", "attendees" => "sarkisyan@intaro.email"];
+        $eventListCurDay = $this->googleCalendar->getList($filter);
+        $text2 = $eventListCurDay[0]["listEvents"][3]["description"];
+
+        dump($text1 == $text2);
+        dump('$text1');
+        dump($text1);
+        dump('$text2');
+        dump($text2);
+
+        
+        $text3 = '<b>Участники</b><br>- <i>Михаил Саркисян id#338308809, +79102502002, sarkisyan@intaro.email</i><br>- <i>Сергей Сергеев id#none</i><br><br><b>Организатор</b><br>- <i>Михаил Саркисян id#338308809, +79102502002, sarkisyan@intaro.email</i>';
+//
+//        dump('$text3');
+//        dump($text3);
+//        dump('$this->googleCalendarDescriptionConvertHtmlToText($text3)');
+//        dump($this->googleCalendarDescriptionConvertHtmlToText($text3));
+//        dump('$this->googleCalendarDescriptionConvertHtmlToText($text3, true)');
+//        dump($this->googleCalendarDescriptionConvertHtmlToText($text3, true));
+//
+//        dump('$userList = json_decode(\'{"users":{');
+//        dump($userList = json_decode('{"users":{"found":[{"chat_id":"338308809","name":"\u041c\u0438\u0445\u0430\u0438\u043b \u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","phone":"+79102502002","email":"sarkisyan@intaro.email"},{"chat_id":"111111","name":"\u0418\u0432\u0430\u043d \u0418\u0432\u0430\u043d\u043e\u0432","phone":"111111","email":"test@example.com"},{"chat_id":"111115","name":"\u041f\u0435\u0442\u0440 \u041f\u0435\u0442\u0440\u043e\u0432","phone":"111115","email":"test@example.com"},{"name":"\u0421\u0435\u0440\u0433\u0435\u0439 \u0421\u0435\u0440\u0433\u0435\u0435\u0432"}],"organizer":[{"chat_id":"338308809","name":"\u041c\u0438\u0445\u0430\u0438\u043b \u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","phone":"+79102502002","email":"sarkisyan@intaro.email"}]}}', true));
+//
+//        dump('$this->googleCalendarDescriptionConvertTextToHtml($userList, $emailList)');
+//        dump($this->googleCalendarDescriptionConvertTextToHtml($userList, $emailList));
+//        dump($emailList);
+        
+        
+
+        dump('$this->googleCalendarDescriptionConvertLtextToText($text1)');
+        dump($this->googleCalendarDescriptionConvertLtextToText($text1));
+        dump('$this->googleCalendarDescriptionConvertLtextToText($text1, true)');
+        dump($this->googleCalendarDescriptionConvertLtextToText($text1, true));
+
+
+
+//        $args = "nmcv";
+//        $dateToday = date("d.m.Y", strtotime("today"));
+//        $dateRange = date("d.m.Y", strtotime("+{$this->dateRange} day"));
+//
+//        $filter = ["eventIdShort" => $args, "attendees" => "sarkisyan@intaro.email"];
+//        $eventListCurDay = $this->googleCalendar->getList($filter);
+//
+//        dump($eventListCurDay);
+//
+//        dump($this->googleVerifyDescription($eventListCurDay[0]["listEvents"][0]));
+//
+//
+//
+//        $text = '{"users":{"none":"none","organizer":[{"chat_id":"338308809","name":"\u041c\u0438\u0445\u0430\u0438\u043b \u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","phone":"+79102502002","email":"sarkisyan@intaro.email"}]}}';
+//        $text = '{"users":{"found":[{"id":17,"chatId":"111112","name":"\u0418\u0432\u0430\u043d \u0418\u0432\u0430\u043d\u043e\u0432","phone":"111112","email":"test@example.com","active":true},{"id":23,"chatId":"111118","name":"\u041f\u0435\u0442\u0440 \u041f\u0435\u0442\u0440\u043e\u0432","phone":"111118","email":"test@example.com","active":true}],"organizer":[{"id":39,"chatId":"338308809","name":"\u041c\u0438\u0445\u0430\u0438\u043b \u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","phone":"+79102502002","email":"sarkisyan@intaro.email","active":true}]}}';
+//
+//
+//        $text = json_decode($text, true);
+//        dump($text);
+//        $meetingRoomMembers = $text;
+//        $textMembersFound = null;
+//        $textMembersOrganizer = null;
+//
+//
+//        foreach ($meetingRoomMembers["users"] as $memberType => $memberList) {
+//            if ($memberType == "none")
+//                continue;
+//            if ($meetingRoomMembers["users"]["found"])
+//                foreach ($memberList as $member) {
+//                    if (isset($member["chatId"]))
+//                        $member["chat_id"] = $member["chatId"];
+//                    if (isset($member["email"]))
+//                        $emailList[] = $member["email"];
+//                    if ($memberType == "found") {
+//                        if (isset($member["chat_id"]))
+//                            $textMembersFound .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
+//                        else
+//                            $textMembersFound .= "<br>- <i>{$member["name"]} id#none</i>";
+//                    }
+//                    if ($memberType == "organizer")
+//                        $textMembersOrganizer .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
+//                }
+//
+//                dump($member);
+//        }
+//
+//
+//
+//        $members = $this->membersList($text);
+//        dump($text);
+//        dump($members);
+
+
+
+//        dump(
+//            $this->googleCalendar->removeEvent(
+//                "m3dli34k5foskeiq52ummh839g@group.calendar.google.com",
+//                "2j9b05qf2p116vakkb97ahdhro"
+//            )
+//        );
+
+
+//
+//        dump($this->googleCalendar->getCalendars());
+//        dump($this->googleCalendar->getCalendarId("Первая переговорка"));
+//
+//        dump($this->googleCalendar->getCalendarNameList());
+//
+//
+//        $responseMessage = json_decode('{"update_id":470788049,"message":{"message_id":9381,"from":{"id":338308809,"is_bot":false,"first_name":"\u041c\u0438\u0445\u0430\u0438\u043b","last_name":"\u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","language_code":"ru"},"chat":{"id":338308809,"first_name":"\u041c\u0438\u0445\u0430\u0438\u043b","last_name":"\u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","type":"private"},"date":1543994816,"text":"\ud83d\udd25 \u0417\u0430\u0431\u0440\u043e\u043d\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043f\u0435\u0440\u0435\u0433\u043e\u0432\u043e\u0440\u043a\u0443"}}', true);
+//        $responseCallbackQuery = json_decode('{"update_id":470788052,"callback_query":{"id":"1453025272684867749","from":{"id":338308809,"is_bot":false,"first_name":"\u041c\u0438\u0445\u0430\u0438\u043b","last_name":"\u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","language_code":"ru"},"message":{"message_id":9371,"from":{"id":685643586,"is_bot":true,"first_name":"Intaro","username":"IntaroBot"},"chat":{"id":338308809,"first_name":"\u041c\u0438\u0445\u0430\u0438\u043b","last_name":"\u0421\u0430\u0440\u043a\u0438\u0441\u044f\u043d","type":"private"},"date":1543993742,"edit_date":1543993745,"text":"\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u0430\u0442\u0443"},"chat_instance":"3939349815832681652","data":"{\"e\":{\"cal\":\"sDay\"},\"mr\":\"mr1\",\"d\":20,\"m\":\"12\",\"y\":\"2018\"}"}}', true);
+//        dump($responseMessage);
+//        dump($responseCallbackQuery);
+//
+////        $this->tgResponse->setResponseData($responseMessage);
+////        dump($this->tgResponse->getResponseData());
+//        dump($this->tgResponse->getResponseType());
+//        dump($this->tgResponse->getChatId());
+//        dump($this->tgResponse->getMessageId());
 
         // Если это известный нам ответ от телеграма
         if ($this->tgResponse->getResponseType()) {
             // Если пользователь найден, то не предлагаем ему регистрацию.
             // После определения типа ответа отправляем в соответствующий путь
-            if ($this->tgDb->getUser()) {
+            if ($this->tgDb->isAuth()) {
                 if ($this->tgResponse->getResponseType() == $this->tgResponse->getResponseTypeMessage())
                     $this->isResponseMessage();
                 elseif ($this->tgResponse->getResponseType() == $this->tgResponse->getResponseTypeCallbackQuery())
@@ -133,10 +261,16 @@ class TelegramController extends Controller
 
     public function commandHelp()
     {
+        $text = "Бот умеет бронировать переговорки!\n\n";
+        $text .= "*Список доступных команд*\n";
+        $text .= "/meetingroomlist - список переговорок, начало бронирования.\n";
+        $text .= "/eventlist - список ваших событий. В этом списке доступны команды /e\_ и /d\_, которые редактируют и удаляют ваши события соответственно.\n";
+        $text .= "/exit - завершить все текущие сеансы. Команды, не относящиеся к текущему действию, так же завершают все сеансы.\n";
+
         $this->tgBot->sendMessage(
             $this->tgResponse->getChatId(),
-            "Введена команда /help. Какая-то инфа про нашего бота",
-            null,
+            $text,
+            "Markdown",
             false,
             false,
             null,
@@ -287,7 +421,7 @@ class TelegramController extends Controller
 
     public function noCommandList($command = null, $commandList = false)
     {
-        $noCommandList = ["-", "нет", "отказ", "не хочу", "отсутствуют"];
+        $noCommandList = ["-", "нет", "отказ", "не хочу", "отсутствует"];
 
         if ($commandList)
             return implode(", ", $noCommandList);
@@ -340,12 +474,12 @@ class TelegramController extends Controller
             }
 
             if ($this->isBotCommand("/e_", true)) {
+                $this->eventEdit();
                 exit();
             }
 
             if ($this->isBotCommand("/exit")) {
                 $this->commandExit();
-
                 exit();
             }
 
@@ -356,20 +490,33 @@ class TelegramController extends Controller
             $meetingRoomUser = $this->tgDb->getMeetingRoomUser(true, false);
 
             // Отсюда пользователь начинает пошагово заполнять данные
-            if ($meetingRoomUser->getMeetingRoom()) {
+
+            if ($meetingRoomUser->getMeetingRoom() && !$meetingRoomUser->getStatus()) {
                 if (!$meetingRoomUser->getDate()) {
-                    // Дата выбирается через коллбек.
-                    // Если пользователь что-нибудь введет при выборе даты через календарь, то отправляем ему сообщение
-                    $this->tgBot->sendMessage(
-                        $this->tgResponse->getChatId(),
-                        "Необходимо выбрать дату!"
-                    );
+                    $this->meetingRoomSelectedTime();
                     exit();
                 } elseif (!$meetingRoomUser->getTime()) {
                     $this->meetingRoomSelectedTime();
                     exit();
                 } elseif (!$meetingRoomUser->getEventName()) {
                     $this->meetingRoomSelectEventName();
+                    exit();
+                } elseif (!$meetingRoomUser->getEventMembers()) {
+                    $this->meetingRoomSelectEventMembers();
+                    exit();
+                }
+            } elseif ($meetingRoomUser->getStatus() == "edit") {
+                if (!$meetingRoomUser->getMeetingRoom()) {
+                    $this->eventEdit(null, "meetingRoom");
+                    exit();
+                } elseif (!$meetingRoomUser->getDate()) {
+                    $this->meetingRoomSelectedTime();
+                    exit();
+                } elseif (!$meetingRoomUser->getTime()) {
+                    $this->meetingRoomSelectedTime();
+                    exit();
+                } elseif (!$meetingRoomUser->getEventName()) {
+                    $this->eventEdit(null, "eventName");
                     exit();
                 } elseif (!$meetingRoomUser->getEventMembers()) {
                     $this->meetingRoomSelectEventMembers();
@@ -464,6 +611,12 @@ class TelegramController extends Controller
 
                 exit();
             }
+
+            if ($data["event"]["event"] == "edit") {
+                $this->eventEdit($data);
+
+                exit();
+            }
         }
     }
 
@@ -480,15 +633,30 @@ class TelegramController extends Controller
         }
         $this->tgDb->setCallbackQuery();
 
-        $this->tgBot->sendMessage(
-            $this->tgResponse->getChatId(),
-            "\u{1F4AC} Список доступных переговорок",
-            "Markdown",
-            false,
-            false,
-            null,
-            $this->tgBot->inlineKeyboardMarkup($keyboard)
-        );
+        $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse->getChatId());
+
+        $text = "\u{1F4AC} Список доступных переговорок";
+        if ($meetingRoomUser->getStatus() == "edit") {
+            $this->tgBot->editMessageText(
+                $text,
+                $this->tgResponse->getChatId(),
+                $this->tgResponse->getMessageId(),
+                null,
+                "Markdown",
+                false,
+                $this->tgBot->inlineKeyboardMarkup($keyboard)
+            );
+        } else {
+            $this->tgBot->sendMessage(
+                $this->tgResponse->getChatId(),
+                $text,
+                "Markdown",
+                false,
+                false,
+                null,
+                $this->tgBot->inlineKeyboardMarkup($keyboard)
+            );
+        }
     }
 
     public function meetingRoomSelectDate($keyboard)
@@ -511,7 +679,6 @@ class TelegramController extends Controller
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse->getChatId());
         // получаем даты уже в нормальном виде
         $date = sprintf("%02d.%s.%s", $data["data"]["day"], $data["data"]["month"], $data["data"]["year"]);
-
 
         if ($this->calendar->validateDate($date, $this->dateRange)) {
             $meetingRoomUser->setDate($date);
@@ -560,16 +727,57 @@ class TelegramController extends Controller
         return "{$timeStart}-{$timeEnd}";
     }
 
-    public function googleCalendarDescriptionParse($membersText)
+    public function googleCalendarDescriptionConvertTextToLtext($meetingRoomMembers, &$emailList)
     {
-        $members = preg_split('/<[^>]*[^\/]>/i', $membersText, -1, PREG_SPLIT_NO_EMPTY);
+        $textMembers = null;
+        $meetingRoomMembers["users"] = array_reverse($meetingRoomMembers["users"]);
+        $emailList = [];
+
+        $textMembersFound = null;
+        $textMembersOrganizer = null;
+        $textMembers = null;
+        foreach ($meetingRoomMembers["users"] as $memberType => $memberList) {
+            if ($memberType == "none")
+                continue;
+            foreach ($memberList as $member) {
+                if (isset($member["chatId"]))
+                    $member["chat_id"] = $member["chatId"];
+                if (isset($member["email"]))
+                    $emailList[] = $member["email"];
+                if ($memberType == "found") {
+                    if (isset($member["chat_id"]))
+                        $textMembersFound .= "\n- {$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}";
+                    else
+                        $textMembersFound .= "\n- {$member["name"]} id#none";
+                }
+                if ($memberType == "organizer")
+                    $textMembersOrganizer .= "\n- {$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}";
+            }
+        }
+
+        if (isset($meetingRoomMembers["users"]["found"])) {
+            $textMembers .= "Участники";
+            $textMembers .= $textMembersFound;
+            $textMembers .= "\n\n";
+        }
+        $textMembers .= "Организатор";
+        $textMembers .= $textMembersOrganizer;
+
+        return $textMembers;
+    }
+
+
+    public function googleCalendarDescriptionConvertLtextToText($membersText, $returnArray = false)
+    {
+        $membersText = explode("\n", $membersText);
+        $membersText = array_filter($membersText);
+
+        $members = $membersText;
         $memberType = null;
         $membersList = [];
-        foreach ($members as $key => $member) {
-            if ($member == "- ") {
-                unset($members[$key]);
-                continue;
-            } elseif ($member == "Участники") {
+        foreach ($members as $key => &$member) {
+            $member = str_replace("- ", "", $member);
+            if ($member == "Участники") {
                 $memberType = "found";
                 unset($members[$key]);
                 continue;
@@ -580,32 +788,134 @@ class TelegramController extends Controller
             }
 
             $member = str_replace(" id#", ", ", $member);
-            if (trim($member))
-                $membersList[$memberType][] = explode(", ", $member);
+            $membersList[$memberType][] = explode(", ", $member);
         }
 
         $members["users"] = $membersList;
 
+        $data["users"]["found"] = [];
         $membersChatId = [];
         foreach ($members["users"] as $membersType => $membersValue) {
-            foreach ($membersValue as $memberValue) {
+            foreach ($membersValue as $key => $memberValue) {
                 $membersChatId[$membersType][] = $memberValue[1];
+                if ($memberValue[1] == "none")
+                    $data["users"]["found"][] = ["name" => $members["users"][$membersType][$key][0]];
             }
         }
 
         $serializer = $this->container->get('serializer');
         $repository = $this->getDoctrine()->getRepository(TgUsers::class);
 
-        $members = $repository->findBy(["chat_id" => $membersChatId["found"]]);
-        $members = json_decode($serializer->serialize($members, 'json'), true);
-        $organizer = $repository->findBy(["chat_id" => $membersChatId["organizer"]]);
-        $organizer = json_decode($serializer->serialize($organizer, 'json'), true);
+        if (isset($membersChatId["found"])) {
+            $members = $repository->findBy(["chat_id" => $membersChatId["found"]]);
+            $members = json_decode($serializer->serialize($members, 'json'), true);
+            $data["users"]["found"] = array_merge($members, $data["users"]["found"]);
+        }
 
-        $data["users"]["found"] = $members;
-        $data["users"]["organizer"] = $organizer;
+        if (isset($membersChatId["organizer"])) {
+            $organizer = $repository->findBy(["chat_id" => $membersChatId["organizer"]]);
+            $organizer = json_decode($serializer->serialize($organizer, 'json'), true);
+            $data["users"]["organizer"] = $organizer;
+        }
+
+        if ($returnArray)
+            return $data;
 
         return $this->membersList($data, false, true);
     }
+
+//    public function googleCalendarDescriptionConvertTextToHtml($meetingRoomMembers, &$emailList)
+//    {
+//        $textMembers = null;
+//        $meetingRoomMembers["users"] = array_reverse($meetingRoomMembers["users"]);
+//        $emailList = [];
+//
+//        $textMembersFound = null;
+//        $textMembersOrganizer = null;
+//        $textMembers = null;
+//        foreach ($meetingRoomMembers["users"] as $memberType => $memberList) {
+//            if ($memberType == "none")
+//                continue;
+//            foreach ($memberList as $member) {
+//                if (isset($member["chatId"]))
+//                    $member["chat_id"] = $member["chatId"];
+//                if (isset($member["email"]))
+//                    $emailList[] = $member["email"];
+//                if ($memberType == "found") {
+//                    if (isset($member["chat_id"]))
+//                        $textMembersFound .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
+//                    else
+//                        $textMembersFound .= "<br>- <i>{$member["name"]} id#none</i>";
+//                }
+//                if ($memberType == "organizer")
+//                    $textMembersOrganizer .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
+//            }
+//        }
+//
+//        if (isset($meetingRoomMembers["users"]["found"])) {
+//            $textMembers .= "<b>Участники</b>";
+//            $textMembers .= $textMembersFound;
+//            $textMembers .= "<br><br>";
+//        }
+//        $textMembers .= "<b>Организатор</b>";
+//        $textMembers .= $textMembersOrganizer;
+//
+//        return $textMembers;
+//    }
+//
+//    public function googleCalendarDescriptionConvertHtmlToText($membersText, $returnArray = false)
+//    {
+//        $members = preg_split('/<[^>]*[^\/]>/i', $membersText, -1, PREG_SPLIT_NO_EMPTY);
+//
+//        $memberType = null;
+//        $membersList = [];
+//        foreach ($members as $key => $member) {
+//            if ($member == "- ") {
+//                unset($members[$key]);
+//                continue;
+//            } elseif ($member == "Участники") {
+//                $memberType = "found";
+//                unset($members[$key]);
+//                continue;
+//            } elseif ($member == "Организатор") {
+//                $memberType = "organizer";
+//                unset($members[$key]);
+//                continue;
+//            }
+//
+//            $member = str_replace(" id#", ", ", $member);
+//            if (trim($member))
+//                $membersList[$memberType][] = explode(", ", $member);
+//
+//        }
+//
+//        $members["users"] = $membersList;
+//
+//        $membersChatId = [];
+//        foreach ($members["users"] as $membersType => $membersValue) {
+//            foreach ($membersValue as $memberValue) {
+//                $membersChatId[$membersType][] = $memberValue[1];
+//            }
+//        }
+//
+//        $serializer = $this->container->get('serializer');
+//        $repository = $this->getDoctrine()->getRepository(TgUsers::class);
+//
+//        if (isset($membersChatId["found"])) {
+//            $members = $repository->findBy(["chat_id" => $membersChatId["found"]]);
+//            $members = json_decode($serializer->serialize($members, 'json'), true);
+//            $data["users"]["found"] = $members;
+//        }
+//
+//        $organizer = $repository->findBy(["chat_id" => $membersChatId["organizer"]]);
+//        $organizer = json_decode($serializer->serialize($organizer, 'json'), true);
+//        $data["users"]["organizer"] = $organizer;
+//
+//        if ($returnArray)
+//            return $data;
+//
+//        return $this->membersList($data, false, true);
+//    }
 
     public function verifyHash($text, $salt)
     {
@@ -617,6 +927,52 @@ class TelegramController extends Controller
         if ($hash)
             return true;
         return false;
+    }
+
+    public function googleVerifyDescription($event)
+    {
+        $textOrganizer = null;
+        $textMembers = null;
+
+        if ($this->verifyHash($event["description"], $event["dateTimeStart"])) {
+            $description = $this->googleCalendarDescriptionConvertLtextToText($event["description"]);
+            if ($description["found"])
+                $textMembers = $description["found"];
+            $textOrganizer = $description["organizer"];
+        } else {
+            if ($this->isGoogleCalendarBotEmail($event["organizerEmail"])) {
+                if ($event["attendees"]) {
+                    $event["organizerEmail"] = $event["attendees"][0];
+                    $repository = $this->getDoctrine()->getRepository(Tgusers::class);
+                    $tgUser = $repository->findBy(["email" => $event["organizerEmail"]]);
+
+                    if ($tgUser) {
+                        $tgUser = $tgUser[0];
+                        $organizer["users"]["organizer"][] = $this->membersFormat(
+                            $tgUser->getChatId(),
+                            $tgUser->getName(),
+                            $tgUser->getPhone(),
+                            $tgUser->getEmail()
+                        );
+                        $organizer = $this->membersList($organizer, false, true);
+                        if (isset($organizer["organizer"])) {
+                            $event["organizerEmail"] = $organizer["organizer"];
+                        } else {
+                            $event["organizerEmail"] = time();
+                        }
+                    }
+
+                } else {
+                    $event["organizerEmail"] = "Неизвестно";
+                }
+            }
+            $textOrganizer = $event["organizerEmail"];
+        }
+
+        return [
+            "textMembers" => $textMembers,
+            "textOrganizer" => $textOrganizer
+        ];
     }
 
     public function googleEventCurDay()
@@ -640,6 +996,12 @@ class TelegramController extends Controller
                 $timeStart = $this->methods->getTimeStr($event["dateTimeStart"]);
                 $timeEnd = $this->methods->getTimeStr($event["dateTimeEnd"]);
 
+                if (substr($event["eventId"], 0, strlen($meetingRoomUser->getEventId())) == $meetingRoomUser->getEventId() &&
+                    $meetingRoomUser->getStatus() == "edit") {
+                    $text .= "*{$timeStart}-{$timeEnd}* \u{26A0} _Текущее событие, которое редактируется_\n";
+                    continue;
+                }
+
                 // если забронировали сразу на несколько дней, но при этом они неполные (1 день с 10:22 до 3 дня 17:15)
                 // то считаем, что это кривое бронирование и просто игнорируем
                 if ($this->methods->getDateStr($event["dateTimeStart"]) != $this->methods->getDateStr($event["dateTimeEnd"]))
@@ -648,48 +1010,12 @@ class TelegramController extends Controller
                 $timeDate = $this->methods->getDateStr($event["dateStart"]);
                 $times[] = ["timeStart" => $timeStart, "timeEnd" => $timeEnd, "dateStart" => $timeDate];
 
-                $textTime = null;
-
-                $textOrganizer = null;
-                $textMembers = null;
-                $textName = null;
-
-                if ($this->verifyHash($event["description"], $event["dateTimeStart"])) {
-                    $description = $this->googleCalendarDescriptionParse($event["description"]);
-                    if ($description["found"])
-                        $textMembers = " Участники: {$description["found"]}";
-                    $textOrganizer = "Орг. {$description["organizer"]}";
-                } else {
-                    if ($this->isGoogleCalendarBotEmail($event["organizerEmail"])) {
-                        if ($event["attendees"]) {
-                            $event["organizerEmail"] = $event["attendees"][0];
-                            $repository = $this->getDoctrine()->getRepository(Tgusers::class);
-                            $tgUser = $repository->findBy(["email" => $event["organizerEmail"]]);
-
-                            if ($tgUser) {
-                                $tgUser = $tgUser[0];
-                                $organizer["users"]["organizer"][] = $this->membersFormat(
-                                    $tgUser->getChatId(),
-                                    $tgUser->getName(),
-                                    $tgUser->getPhone(),
-                                    $tgUser->getEmail()
-                                );
-                                $organizer = $this->membersList($organizer, false, true);
-                                if (isset($organizer["organizer"])) {
-                                    $event["organizerEmail"] = $organizer["organizer"];
-                                } else {
-                                    $event["organizerEmail"] = time();
-                                }
-                            }
-
-                        } else {
-                            $event["organizerEmail"] = "Неизвестно";
-                        }
-                    }
-                    $textOrganizer = "Орг. {$event["organizerEmail"]}";
-                }
                 $textName = "Название: {$event["calendarEventName"]}.";
-                $textTime = "_{$textName}{$textMembers}_ {$textOrganizer}";
+                $verifyDescription = $this->googleVerifyDescription($event);
+                if ($verifyDescription["textMembers"])
+                    $verifyDescription["textMembers"] = " Участники: {$verifyDescription["textMembers"]}";
+                $verifyDescription["textOrganizer"] = "Организатор: {$verifyDescription["textOrganizer"]}";
+                $textTime = "_{$textName}{$verifyDescription["textMembers"]}_ {$verifyDescription["textOrganizer"]}";
 
                 // если существует $timeDate, то элемент всегда будет на первом месте
                 if ($timeDate) {
@@ -727,9 +1053,18 @@ class TelegramController extends Controller
 
     public function meetingRoomSelectedTime()
     {
+        $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse->getChatId());
+
+        if (!$meetingRoomUser->getDate()) {
+            $this->tgBot->sendMessage(
+                $this->tgResponse->getChatId(),
+                "Необходимо выбрать дату!"
+            );
+            exit();
+        }
+
         $time = explode("-", $this->tgResponse->getText());
         if (isset($time[0]) && isset($time[1]) && $this->calendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
-
             /**
              * @var $meetingRoom TgCommandMeetingRoom
              */
@@ -743,6 +1078,11 @@ class TelegramController extends Controller
             $times = [];
             if ($eventListCurDay["listEvents"]) {
                 foreach ($eventListCurDay["listEvents"] as $event) {
+
+                    if (substr($event["eventId"], 0, strlen($meetingRoom->getEventId())) == $meetingRoom->getEventId() &&
+                        $meetingRoom->getStatus() == "edit")
+                        continue;
+
                     $timeStart = $this->methods->getTimeStr($event["dateTimeStart"]);
                     $timeEnd = $this->methods->getTimeStr($event["dateTimeEnd"]);
                     $timeDate = $this->methods->getDateStr($event["dateStart"]);
@@ -754,20 +1094,20 @@ class TelegramController extends Controller
 
             if ($this->calendar->validateAvailableTimes($times, $time[0], $time[1])) {
                 $timeDiff = $this->calendar->timeDiff(strtotime($time[0]), strtotime($time[1]));
-
-                $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse->getChatId());
                 $meetingRoomUser->setTime("{$time[0]}-{$time[1]}");
                 $this->tgDb->insert($meetingRoomUser);
 
-                $this->tgDb->clearCallbackQuery();
-
-                $text = "Выбрано время _{$time[0]}-{$time[1]} ({$timeDiff})_\n\n";
-                $text .= "*Введите название события*";
-                $this->tgBot->sendMessage(
-                    $this->tgResponse->getChatId(),
-                    $text,
-                    "Markdown"
-                );
+                if ($meetingRoom->getStatus() == "edit") {
+                    $this->meetingRoomConfirm();
+                } else {
+                    $text = "Выбрано время _{$time[0]}-{$time[1]} ({$timeDiff})_\n\n";
+                    $text .= "*Введите название события*";
+                    $this->tgBot->sendMessage(
+                        $this->tgResponse->getChatId(),
+                        $text,
+                        "Markdown"
+                    );
+                }
             } else {
                 $this->tgBot->sendMessage(
                     $this->tgResponse->getChatId(),
@@ -867,12 +1207,6 @@ class TelegramController extends Controller
 
 
                 foreach ($tgUsers as $tgUser) {
-                    $text = "{$tgUser->getName()}, тел.: {$tgUser->getPhone()}, email: {$tgUser->getEmail()}";
-
-                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["chatId" => $tgUser->getChatId()]]);
-                    $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
-                    $this->tgDb->setCallbackQuery();
-
                     // попадаем сюда по коллбеку после выбора кнопки пользователем
                     if (isset($data) && $data &&
                         $data["event"]["members"] == "duplicate" &&
@@ -890,7 +1224,13 @@ class TelegramController extends Controller
                         $this->tgDb->insert($meetingRoomUser);
                         break;
                     }
+
+                    $text = "{$tgUser->getName()}, тел.: {$tgUser->getPhone()}, email: {$tgUser->getEmail()}";
+                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["chatId" => $tgUser->getChatId()]]);
+                    $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
                 }
+
+                $this->tgDb->setCallbackQuery();
 
                 // Если успешно уточнили, то просто отправляем пользователю еще набор кнопок для дальнейшего уточнения,
                 // Иначе просто выходим из цикла и идем дальше искать другие типы - not_found, fount (сейчас duplicate)
@@ -962,7 +1302,7 @@ class TelegramController extends Controller
 
                 $keyboard = [];
                 $ln = 0;
-                $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "not_found"], "data" => ["ready" => "yes"]], true);
+                $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "not_found"], "data" => ["ready" => "yes"]]);
                 $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton("Продолжить", $callback);
                 $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "not_found"], "data" => ["ready" => "no"]]);
                 $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton("Назад", $callback);
@@ -977,7 +1317,7 @@ class TelegramController extends Controller
                     $text .= "*Не найдено:* {$members["not_found"]}\n";
 
                 $this->tgBot->editMessageText(
-                    "{$text}\n*Не все участники были найдены!* Они не смогут получить уведомления!\n",
+                    "{$text}\n*Не все участники были найдены!* Они не смогут получать уведомления!\n",
                     $this->tgResponse->getChatId(),
                     $messageId,
                     null,
@@ -999,7 +1339,7 @@ class TelegramController extends Controller
             isset($meetingRoomUserData["users"]["found"]) && $meetingRoomUserData["users"]["found"]) {
             if (isset($data) && $data && $data["event"]["members"] == "found") {
                 if ($data["data"]["ready"] == "yes") {
-                    $this->meetingRoomConfirm();
+                    $this->meetingRoomConfirm(null, true);
                 } elseif ($data["data"]["ready"] == "no") {
                     $meetingRoomUser->setEventMembers('');
                     $this->tgDb->insert($meetingRoomUser);
@@ -1025,7 +1365,7 @@ class TelegramController extends Controller
                 $text .= "*Организатор:* {$members["organizer"]}\n";
             $keyboard = [];
             $ln = 0;
-            $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "found"], "data" => ["ready" => "yes"]], true);
+            $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "found"], "data" => ["ready" => "yes"]]);
             $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton("Продолжить", $callback);
             $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "found"], "data" => ["ready" => "no"]]);
             $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton("Назад", $callback);
@@ -1156,12 +1496,26 @@ class TelegramController extends Controller
 
     /**
      * @var $meetingRoom TgCommandMeetingRoom
+     * @param bool $nextMessage
      */
-    public function meetingRoomConfirm($data = null)
+    public function meetingRoomConfirm($data = null, $nextMessage = false)
     {
+        $repository = $this->getDoctrine()->getRepository(TgCommandMeetingRoom::class);
+        $meetingRoom = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()])[0];
+
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser($this->tgResponse->getChatId());
         $members = $this->membersList(json_decode($meetingRoomUser->getEventMembers(), true));
         $text = null;
+
+        $messageId = $this->tgResponse->getMessageId();
+        if (!$nextMessage && $meetingRoomUser->getStatus() == "edit" && !$data) {
+            $messageId++;
+            $this->tgBot->sendMessage(
+                $this->tgResponse->getChatId(),
+                "*Данные для отправки*",
+                "Markdown"
+            );
+        }
 
         if (!isset($data["event"]["confirm"]))
             $text .= "*Данные для отправки*\n\n";
@@ -1189,8 +1543,6 @@ class TelegramController extends Controller
                     $text .= "\n*Данные успешно отправлены!*";
                     $keyboard = null;
 
-                    $repository = $this->getDoctrine()->getRepository(TgCommandMeetingRoom::class);
-                    $meetingRoom = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()])[0];
                     $meetingRoomDate = $meetingRoom->getDate();
                     $meetingRoomTime = explode("-", $meetingRoom->getTime());
                     $meetingRoomDateTimeStart = (new \DateTime("{$meetingRoomDate} {$meetingRoomTime[0]}"))->format(\DateTime::RFC3339);
@@ -1200,37 +1552,9 @@ class TelegramController extends Controller
                     $meetingRoomName = $meetingRoom->getMeetingRoom();
                     $calendarId = $this->googleCalendar->getCalendarId($meetingRoomName);
 
-                    $textMembers = null;
                     $meetingRoomMembers["users"] = array_reverse($meetingRoomMembers["users"]);
-                    $emailList = [];
 
-                    $textMembersFound = null;
-                    $textMembersOrganizer = null;
-                    $textMembers = null;
-                    foreach ($meetingRoomMembers["users"] as $memberType => $memberList) {
-                        if ($memberType == "none")
-                            continue;
-                        foreach ($memberList as $member) {
-                            if (isset($member["email"]))
-                                $emailList[] = $member["email"];
-                            if ($memberType == "found") {
-                                if (isset($member["chat_id"]))
-                                    $textMembersFound .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
-                                else
-                                    $textMembersFound .= "<br>- <i>{$member["name"]} id#none</i>";
-                            }
-                            if ($memberType == "organizer")
-                                $textMembersOrganizer .= "<br>- <i>{$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}</i>";
-                        }
-                    }
-
-                    if (isset($meetingRoomMembers["users"]["found"])) {
-                        $textMembers .= "<b>Участники</b>";
-                        $textMembers .= $textMembersFound;
-                        $textMembers .= "<br><br>";
-                    }
-                    $textMembers .= "<b>Организатор</b>";
-                    $textMembers .= $textMembersOrganizer;
+                    $textMembers = $this->googleCalendarDescriptionConvertTextToLtext($meetingRoomMembers, $emailList);
 
                     $attendees = [];
                     foreach ($emailList as $email)
@@ -1244,15 +1568,46 @@ class TelegramController extends Controller
                     $hash->setCreated(new \DateTime);
                     $this->tgDb->insert($hash);
 
-                    $this->googleCalendar->addEvent(
-                        $calendarId,
-                        $meetingRoomEventName,
-                        $textMembers,
-                        $meetingRoomDateTimeStart,
-                        $meetingRoomDateTimeEnd,
-                        $attendees
-                    );
+                    if ($meetingRoomUser->getEventId() && $meetingRoomUser->getStatus() == "edit") {
+                        $repository = $this->getDoctrine()->getRepository(Tgusers::class);
+                        $tgUser = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()]);
+                        if ($tgUser) {
+                            $tgUser = $tgUser[0];
+                            $filter = ["eventIdShort" => $meetingRoomUser->getEventId(), "attendees" => $tgUser->getEmail()];
+                            $event = $this->googleCalendar->getList($filter);
 
+                            if ($event["calendarName"] == $meetingRoomName) {
+                                $this->googleCalendar->editEvent(
+                                    $calendarId,
+                                    $event["eventId"],
+                                    $meetingRoomEventName,
+                                    $textMembers,
+                                    $meetingRoomDateTimeStart,
+                                    $meetingRoomDateTimeEnd,
+                                    $attendees
+                                );
+                            } else {
+                                $this->googleCalendar->removeEvent($event["calendarId"], $event["eventId"]);
+                                $this->googleCalendar->addEvent(
+                                    $calendarId,
+                                    $meetingRoomEventName,
+                                    $textMembers,
+                                    $meetingRoomDateTimeStart,
+                                    $meetingRoomDateTimeEnd,
+                                    $attendees
+                                );
+                            }
+                        }
+                    } else {
+                        $this->googleCalendar->addEvent(
+                            $calendarId,
+                            $meetingRoomEventName,
+                            $textMembers,
+                            $meetingRoomDateTimeStart,
+                            $meetingRoomDateTimeEnd,
+                            $attendees
+                        );
+                    }
                     $this->tgDb->getMeetingRoomUser(false, false);
                 } elseif ($data["data"]["ready"] == "no") {
                     $text .= "\n*Отмена!* Данные удалены!";
@@ -1266,7 +1621,7 @@ class TelegramController extends Controller
         $this->tgBot->editMessageText(
             $text,
             $this->tgResponse->getChatId(),
-            $this->tgResponse->getMessageId(),
+            $messageId,
             null,
             "Markdown",
             false,
@@ -1290,33 +1645,36 @@ class TelegramController extends Controller
             $eventListCurDay = $this->googleCalendar->getList($filter);
 
             $text = null;
+
             foreach ($eventListCurDay as $calendar) {
-
+                $text .= "\n\u{1F510} *{$calendar["calendarName"]}*\n";
                 if ($calendar["listEvents"]) {
-                    $text .= "\u{1F510} *{$calendar["calendarName"]}*\n";
-
                     $dateTemp = null;
                     foreach ($calendar["listEvents"] as $event) {
                         $date = (new \DateTime($event["dateTimeStart"]))->format("d.m.Y");
 
                         if ($date != $dateTemp) {
-                            $text .= "\n`{$date}`\n";
+                            $text .= "\n\u{1F4C6} *{$date}*\n";
                         }
                         $timeStart = (new \DateTime($event["dateTimeStart"]))->format("H:i");
                         $timeEnd = (new \DateTime($event["dateTimeEnd"]))->format("H:i");
 
+                        $textName = "Название: {$event["calendarEventName"]}.";
+                        $verifyDescription = $this->googleVerifyDescription($event);
+                        if ($verifyDescription["textMembers"])
+                            $verifyDescription["textMembers"] = " Участники: {$verifyDescription["textMembers"]}";
+                        $verifyDescription["textOrganizer"] = "Организатор: {$verifyDescription["textOrganizer"]}";
+                        $textTime = "_{$textName}{$verifyDescription["textMembers"]}_ {$verifyDescription["textOrganizer"]}";
+                        $text .= "*{$timeStart}-{$timeEnd}* {$textTime} \n";
+
                         $eventId = substr($event["eventId"], 0, 4);
-
-                        $text .= "*{$timeStart}-{$timeEnd}* _{$event["calendarEventName"]}_\n";
-
-//                        $text .= "\[/edit\_e\_{$eventId}] \[/del\_e\_{$eventId}]\n";
                         $text .= "\[Изм. /e\_{$eventId}] ";
                         $text .= "\[Удал. /d\_{$eventId}]\n";
 
-
-
                         $dateTemp = $date;
-                    }$text .= "\n";
+                    }
+                } else {
+                    $text .= "Список событий пуст!\n";
                 }
             }
 
@@ -1330,7 +1688,28 @@ class TelegramController extends Controller
 
     public function getEventArgs()
     {
-        return substr($this->tgResponse->getText(), strpos($this->tgResponse->getText(), "_") + 1);
+        $args = substr($this->tgResponse->getText(), strpos($this->tgResponse->getText(), "_") + 1);
+        if ($args)
+            return $args;
+        return null;
+    }
+
+    public function googleEventFormat($event)
+    {
+        $date = date("d.m.Y", strtotime($event["dateTimeStart"]));
+        $timeStart = date("H:i", strtotime($event["dateTimeStart"]));
+        $timeEnd = date("H:i", strtotime($event["dateTimeEnd"]));
+
+        $verifyDescription = $this->googleVerifyDescription($event);
+
+        return $this->eventInfoFormat(
+            $event["calendarName"],
+            $date,
+            "{$timeStart}-{$timeEnd}",
+            $event["calendarEventName"],
+            $verifyDescription["textOrganizer"],
+            $verifyDescription["textMembers"]
+        );
     }
 
     public function eventDelete($data = null)
@@ -1350,36 +1729,11 @@ class TelegramController extends Controller
             $event = $this->googleCalendar->getList($filter);
 
             if (isset($event["eventId"])) {
-                $date = date("d.m.Y", strtotime($event["dateTimeStart"]));
-                $timeStart = date("H:i", strtotime($event["dateTimeStart"]));
-                $timeEnd = date("H:i", strtotime($event["dateTimeEnd"]));
-
-                $members["organizer"] = null;
-                $members["found"] = null;
-
-                if ($this->verifyHash($event["description"], $event["dateTimeStart"])) {
-                    $members = $this->googleCalendarDescriptionParse($event["description"]);
-                } else {
-                    $organizer["users"]["organizer"][] = $this->membersFormat(
-                        $tgUser->getChatId(),
-                        $tgUser->getName(),
-                        $tgUser->getPhone(),
-                        $tgUser->getEmail()
-                    );
-                    $members["organizer"] = $this->membersList($organizer, false, true)["organizer"];
-                }
-
                 $text = null;
                 if (!isset($data["event"]["event"]))
                     $text .= "*Вы действительно хотите удалить событие?*\n\n";
-                $text .= $this->eventInfoFormat(
-                    $event["calendarName"],
-                    $date,
-                    "{$timeStart}-{$timeEnd}",
-                    $event["calendarEventName"],
-                    $members["organizer"],
-                    $members["found"]
-                );
+
+                $text .= $this->googleEventFormat($event);
 
                 if (isset($data["event"]["event"]) && $data["event"]["event"] == "delete" && $data["data"]["ready"] == "yes") {
                     $this->googleCalendar->removeEvent($event["calendarId"], $event["eventId"]);
@@ -1401,7 +1755,6 @@ class TelegramController extends Controller
                         "Markdown"
                     );
                 } else {
-
                     $keyboard = [];
                     $ln = 0;
                     $callback = $this->tgDb->prepareCallbackQuery(["event" => ["event" => "delete"], "data" => ["ready" => "yes", "args" => $args]]);
@@ -1426,6 +1779,129 @@ class TelegramController extends Controller
                     "Событие не найдено!",
                     "Markdown"
                 );
+            }
+        }
+    }
+
+    public function eventEdit($data = null, $dataMessage = null)
+    {
+        $repository = $this->getDoctrine()->getRepository(TgCommandMeetingRoom::class);
+        $meetingRoom = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()]);
+
+        if ($meetingRoom) {
+            $meetingRoom = $meetingRoom[0];
+            $args = $this->getEventArgs();
+
+            if (isset($data["data"]["args"]))
+                $args = $data["data"]["args"];
+            elseif ($meetingRoom->getEventId())
+                $args = $meetingRoom->getEventId();
+
+            $repository = $this->getDoctrine()->getRepository(Tgusers::class);
+            $tgUser = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()]);
+
+            if ($tgUser) {
+                $tgUser = $tgUser[0];
+
+                $filter = ["eventIdShort" => $args, "attendees" => $tgUser->getEmail()];
+                $event = $this->googleCalendar->getList($filter);
+
+                if (isset($event["eventId"])) {
+
+                    $text = null;
+
+                    $date = date("d.m.Y", strtotime($event["dateTimeStart"]));
+                    $timeStart = date("H:i", strtotime($event["dateTimeStart"]));
+                    $timeEnd = date("H:i", strtotime($event["dateTimeEnd"]));
+
+                    if (isset($data["event"]["event"]) && $data["event"]["event"] == "edit") {
+                        if ($data["data"]["obj"] == "meetingRoom") {
+                            $meetingRoom->setMeetingRoom('');
+                            $meetingRoom->setDate('');
+                            $meetingRoom->setTime('');
+                            $meetingRoom->setEventId($args);
+                            $this->tgDb->insert($meetingRoom);
+                            $this->meetingRoomSelect();
+
+                            exit();
+                        } elseif ($data["data"]["obj"] == "dateTime") {
+                            $this->meetingRoomConfirm();
+                            exit();
+                        } elseif ($data["data"]["obj"] == "eventName") {
+                            $meetingRoom->setEventName('');
+                            $meetingRoom->setEventId($args);
+                            $this->tgDb->insert($meetingRoom);
+
+                            $this->tgBot->sendMessage(
+                                $this->tgResponse->getChatId(),
+                                "*Напишите новое название события*\n",
+                                "Markdown"
+                            );
+                            exit();
+                        } elseif ($data["data"]["obj"] == "eventMembers") {
+                            $meetingRoom->setEventMembers('');
+                            $meetingRoom->setEventId($args);
+                            $this->tgDb->insert($meetingRoom);
+
+                            $this->tgBot->sendMessage(
+                                $this->tgResponse->getChatId(),
+                                "*Составьте новый список участников*\n",
+                                "Markdown"
+                            );
+                            exit();
+                        }
+                    } elseif ($dataMessage) {
+                        if ($dataMessage == "meetingRoom") {
+                            $this->tgBot->sendMessage(
+                                $this->tgResponse->getChatId(),
+                                "*Необходимо выбрать переговорку из списка!*",
+                                "Markdown"
+                            );
+                        } elseif($dataMessage == "eventName") {
+                            $meetingRoom->setEventName($this->tgResponse->getText());
+                            $this->tgDb->insert($meetingRoom);
+                            $this->meetingRoomConfirm();
+                        }
+                        exit();
+                    }
+
+                    $meetingRoom->setDate($date);
+                    $meetingRoom->setTime("{$timeStart}-{$timeEnd}");
+                    $meetingRoom->setEventName($event["calendarEventName"]);
+                    $meetingRoom->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event["description"], true)));
+                    $meetingRoom->setMeetingRoom($event["calendarName"]);
+                    $meetingRoom->setStatus('edit');
+                    $meetingRoom->setCreated(new \DateTime);
+                    $this->tgDb->insert($meetingRoom);
+
+                    $ln = 0;
+                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["event" => "edit"], "data" => ["obj" => "meetingRoom", "args" => $args]]);
+                    $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton("Сменить комнату и время", $callback);
+                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["event" => "edit"], "data" => ["obj" => "eventName", "args" => $args]]);
+                    $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton("Изменить название события", $callback);
+                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["event" => "edit"], "data" => ["obj" => "eventMembers", "args" => $args]]);
+                    $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton("Изменить список участников", $callback);
+                    $this->tgDb->setCallbackQuery();
+
+                    $text .= $this->googleEventFormat($event);
+
+                    $this->tgBot->sendMessage(
+                        $this->tgResponse->getChatId(),
+                        $text,
+                        "Markdown",
+                        false,
+                        false,
+                        null,
+                        $this->tgBot->inlineKeyboardMarkup($keyboard)
+                    );
+
+                } else {
+                    $this->tgBot->sendMessage(
+                        $this->tgResponse->getChatId(),
+                        "Событие не найдено!",
+                        "Markdown"
+                    );
+                }
             }
         }
     }

@@ -39,17 +39,22 @@ class TgCommandMeetingRoom
     /**
      * @ORM\Column(type="string", length=2048, nullable=true)
      */
-    private $event_description;
-
-    /**
-     * @ORM\Column(type="string", length=2048, nullable=true)
-     */
     private $event_members;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $meeting_room;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $event_id;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $status;
 
     /**
      * @ORM\Column(type="datetime")
@@ -109,18 +114,6 @@ class TgCommandMeetingRoom
         return $this;
     }
 
-    public function getEventDescription(): ?string
-    {
-        return $this->event_description;
-    }
-
-    public function setEventDescription(?string $event_description): self
-    {
-        $this->event_description = $event_description;
-
-        return $this;
-    }
-
     public function getEventMembers(): ?string
     {
         return $this->event_members;
@@ -141,6 +134,30 @@ class TgCommandMeetingRoom
     public function setMeetingRoom(?string $meeting_room): self
     {
         $this->meeting_room = $meeting_room;
+
+        return $this;
+    }
+
+    public function getEventId(): ?string
+    {
+        return $this->event_id;
+    }
+
+    public function setEventId(?string $event_id): self
+    {
+        $this->event_id = $event_id;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(?string $status): self
+    {
+        $this->status = $status;
 
         return $this;
     }

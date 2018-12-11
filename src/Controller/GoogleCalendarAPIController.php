@@ -223,28 +223,34 @@ class GoogleCalendarAPIController extends Controller
 
         $service = new Google_Service_Calendar($this->googleClient);
         $service->events->delete($calendarId, $eventId);
+
         return new JsonResponse(["success" => "Event deleted!"]);
     }
 
     /**
-     * @Route("/google/service/calendar/event/update", name="google_service_calendar_event_update")
+     * @Route("/google/service/calendar/event/edit", name="google_service_calendar_event_edit")
      * @param Request $request
      * @return JsonResponse
      */
-    public function googleServiceCalendarEventUpdate(Request $request)
+    public function googleServiceCalendarEventEdit(Request $request)
     {
+        $calendarId = $request->get('calendarId');
+        $eventId = $request->get('eventId');
+        $event = $request->get('event');
+
+        if (!$calendarId)
+            return new JsonResponse(json_encode(["error" => "calendarId not found!"]));
+        elseif (!$event)
+            return new JsonResponse(json_encode(["error" => "eventId not found!"]));
+        elseif (!$event)
+            return new JsonResponse(json_encode(["error" => "event not found!"]));
+
+        $event = json_decode($event, true);
+        $event = new Google_Service_Calendar_Event($event);
         $service = new Google_Service_Calendar($this->googleClient);
 
-        $calendarId = "m3dli34k5foskeiq52ummh839g@group.calendar.google.com";
-        $eventId = "2j9b05qf2p116vakkb97ahdhro";
+        $service->events->update($calendarId, $eventId, $event);
 
-        // First retrieve the event from the API.
-        $event = $service->events->get($calendarId, $eventId);
-
-        $event->setSummary("Тест 2");
-        $updatedEvent = $service->events->update($calendarId, $event->getId(), $event);
-
-        echo $updatedEvent->getUpdated();
         return new JsonResponse();
     }
 
