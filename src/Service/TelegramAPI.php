@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use App\Service\Methods as MethodsService;
+use App\Service\Helper as MethodsService;
 
 class TelegramAPI
 {
@@ -31,7 +31,7 @@ class TelegramAPI
      */
     public function curlTgProxy($method, $args = null)
     {
-        $args = $this->methods->getRender($args);
+        $args = "?" . http_build_query($args);
 
         $url = $this->tgBotApiUrl . $method . $args;
         $ch = curl_init();
@@ -44,12 +44,13 @@ class TelegramAPI
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_PROXYTYPE => CURLPROXY_SOCKS5_HOSTNAME,
+            CURLOPT_TIMEOUT => 10
         ];
         curl_setopt_array($ch, $parameter);
         $data = curl_exec($ch);
         curl_close($ch);
 
-        return $this->methods->jsonDecode($data);
+        return json_decode($data);
     }
     
     /*
@@ -65,7 +66,7 @@ class TelegramAPI
         if (!$inline_keyboard)
             return null;
 
-        return $this->methods->jsonEncode([
+        return json_encode([
             "inline_keyboard" => $inline_keyboard
         ]);
     }
@@ -79,7 +80,7 @@ class TelegramAPI
      */
     public function replyKeyboardMarkup(array $keyboard, bool $resize_keyboard = false, bool $one_time_keyboard = false, bool $selective = false)
     {
-        return $this->methods->jsonEncode([
+        return json_encode([
             "keyboard" => $keyboard,
             "resize_keyboard" => $resize_keyboard,
             "one_time_keyboard" => $one_time_keyboard,
@@ -94,7 +95,7 @@ class TelegramAPI
      */
     public function replyKeyboardRemove(bool $remove_keyboard = true, bool $selective = false)
     {
-        return $this->methods->jsonEncode([
+        return json_encode([
             "remove_keyboard" => $remove_keyboard,
             "selective" => $selective
         ]);
@@ -107,7 +108,7 @@ class TelegramAPI
      */
     public function forceReply(bool $force_reply = true, bool $selective = false)
     {
-        return $this->methods->jsonEncode([
+        return json_encode([
             "force_reply" => $force_reply,
             "selective" => $selective
         ]);
@@ -132,7 +133,7 @@ class TelegramAPI
         if (is_string($callback_data))
             $callback_data = explode(' ', $callback_data);
 
-        $callback_data = $this->methods->jsonEncode($callback_data);
+        $callback_data = json_encode($callback_data);
         $url = urlencode($url);
 
         return [
@@ -161,7 +162,7 @@ class TelegramAPI
      */
     public function hideKeyboard(bool $hide_keyboard = true)
     {
-        return $this->methods->jsonEncode([
+        return json_encode([
             "hide_keyboard" => $hide_keyboard
         ]);
     }
@@ -185,10 +186,10 @@ class TelegramAPI
     public function getUpdates(int $offset = null, int $limit = null, int $timeout = null, array $allowed_updates = null)
     {
         $args = [
-            "offset={$offset}",
-            "limit={$limit}",
-            "timeout={$timeout}",
-            "allowed_updates={$allowed_updates}"
+            "offset" => $offset,
+            "limit" => $limit,
+            "timeout" => $timeout,
+            "allowed_updates" => $allowed_updates
         ];
 
         return $this->curlTgProxy(__FUNCTION__ , $args);
@@ -204,10 +205,10 @@ class TelegramAPI
     public function setWebHook(string $url, $certificate = null, int $max_connections = null, array $allowed_updates = null)
     {
         $args = [
-            "url={$url}?{$this->tgToken}",
-            "certificate={$certificate}",
-            "max_connections={$max_connections}",
-            "allowed_updates={$allowed_updates}"
+            "url" => "{$url}?{$this->tgToken}",
+            "certificate" => $certificate,
+            "max_connections" => $max_connections,
+            "allowed_updates" => $allowed_updates
         ];
 
         return $this->curlTgProxy(__FUNCTION__ , $args);
@@ -235,15 +236,25 @@ class TelegramAPI
      */
     public function sendMessage($chat_id, string $text, string $parse_mode = null, bool $disable_web_page_preview = false, bool $disable_notification = false, int $reply_to_message_id = null, $reply_markup = null)
     {
-        $text = urlencode($text);
+//        $text = urlencode($text);
+//        $args = [
+//            "chat_id={$chat_id}",
+//            "text={$text}",
+//            "parse_mode={$parse_mode}",
+//            "disable_web_page_preview={$disable_web_page_preview}",
+//            "disable_notification={$disable_notification}",
+//            "reply_to_message_id={$reply_to_message_id}",
+//            "reply_markup={$reply_markup}"
+//        ];
+
         $args = [
-            "chat_id={$chat_id}",
-            "text={$text}",
-            "parse_mode={$parse_mode}",
-            "disable_web_page_preview={$disable_web_page_preview}",
-            "disable_notification={$disable_notification}",
-            "reply_to_message_id={$reply_to_message_id}",
-            "reply_markup={$reply_markup}"
+            "chat_id" => $chat_id,
+            "text" => $text,
+            "parse_mode" => $parse_mode,
+            "disable_web_page_preview" => $disable_web_page_preview,
+            "disable_notification" => $disable_notification,
+            "reply_to_message_id" => $reply_to_message_id,
+            "reply_markup" => $reply_markup
         ];
 
         return $this->curlTgProxy(__FUNCTION__ , $args);
@@ -259,12 +270,20 @@ class TelegramAPI
      */
     public function answerCallbackQuery(string $callback_query_id, string $text = null, bool $show_alert = false, string $url = null, int $cache_time = null)
     {
+//        $args = [
+//            "callback_query_id={$callback_query_id}",
+//            "text={$text}",
+//            "show_alert={$show_alert}",
+//            "url={$url}",
+//            "cache_time={$cache_time}"
+//        ];
+
         $args = [
-            "callback_query_id={$callback_query_id}",
-            "text={$text}",
-            "show_alert={$show_alert}",
-            "url={$url}",
-            "cache_time={$cache_time}"
+            "callback_query_id" => $callback_query_id,
+            "text" => $text,
+            "show_alert" => $show_alert,
+            "url" => $url,
+            "cache_time" => $cache_time
         ];
 
         return $this->curlTgProxy(__FUNCTION__ , $args);
@@ -282,15 +301,25 @@ class TelegramAPI
      */
     public function editMessageText(string $text, $chat_id = null, int $message_id = null, string $inline_message_id = null, string $parse_mode = null, bool $disable_web_page_preview = false, $reply_markup = null)
     {
-        $text = urlencode($text);
+//        $text = urlencode($text);
+//        $args = [
+//            "text={$text}",
+//            "chat_id={$chat_id}",
+//            "message_id={$message_id}",
+//            "inline_message_id={$inline_message_id}",
+//            "parse_mode={$parse_mode}",
+//            "disable_web_page_preview={$disable_web_page_preview}",
+//            "reply_markup={$reply_markup}",
+//        ];
+
         $args = [
-            "text={$text}",
-            "chat_id={$chat_id}",
-            "message_id={$message_id}",
-            "inline_message_id={$inline_message_id}",
-            "parse_mode={$parse_mode}",
-            "disable_web_page_preview={$disable_web_page_preview}",
-            "reply_markup={$reply_markup}",
+            "text" => $text,
+            "chat_id" => $chat_id,
+            "message_id" => $message_id,
+            "inline_message_id" => $inline_message_id,
+            "parse_mode" => $parse_mode,
+            "disable_web_page_preview" => $disable_web_page_preview,
+            "reply_markup" => $reply_markup,
         ];
 
         return $this->curlTgProxy(__FUNCTION__ , $args);
@@ -303,9 +332,14 @@ class TelegramAPI
      */
     public function deleteMessage($chat_id, int $message_id)
     {
+//        $args = [
+//            "chat_id={$chat_id}",
+//            "message_id={$message_id}",
+//        ];
+
         $args = [
-            "chat_id={$chat_id}",
-            "message_id={$message_id}",
+            "chat_id" => $chat_id,
+            "message_id" => $message_id,
         ];
 
         return $this->curlTgProxy(__FUNCTION__ , $args);

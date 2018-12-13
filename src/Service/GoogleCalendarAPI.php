@@ -2,8 +2,8 @@
 
 namespace App\Service;
 
-use Symfony\Component\DependencyInjection\ContainerInterface as Container;
-use App\Service\Methods as MethodsService;
+use App\Service\Helper as MethodsService;
+use Symfony\Component\Routing\RouterInterface;
 
 class GoogleCalendarAPI
 {
@@ -11,15 +11,14 @@ class GoogleCalendarAPI
     protected $methods;
     protected $isGoogle;
     protected $googleToken;
+    protected $router;
 
-    function __construct(Container $container)
+    function __construct($googleToken, RouterInterface $router)
     {
-        $this->container = $container;
-
-        $this->googleToken = $container->getParameter('google_token');
+        $this->googleToken = $googleToken;
         $this->isGoogle = isset($_GET[$this->googleToken]);
-        
         $this->methods = new MethodsService;
+        $this->router = $router;
     }
 
     /**
@@ -28,38 +27,40 @@ class GoogleCalendarAPI
      */
     public function getList(array $filter = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_list', [], 0);
+        $url = $this->router->generate('google_service_calendar_list', [], 0);
 
-        $filterAvailableKeys = array_keys($this->methods->curl($url, ["filter=getList"], true));
+        $filterAvailableKeys = Helper::curl($url, ["filter" => "getList"], true);
+
         $resultFilter = [];
 
-        foreach ($filterAvailableKeys as $filterAvailableKey) {
-            foreach ($filter as $filterKey => $filterValue) {
-                if ($filterKey == $filterAvailableKey) {
-                    $resultFilter += [$filterKey => $filterValue];
+        if ($filterAvailableKeys && $filter) {
+            $filterAvailableKeys = array_keys($filterAvailableKeys);
+            foreach ($filterAvailableKeys as $filterAvailableKey) {
+                foreach ($filter as $filterKey => $filterValue) {
+                    if ($filterKey == $filterAvailableKey) {
+                        $resultFilter += [$filterKey => $filterValue];
+                    }
                 }
             }
         }
 
         $filter = json_encode($resultFilter);
 
-        $args = ["filter={$filter}"];
 
-        return $this->methods->curl($url, $args, true);
+        return Helper::curl($url, ["filter" => $filter], true);
     }
 
     public function getCalendars($calendarName = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_list', [], 0);
+        $url = $this->router->generate('google_service_calendar_list', [], 0);
 
         $filter = ["get" => "calendars"];
         if ($calendarName)
             $filter += ["calendarName" => $calendarName];
 
         $filter = json_encode($filter);
-        $args = ["filter={$filter}"];
 
-        return $this->methods->curl($url, $args, true);
+        return Helper::curl($url, ["filter" => $filter], true);
     }
 
     public function getCalendarId($calendarName)
@@ -94,7 +95,7 @@ class GoogleCalendarAPI
      */
     public function addEvent(string $calendarId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_event_add', [], 0);
+        $url = $this->router->generate('google_service_calendar_event_add', [], 0);
 
         $event = [
             'summary' => $summary,
@@ -114,20 +115,20 @@ class GoogleCalendarAPI
             ],
         ];
 
-        $event = urlencode(json_encode($event));
+        $event = json_encode($event);
 
 
         $args = [
-            "calendarId={$calendarId}",
-            "event={$event}"
+            "calendarId" => $calendarId,
+            "event" => $event
         ];
 
-        return $this->methods->curl($url, $args, true);
+        return Helper::curl($url, $args, true);
     }
 
     public function editEvent(string $calendarId, string $eventId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_event_edit', [], 0);
+        $url = $this->router->generate('google_service_calendar_event_edit', [], 0);
 
         $event = [
             'summary' => $summary,
@@ -147,27 +148,27 @@ class GoogleCalendarAPI
             ],
         ];
 
-        $event = urlencode(json_encode($event));
+        $event = json_encode($event);
 
 
         $args = [
-            "calendarId={$calendarId}",
-            "eventId={$eventId}",
-            "event={$event}"
+            "calendarId" => $calendarId,
+            "eventId" => $eventId,
+            "event" => $event
         ];
 
-        return $this->methods->curl($url, $args, true);
+        return Helper::curl($url, $args, true);
     }
 
     public function removeEvent($calendarId = null, $eventId = null)
     {
-        $url = $this->container->get('router')->generate('google_service_calendar_event_remove', [], 0);
+        $url = $this->router->generate('google_service_calendar_event_remove', [], 0);
 
         $args = [
-            "calendarId={$calendarId}",
-            "eventId={$eventId}"
+            "calendarId" => $calendarId,
+            "eventId" => $eventId
         ];
 
-        return $this->methods->curl($url, $args, true);
+        return Helper::curl($url, $args, true);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Service\Methods;
+use App\Service\Helper;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,17 +43,8 @@ class GoogleCalendarAPIController extends Controller
         if ($this->googleClient->isAccessTokenExpired()) {
             $this->googleClient->refreshTokenWithAssertion();
         }
-        
-        $this->methods = new Methods;
-    }
 
-    public function isGoogleCalendarBotEmail($email)
-    {
-        $googleBotEmail = "@group.calendar.google.com";
-        $email = substr($email, strpos($email, "@"));
-        if ($email == $googleBotEmail)
-            return true;
-        return false;
+        $this->methods = new Helper;
     }
 
     /**
@@ -72,11 +63,13 @@ class GoogleCalendarAPIController extends Controller
         $filter["eventIdShort"] = null;
 
         // Получение списка фильтров
-        if ($request->get('filter') == "getList")
+        if ($request->get('filter') == "getList") {
             return new JsonResponse($filter);
+        }
 
-        if (json_decode($request->get('filter')))
+        if (json_decode($request->get('filter'))) {
             $filter = array_merge($filter, json_decode($request->get('filter'), true));
+        }
 
         $service = new Google_Service_Calendar($this->googleClient);
         $calendarList = $service->calendarList->listCalendarList();
@@ -87,13 +80,14 @@ class GoogleCalendarAPIController extends Controller
         $calendarListResult = [];
         foreach ($calendarList->getItems() as $calendarListEntry) {
 
-                /**
-                 * @var $event Google_Service_Calendar_Event
-                 */
+            /**
+             * @var $event Google_Service_Calendar_Event
+             */
 
-                // Если нет нужного календаря
-            if ($filter["calendarName"] && $filter["calendarName"] != $calendarListEntry->getSummary())
+            // Если нет нужного календаря
+            if ($filter["calendarName"] && $filter["calendarName"] != $calendarListEntry->getSummary()) {
                 continue;
+            }
 
             $calendarEventResult = [];
 
@@ -102,48 +96,28 @@ class GoogleCalendarAPIController extends Controller
 
             if ($filter["startDateTime"]) {
                 $startDateTime = (new \DateTime("{$filter["startDateTime"]}"))->format(\DateTime::RFC3339);
-                if (!$filter["endDateTime"])
+                if (!$filter["endDateTime"]) {
                     $endDateTime = (new \DateTime("{$filter["startDateTime"]}"))->modify("+1 day")->format(\DateTime::RFC3339);
-                else
+                } else {
                     $endDateTime = (new \DateTime("{$filter["endDateTime"]}"))->format(\DateTime::RFC3339);
-
+                }
             }
 
-
-            $eventsList = $service->events->listEvents($calendarListEntry->getId(), ["maxResults" => 2500, "timeMin" => $startDateTime, "timeMax" => $endDateTime, "orderBy" => "startTime", "singleEvents" => "true"]);
-
             if ($filter["get"] != "calendars") {
+                $eventsList = $service->events->listEvents($calendarListEntry->getId(), ["maxResults" => 2500, "timeMin" => $startDateTime, "timeMax" => $endDateTime, "orderBy" => "startTime", "singleEvents" => "true"]);
                 foreach ($eventsList->getItems() as $event) {
-
-                    // Если нет нужного дня
-                    // У событий может быть только один ключ с датами:либо date (когда на весь день занимают),
-                    // либо dateTime на определенный промежуток
-//                if ($filter["startDateTime"]) {
-//                    $dateTime = $event->getStart()->getDateTime();
-//                    $date = $event->getStart()->getDate();
-//                    if (isset($dateTime) && $this->methods->getDateStr($filter["startDateTime"]) != $this->methods->getDateStr($dateTime))
-//                        continue;
-//                    elseif (isset($date) && $this->methods->getDateStr($filter["startDateTime"]) != $this->methods->getDateStr($date))
-//                        continue;
-//                }
-
-                    if (!$event->getSummary())
+                    if (!$event->getSummary()) {
                         $event->setSummary('<Без названия>');
-
-//                if ($this->isGoogleCalendarBotEmail($event->getCreator()->getEmail()))
-//                    dump("OK");
-
-//                if (!$event->getStart()->getDateTime() && !$event->getEnd()->getDateTime()) {
-//                    break;
-//                }
+                    }
 
                     $attendeesEmail = [];
-                    foreach ($event->getAttendees() as $member)
-                        $attendeesEmail[] = implode(" ",(array)$member["email"]);
+                    foreach ($event->getAttendees() as $member) {
+                        $attendeesEmail[] = implode(" ", (array)$member["email"]);
+                    }
 
-                    if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0]))
+                    if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0])) {
                         continue;
-
+                    }
 
                     $eventArray = [
                         "eventId" => $event->getId(),
@@ -192,12 +166,12 @@ class GoogleCalendarAPIController extends Controller
         $calendarId = $request->get('calendarId');
         $event = $request->get('event');
 
-        if (!$calendarId)
-            return new JsonResponse(json_encode(["error" => "calendarId not found!"]));
-        elseif (!$event)
-            return new JsonResponse(json_encode(["error" => "data not found!"]));
-
-
+        if (!$calendarId) {
+            return new JsonResponse(["error" => "calendarId not found!"]);
+        } elseif (!$event) {
+            return new JsonResponse(["error" => "data not found!"]);
+        }
+ 
         $event = json_decode($event, true);
         $event = new Google_Service_Calendar_Event($event);
         $service = new Google_Service_Calendar($this->googleClient);
@@ -216,10 +190,11 @@ class GoogleCalendarAPIController extends Controller
         $calendarId = $request->get('calendarId');
         $eventId = $request->get('eventId');
 
-        if (!$calendarId)
-            return new JsonResponse(json_encode(["error" => "calendarId not found!"]));
-        elseif (!$eventId)
-            return new JsonResponse(json_encode(["error" => "eventId not found!"]));
+        if (!$calendarId) {
+            return new JsonResponse(["error" => "calendarId not found!"]);
+        } elseif (!$eventId) {
+            return new JsonResponse(["error" => "eventId not found!"]);
+        }
 
         $service = new Google_Service_Calendar($this->googleClient);
         $service->events->delete($calendarId, $eventId);
@@ -238,12 +213,14 @@ class GoogleCalendarAPIController extends Controller
         $eventId = $request->get('eventId');
         $event = $request->get('event');
 
-        if (!$calendarId)
-            return new JsonResponse(json_encode(["error" => "calendarId not found!"]));
-        elseif (!$event)
-            return new JsonResponse(json_encode(["error" => "eventId not found!"]));
-        elseif (!$event)
-            return new JsonResponse(json_encode(["error" => "event not found!"]));
+        if (!$calendarId) {
+            return new JsonResponse(["error" => "calendarId not found!"]);
+        } elseif (!$eventId) {
+            return new JsonResponse(["error" => "eventId not found!"]);
+        }
+        elseif (!$event) {
+            return new JsonResponse(["error" => "event not found!"]);
+        }
 
         $event = json_decode($event, true);
         $event = new Google_Service_Calendar_Event($event);
@@ -254,9 +231,9 @@ class GoogleCalendarAPIController extends Controller
         return new JsonResponse();
     }
 
-        /*
-         * __________________________TEST__________________________
-         */
+    /*
+     * __________________________TEST__________________________
+     */
 
     /**
      * @Route("/testgoogle", name="google_calendar_test")
@@ -265,8 +242,20 @@ class GoogleCalendarAPIController extends Controller
      */
     public function test(Request $request)
     {
-        $filter = json_decode($request->get('filter'), true);
-//        $filter = ["startDateTime" => "28.11.2018", "calendarName" => "Первая переговорка"];
+        // Список фильтров
+        $filter["calendarName"] = null;
+        $filter["startDateTime"] = null;
+        $filter["endDateTime"] = null;
+        $filter["attendees"] = null;
+        $filter["get"] = null;
+        $filter["eventIdShort"] = null;
+
+        // Получение списка фильтров
+        if ($request->get('filter') == "getList")
+            return new JsonResponse($filter);
+
+        if (json_decode($request->get('filter')))
+            $filter = array_merge($filter, json_decode($request->get('filter'), true));
 
         $service = new Google_Service_Calendar($this->googleClient);
         $calendarList = $service->calendarList->listCalendarList();
@@ -276,51 +265,68 @@ class GoogleCalendarAPIController extends Controller
          */
         $calendarListResult = [];
         foreach ($calendarList->getItems() as $calendarListEntry) {
+
             /**
              * @var $event Google_Service_Calendar_Event
              */
 
-            // Если есть фильтр и нет нужного календаря - ищем дальше
-            if (isset($filter["calendarName"]))
-                if ($filter["calendarName"] != $calendarListEntry->getSummary())
-                    continue;
+            // Если нет нужного календаря
+            if ($filter["calendarName"] && $filter["calendarName"] != $calendarListEntry->getSummary())
+                continue;
 
             $calendarEventResult = [];
-            foreach ($service->events->listEvents($calendarListEntry->getId(), ["orderBy" => "startTime", "singleEvents" => "true"])->getItems() as $event) {
-//                dump($event->getAttendees());
 
-                // Если есть фильтр и нет нужного дня - ищем дальше
-                if (isset($filter["startDateTime"])) {
+            $startDateTime = null;
+            $endDateTime = null;
 
-                    $dateTime = $event->getStart()->getDateTime();
-                    if (isset($dateTime)) {
-                        if (date("d.m.Y", strtotime($filter["startDateTime"])) != date("d.m.Y", strtotime($event->getStart()->getDateTime())))
-                            continue;
+            if ($filter["startDateTime"]) {
+                $startDateTime = (new \DateTime("{$filter["startDateTime"]}"))->format(\DateTime::RFC3339);
+                if (!$filter["endDateTime"])
+                    $endDateTime = (new \DateTime("{$filter["startDateTime"]}"))->modify("+1 day")->format(\DateTime::RFC3339);
+                else
+                    $endDateTime = (new \DateTime("{$filter["endDateTime"]}"))->format(\DateTime::RFC3339);
+
+            }
+
+            if ($filter["get"] != "calendars") {
+                $eventsList = $service->events->listEvents($calendarListEntry->getId(), ["maxResults" => 2500, "timeMin" => $startDateTime, "timeMax" => $endDateTime, "orderBy" => "startTime", "singleEvents" => "true"]);
+                foreach ($eventsList->getItems() as $event) {
+
+                    if (!$event->getSummary()) {
+                        $event->setSummary('<Без названия>');
                     }
 
-                    $date = $event->getStart()->getDate();
-                    if (isset($date)) {
-                        if (date("d.m.Y", strtotime($filter["startDateTime"])) != date("d.m.Y", strtotime($event->getStart()->getDate())))
-                            continue;
+                    $attendeesEmail = [];
+                    foreach ($event->getAttendees() as $member)
+                        $attendeesEmail[] = implode(" ", (array)$member["email"]);
+
+                    if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0]))
+                        continue;
+
+
+                    $eventArray = [
+                        "eventId" => $event->getId(),
+                        "calendarEventName" => $event->getSummary(),
+                        "calendarId" => $calendarListEntry->getId(),
+                        "calendarName" => $calendarListEntry->getSummary(),
+                        "description" => $event->getDescription(),
+                        "organizerName" => $event->getCreator()->getDisplayName(),
+                        "organizerEmail" => $event->getCreator()->getEmail(),
+                        "dateCreated" => $event->getCreated(),
+                        "dateTimeStart" => $event->getStart()->getDateTime(),
+                        "dateTimeEnd" => $event->getEnd()->getDateTime(),
+                        "dateStart" => $event->getStart()->getDate(),
+                        "dateEnd" => $event->getEnd()->getDate(),
+                        "attendees" => $attendeesEmail,
+                    ];
+
+                    if ($filter["eventIdShort"]) {
+                        if (substr($eventArray["eventId"], 0, strlen($filter["eventIdShort"])) == $filter["eventIdShort"])
+                            return new JsonResponse($eventArray);
                     }
+
+                    $calendarEventResult[] = $eventArray;
                 }
-
-                if (!$event->getSummary())
-                    $event->setSummary('<Без названия>');
-
-                $calendarEventResult[] = [
-                    "eventId" => $event->getId(),
-                    "calendarEventName" => $event->getSummary(),
-                    "description" => $event->getDescription(),
-                    "organizerName" =>  $event->getCreator()->getDisplayName(),
-                    "organizerEmail" =>  $event->getCreator()->getEmail(),
-                    "dateCreated" => $event->getCreated(),
-                    "dateTimeStart" => $event->getStart()->getDateTime(),
-                    "dateTimeEnd" => $event->getEnd()->getDateTime(),
-                    "dateStart" => $event->getStart()->getDate(),
-                    "dateEnd" => $event->getEnd()->getDate(),
-                    "attendees" => $event->getAttendees(),
-                ];
             }
 
             $calendarListResult[] = [
@@ -329,41 +335,9 @@ class GoogleCalendarAPIController extends Controller
                 "listEvents" => $calendarEventResult
             ];
         }
-
         dump($calendarListResult);
-        exit();
+
 
         return new JsonResponse($calendarListResult);
-
-        $event = new Google_Service_Calendar_Event([
-            'summary' => 'Название события',
-            'location' => 'Адрес события',
-            'description' => 'Описание события',
-            'start' => [
-                'dateTime' => '2018-11-20T11:45:00+03:00',
-//                'timeZone' => null,
-            ],
-            'end' => [
-                'dateTime' => '2018-11-20T13:45:00+03:00',
-//                'timeZone' => null,
-            ],
-            'recurrence' => [], // повтор. пример: массив ['RRULE:FREQ=DAILY;COUNT=2']
-            'attendees' => [
-                ['email' => 'lpage@example.com'],
-                ['email' => 'sbrin@example.com'],
-            ],
-            'reminders' => [
-                'useDefault' => false,
-                'overrides' => [
-                    ['method' => 'email', 'minutes' => 24 * 60],
-                    ['method' => 'popup', 'minutes' => 10],
-                ],
-            ],
-        ]);
-
-//        $event = $service->events->insert($calendarId, $event);
-//        printf('Event created: %s\n', $event->htmlLink);
-
-        return new Response();
     }
 }

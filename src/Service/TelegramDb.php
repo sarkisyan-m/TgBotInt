@@ -5,66 +5,60 @@ namespace App\Service;
 use App\Entity\CallbackQuery;
 use App\Entity\TgCommandMeetingRoom;
 use App\Entity\TgUsers;
+use Doctrine\ORM\EntityManagerInterface;
 use Rhumsaa\Uuid\Uuid;
-use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 
 class TelegramDb
 {
-    protected $doctrine;
-    protected $container;
-
-    protected $tgBot;
-    protected $tgResponse;
+    protected $entityManager;
+    protected $tgRequest;
+    protected $roomActualDate;
 
     protected $dataCallbackQuery;
 
-    function __construct(Container $container, $tgBot, $tgResponse)
+    function __construct(EntityManagerInterface $entityManager, TelegramRequest $tgRequest, $roomActualDate)
     {
-        $this->container = $container;
-        $this->doctrine = $container->get('doctrine');
-        $this->tgResponse = new TelegramResponse;
+        $this->entityManager = $entityManager;
+        $this->roomActualDate = $roomActualDate;
+        $this->tgRequest = $tgRequest;
+    }
 
-        /**
-         * @var $tgBot TelegramAPI
-         * @var $tgDb TelegramDb
-         * @var $tgResponse TelegramResponse
-         */
-        $this->tgBot = $tgBot;
-        $this->tgResponse = $tgResponse;
+    public function setTelegramRequest(TelegramRequest $tgRequest)
+    {
+        $this->tgRequest = $tgRequest;
     }
 
     public function insert($entity)
     {
-        $em = $this->doctrine->getManager();
-        $em->persist($entity);
-        $em->flush();
+        $this->entityManager->persist($entity);
+        $this->entityManager->flush();
     }
 
     public function delete($entity)
     {
-        $em = $this->doctrine->getManager();
-        foreach ($entity as $item)
-            $em->remove($item);
-        $em->flush();
+        foreach ($entity as $item) {
+            $this->entityManager->remove($item);
+        }
+
+        $this->entityManager->flush();
     }
 
     public function getTimeDiff($time)
     {
-        $actualDate = $this->container->getParameter('meeting_room_actual_date');
-
-        if ((time() - $time) / 60 <= $actualDate)
+        if ((time() - $time) / 60 <= $this->roomActualDate) {
             return true;
+        }
 
         return false;
     }
 
     public function setMeetingRoomUser()
     {
-        $repository = $this->doctrine->getRepository(TgCommandMeetingRoom::class);
+        $repository = $this->entityManager->getRepository(TgCommandMeetingRoom::class);
 
-        if (empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()]))) {
+        if (empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]))) {
             $meetingRoomUser = new TgCommandMeetingRoom;
-            $meetingRoomUser->setChatId($this->tgResponse->getChatId());
+            $meetingRoomUser->setChatId($this->tgRequest->getChatId());
             $meetingRoomUser->setCreated(new \DateTime);
             $this->insert($meetingRoomUser);
 
@@ -76,9 +70,9 @@ class TelegramDb
 
     public function removeMeetingRoomUser()
     {
-        $repository = $this->doctrine->getRepository(TgCommandMeetingRoom::class);
+        $repository = $this->entityManager->getRepository(TgCommandMeetingRoom::class);
 
-        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()]))) {
+        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]))) {
             $this->delete($meetingRoomUser);
 
             return true;
@@ -93,9 +87,9 @@ class TelegramDb
          * @var $meetingRoomUser TgCommandMeetingRoom
          */
 
-        $repository = $this->doctrine->getRepository(TgCommandMeetingRoom::class);
+        $repository = $this->entityManager->getRepository(TgCommandMeetingRoom::class);
 
-        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()], ["created" => "DESC"]))) {
+        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]))) {
             $meetingRoomUser = $meetingRoomUser[0];
 
             if ($start && !$this->getTimeDiff($meetingRoomUser->getCreated()->getTimestamp()) || $refresh) {
@@ -115,18 +109,13 @@ class TelegramDb
 
     public function userAuth()
     {
-        $repository = $this->doctrine->getRepository(TgUsers::class);
-        $user = $repository->findBy(["chat_id" => $this->tgResponse->getChatId()], ["created" => "DESC"]);
+        $repository = $this->entityManager->getRepository(TgUsers::class);
+        $user = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]);
 
         if ($user)
             return true;
 
         return false;
-    }
-
-    public function userRegister()
-    {
-
     }
 
     public function prepareCallbackQuery($data)
@@ -139,22 +128,20 @@ class TelegramDb
 
     public function setCallbackQuery()
     {
-        if (!$this->dataCallbackQuery)
+        if (!$this->dataCallbackQuery) {
             return false;
+        }
 
-        $callBackQueryRepository = $this->doctrine->getRepository(CallbackQuery::class);
-        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgResponse->getChatId()], ["created" => "DESC"]);
+        $callBackQueryRepository = $this->entityManager->getRepository(CallbackQuery::class);
+        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]);
 
-        /**
-         * @var $callbackQueryEntity CallbackQuery
-         */
         if ($callbackQueryEntity) {
             $callbackQueryEntity = $callbackQueryEntity[0];
             $callbackQueryEntity->setData(json_encode($this->dataCallbackQuery));
             $callbackQueryEntity->setCreated(new \DateTime);
         } else {
             $callbackQueryEntity = new CallbackQuery;
-            $callbackQueryEntity->setChatId($this->tgResponse->getChatId());
+            $callbackQueryEntity->setChatId($this->tgRequest->getChatId());
             $callbackQueryEntity->setData(json_encode($this->dataCallbackQuery));
             $callbackQueryEntity->setCreated(new \DateTime);
         }
@@ -170,12 +157,9 @@ class TelegramDb
 
     public function getCallbackQuery()
     {
-        $callBackQueryRepository = $this->doctrine->getRepository(CallbackQuery::class);
-        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgResponse->getChatId()], ["created" => "DESC"]);
+        $callBackQueryRepository = $this->entityManager->getRepository(CallbackQuery::class);
+        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]);
 
-        /**
-         * @var $callbackQueryEntity CallbackQuery
-         */
         if ($callbackQueryEntity) {
             $callbackQueryEntity = $callbackQueryEntity[0];
             return json_decode($callbackQueryEntity->getData(), true);
@@ -186,8 +170,8 @@ class TelegramDb
 
     public function isAuth()
     {
-        $tgUsersRepository = $this->doctrine->getRepository(TgUsers::class);
-        $tgUsersEntity = $tgUsersRepository->findBy(["chat_id" => $this->tgResponse->getChatId()]);
+        $tgUsersRepository = $this->entityManager->getRepository(TgUsers::class);
+        $tgUsersEntity = $tgUsersRepository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
         if ($tgUsersEntity)
             return true;
 

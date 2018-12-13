@@ -2,28 +2,18 @@
 
 namespace App\Service;
 
-use Rhumsaa\Uuid\Uuid;
-use Symfony\Component\DependencyInjection\ContainerInterface as Container;
-
 class Calendar
 {
     protected $container;
     protected $tgBot;
     protected $tgDb;
-    protected $tgResponse;
+    protected $tgRequest;
 
-    function __construct(Container $container, $tgBot, $tgDb, $tgResponse)
+    function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest)
     {
-        $this->container = $container;
-
-        /**
-         * @var $tgBot TelegramAPI
-         * @var $tgDb TelegramDb
-         * @var $tgResponse TelegramResponse
-         */
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
-        $this->tgResponse = $tgResponse;
+        $this->tgRequest = $tgRequest;
     }
 
     public function getDays(int $day = 0, int $month = 0, int $year = 0)
@@ -279,12 +269,6 @@ class Calendar
             }
 
             $tempTime = $time;
-
-
-
-            $filename = $this->container->getParameter('kernel.project_dir') . "/public/eventlist.txt";
-            file_put_contents($filename, print_r(($times), true));
-
         }
 
         // Пустой результат бывает либо когда день полностью занят, либо события,

@@ -2,19 +2,20 @@
 
 namespace App\Service;
 
-use Symfony\Component\DependencyInjection\ContainerInterface as Container;
-use App\Service\Methods as MethodsService;
+use App\Service\Helper as MethodsService;
 
 class Bitrix24API
 {
-    protected $bitrix24Url = 'https://intaro.bitrix24.ru/rest/';
+    protected $bitrix24Url;
     protected $methods;
 
-    function __construct(Container $container)
+    function __construct($bitrix24Url, $bitrix24UserId, $bitrix24Api)
     {
         $this->methods = new MethodsService;
-        $this->bitrix24Url .= $container->getParameter('bitrix24_user_id') . "/";
-        $this->bitrix24Url .= $container->getParameter('bitrix24_api') . "/";
+
+        $this->bitrix24Url = $bitrix24Url;
+        $this->bitrix24Url .= $bitrix24UserId . "/";
+        $this->bitrix24Url .= $bitrix24Api . "/";
     }
 
     /**
@@ -26,14 +27,14 @@ class Bitrix24API
         $url = $this->bitrix24Url . $method . "/";
         $pagination = 50;
         $result = [];
-
-        $total = $this->methods->curl($url, ["ACTIVE=true"], true);
+        
+        $total = Helper::curl($url, ["ACTIVE" => true], true);
         $total = ceil($total["total"] / $pagination);
 
         for ($i = 0; $i < $total; $i++) {
             $page = $i * $pagination;
-            $args = ["start={$page}", "ACTIVE=true"];
-            $result = array_merge($result, $this->methods->curl($url, $args, true)["result"]);
+            $args = ["start" => $page, "ACTIVE" => true];
+            $result = array_merge($result, Helper::curl($url, $args, true)["result"]);
         }
 
         foreach ($result as &$user) {
@@ -56,15 +57,15 @@ class Bitrix24API
         return $result;
     }
 
-    /**
-     * @param $args
-     * @return mixed
-     */
-    public function getUser($args)
-    {
-        $method = "user.get";
-        $url = $this->bitrix24Url . $method . "/";
-
-        return $this->methods->curl($url, $args, true);
-    }
+//    /**
+//     * @param $args
+//     * @return mixed
+//     */
+//    public function getUser($args)
+//    {
+//        $method = "user.get";
+//        $url = $this->bitrix24Url . $method . "/";
+//
+//        return Helper::curl($url, $args, true);
+//    }
 }
