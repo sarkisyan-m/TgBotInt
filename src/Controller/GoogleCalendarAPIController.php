@@ -2,13 +2,11 @@
 
 namespace App\Controller;
 
-use App\Service\Helper;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
-
 use Google_Client as GoogleClient;
 use Google_Service_Calendar;
 use Google_Service_Calendar_Event;
@@ -18,8 +16,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 
 class GoogleCalendarAPIController extends Controller
 {
-    protected $methods;
-
     protected $googleClient;
     protected $googleToken;
     protected $isGoogle;
@@ -43,8 +39,14 @@ class GoogleCalendarAPIController extends Controller
         if ($this->googleClient->isAccessTokenExpired()) {
             $this->googleClient->refreshTokenWithAssertion();
         }
+    }
 
-        $this->methods = new Helper;
+    public function googleService()
+    {
+        $service = new Google_Service_Calendar($this->googleClient);
+        $service->settings->get('locale')->setValue('ru');
+
+        return $service;
     }
 
     /**
@@ -71,7 +73,7 @@ class GoogleCalendarAPIController extends Controller
             $filter = array_merge($filter, json_decode($request->get('filter'), true));
         }
 
-        $service = new Google_Service_Calendar($this->googleClient);
+        $service = $this->googleService();
         $calendarList = $service->calendarList->listCalendarList();
 
         /**
@@ -165,41 +167,25 @@ class GoogleCalendarAPIController extends Controller
     {
         $calendarId = $request->get('calendarId');
         $event = $request->get('event');
+        $params = $request->get('params');
 
         if (!$calendarId) {
             return new JsonResponse(["error" => "calendarId not found!"]);
         } elseif (!$event) {
-            return new JsonResponse(["error" => "data not found!"]);
+            return new JsonResponse(["error" => "event not found!"]);
+        } elseif (!$params) {
+            return new JsonResponse(["error" => "params not found!"]);
         }
- 
+
         $event = json_decode($event, true);
         $event = new Google_Service_Calendar_Event($event);
-        $service = new Google_Service_Calendar($this->googleClient);
-        $event = $service->events->insert($calendarId, $event);
+        $params = json_decode($params, true);
+
+        $service = $this->googleService();
+
+        $event = $service->events->insert($calendarId, $event, $params);
 
         return new JsonResponse(["success" => "Event created!", "url" => $event->htmlLink]);
-    }
-
-    /**
-     * @Route("/google/service/calendar/event/remove", name="google_service_calendar_event_remove")
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function googleServiceCalendarEventRemove(Request $request)
-    {
-        $calendarId = $request->get('calendarId');
-        $eventId = $request->get('eventId');
-
-        if (!$calendarId) {
-            return new JsonResponse(["error" => "calendarId not found!"]);
-        } elseif (!$eventId) {
-            return new JsonResponse(["error" => "eventId not found!"]);
-        }
-
-        $service = new Google_Service_Calendar($this->googleClient);
-        $service->events->delete($calendarId, $eventId);
-
-        return new JsonResponse(["success" => "Event deleted!"]);
     }
 
     /**
@@ -212,6 +198,7 @@ class GoogleCalendarAPIController extends Controller
         $calendarId = $request->get('calendarId');
         $eventId = $request->get('eventId');
         $event = $request->get('event');
+        $params = $request->get('params');
 
         if (!$calendarId) {
             return new JsonResponse(["error" => "calendarId not found!"]);
@@ -220,15 +207,47 @@ class GoogleCalendarAPIController extends Controller
         }
         elseif (!$event) {
             return new JsonResponse(["error" => "event not found!"]);
+        } elseif (!$params) {
+            return new JsonResponse(["error" => "params not found!"]);
         }
 
         $event = json_decode($event, true);
         $event = new Google_Service_Calendar_Event($event);
-        $service = new Google_Service_Calendar($this->googleClient);
+        $params = json_decode($params, true);
 
-        $service->events->update($calendarId, $eventId, $event);
+        $service = $this->googleService();
+        $service->settings->get('locale')->setValue('ru');
+        $service->events->update($calendarId, $eventId, $event, $params);
 
         return new JsonResponse();
+    }
+
+    /**
+     * @Route("/google/service/calendar/event/remove", name="google_service_calendar_event_remove")
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function googleServiceCalendarEventRemove(Request $request)
+    {
+        $calendarId = $request->get('calendarId');
+        $eventId = $request->get('eventId');
+        $params = $request->get('params');
+
+        if (!$calendarId) {
+            return new JsonResponse(["error" => "calendarId not found!"]);
+        } elseif (!$eventId) {
+            return new JsonResponse(["error" => "eventId not found!"]);
+        } elseif (!$params) {
+            return new JsonResponse(["error" => "params not found!"]);
+        }
+
+        $params = json_decode($params, true);
+
+        $service = $this->googleService();
+        $service->settings->get('locale')->setValue('ru');
+        $service->events->delete($calendarId, $eventId, $params);
+
+        return new JsonResponse(["success" => "Event deleted!"]);
     }
 
     /*
@@ -257,7 +276,8 @@ class GoogleCalendarAPIController extends Controller
         if (json_decode($request->get('filter')))
             $filter = array_merge($filter, json_decode($request->get('filter'), true));
 
-        $service = new Google_Service_Calendar($this->googleClient);
+
+        $service = $this->googleService();
         $calendarList = $service->calendarList->listCalendarList();
 
         /**

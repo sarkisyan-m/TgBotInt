@@ -17,6 +17,12 @@ class Verification
     private $id;
 
     /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\TgUsers")
+     * @ORM\JoinColumn(nullable=false)
+     */
+    private $tg_user;
+
+    /**
      * @ORM\Column(type="string", length=255)
      */
     private $hash;
@@ -34,6 +40,18 @@ class Verification
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getTgUser(): ?TgUsers
+    {
+        return $this->tg_user;
+    }
+
+    public function setTgUser(?TgUsers $tg_user): self
+    {
+        $this->tg_user = $tg_user;
+
+        return $this;
     }
 
     public function getHash(): ?string

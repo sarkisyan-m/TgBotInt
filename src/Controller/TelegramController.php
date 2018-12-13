@@ -2,12 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\Category;
-use App\Entity\Product;
-use App\Entity\TgCommandMeetingRoom;
-use App\Entity\TgUsers;
-use App\Entity\Verification;
 use App\Entity\MeetingRoom;
+use App\Entity\TgUsers;
 use App\Service\Bitrix24API;
 use App\Service\Calendar;
 use App\Service\GoogleCalendarAPI;
@@ -26,14 +22,13 @@ use Symfony\Component\HttpFoundation\Request;
 
 class TelegramController extends Controller
 {
-    protected $methods;
-
     protected $tgBot;
     protected $tgDb;
     protected $tgToken;
     protected $tgRequest;
     protected $isTg;
     protected $tgUser;
+    protected $botCommands;
 
     protected $calendar;
     protected $googleCalendar;
@@ -42,10 +37,6 @@ class TelegramController extends Controller
     protected $workTimeStart;
     protected $workTimeEnd;
     protected $dateRange;
-
-    protected $meetingRoom;
-
-    protected $botCommands;
 
     function __construct(
         TelegramAPI $tgBot,
@@ -58,7 +49,6 @@ class TelegramController extends Controller
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->tgRequest = new TelegramRequest;
-        $this->tgDb->setTelegramRequest($this->tgRequest);
 
         $this->bitrix24 = $bitrix24;
 
@@ -99,18 +89,15 @@ class TelegramController extends Controller
         $this->tgToken = $this->container->getParameter('tg_token');
 
         $this->tgRequest->setRequestData(json_decode($request->getContent(), true));
+        $this->tgDb->setTelegramRequest($this->tgRequest);
         $this->isTg = $request->query->has($this->tgToken);
         $this->tgLogger($this->tgRequest->getRequestData());
-
-
-
-
 
         // Если это известный нам ответ от телеграма
         if ($this->isTg && $this->tgRequest->getRequestType()) {
             // Если пользователь найден, то не предлагаем ему регистрацию.
             // После определения типа ответа отправляем в соответствующий путь
-            if ($this->tgDb->isAuth()) {
+            if ($this->tgDb->getTgUser()) {
                 if ($this->tgRequest->getRequestType() == $this->tgRequest->getRequestTypeMessage()) {
                     if ($this->isRequestMessage()) {
                         return new Response();
@@ -135,7 +122,7 @@ class TelegramController extends Controller
 
         $this->errorRequest();
 
-        return $this->render('index.html.twig');
+        return new Response();
     }
 
     public function commandHelp()
@@ -189,7 +176,7 @@ class TelegramController extends Controller
     // Здесь должны содержаться функции, которые очищают пользовательские вводы
     public function deleteSession()
     {
-        $this->tgDb->getMeetingRoomUser(false, true);
+        $this->tgDb->getMeetingRoomUser(true);
         // .. еще какая-то функция, которая обнуляет уже другую таблицу
         // и т.д.
     }
@@ -366,7 +353,7 @@ class TelegramController extends Controller
              * Начало бронирования переговорки
              */
             // Вытаскиваем сущность и проверяем срок годности. При флажке true сбрасываются данные, если они просрочены.
-            $meetingRoomUser = $this->tgDb->getMeetingRoomUser(true, false);
+            $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
 
             // Отсюда пользователь начинает пошагово заполнять данные
 
@@ -688,16 +675,16 @@ class TelegramController extends Controller
         }
 
         $serializer = $this->container->get('serializer');
-        $repository = $this->getDoctrine()->getRepository(TgUsers::class);
 
         if (isset($membersChatId["found"])) {
-            $members = $repository->findBy(["chat_id" => $membersChatId["found"]]);
+
+            $members = $this->tgDb->getTgUsers(["chat_id" => $membersChatId["found"]]);
             $members = json_decode($serializer->serialize($members, 'json'), true);
             $data["users"]["found"] = array_merge($members, $data["users"]["found"]);
         }
 
         if (isset($membersChatId["organizer"])) {
-            $organizer = $repository->findBy(["chat_id" => $membersChatId["organizer"]]);
+            $organizer = $this->tgDb->getTgUsers(["chat_id" => $membersChatId["organizer"]]);
             $organizer = json_decode($serializer->serialize($organizer, 'json'), true);
             $data["users"]["organizer"] = $organizer;
         }
@@ -805,8 +792,7 @@ class TelegramController extends Controller
     {
         $hashService = new Hash;
         $hash = $hashService->hash($text, $salt);
-        $repository = $this->getDoctrine()->getRepository(Verification::class);
-        $hash = $repository->findBy(["hash" => $hash]);
+        $hash = $this->tgDb->getHash(["hash" => $hash]);
 
         if ($hash)
             return true;
@@ -827,8 +813,8 @@ class TelegramController extends Controller
             if ($this->isGoogleCalendarBotEmail($event["organizerEmail"])) {
                 if ($event["attendees"]) {
                     $event["organizerEmail"] = $event["attendees"][0];
-                    $repository = $this->getDoctrine()->getRepository(Tgusers::class);
-                    $tgUser = $repository->findBy(["email" => $event["organizerEmail"]]);
+
+                    $tgUser = $this->tgDb->getTgUsers(["email" => $event["organizerEmail"]]);
 
                     if ($tgUser) {
                         $tgUser = $tgUser[0];
@@ -947,23 +933,20 @@ class TelegramController extends Controller
         }
 
         $time = explode("-", $this->tgRequest->getText());
-        if (isset($time[0]) && isset($time[1]) && $this->calendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
-            /**
-             * @var $meetingRoom TgCommandMeetingRoom
-             */
-            $repository = $this->getDoctrine()->getRepository(TgCommandMeetingRoom::class);
-            $meetingRoom = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
-            $meetingRoom = $meetingRoom[0];
+        if (isset($time[0]) && isset($time[1]) &&
+            $this->calendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
 
-            $filter = ["startDateTime" => $meetingRoom->getDate(), "calendarName" => $meetingRoom->getMeetingRoom()];
+            $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+
+            $filter = ["startDateTime" => $meetingRoomUser->getDate(), "calendarName" => $meetingRoomUser->getMeetingRoom()];
             $eventListCurDay = $this->googleCalendar->getList($filter)[0];
 
             $times = [];
             if ($eventListCurDay["listEvents"]) {
                 foreach ($eventListCurDay["listEvents"] as $event) {
 
-                    if (substr($event["eventId"], 0, strlen($meetingRoom->getEventId())) == $meetingRoom->getEventId() &&
-                        $meetingRoom->getStatus() == "edit")
+                    if (substr($event["eventId"], 0, strlen($meetingRoomUser->getEventId())) == $meetingRoomUser->getEventId() &&
+                        $meetingRoomUser->getStatus() == "edit")
                         continue;
 
                     $timeStart = Helper::getTimeStr($event["dateTimeStart"]);
@@ -980,7 +963,7 @@ class TelegramController extends Controller
                 $meetingRoomUser->setTime("{$time[0]}-{$time[1]}");
                 $this->tgDb->insert($meetingRoomUser);
 
-                if ($meetingRoom->getStatus() == "edit") {
+                if ($meetingRoomUser->getStatus() == "edit") {
                     $this->meetingRoomConfirm();
 
                     return;
@@ -1086,8 +1069,9 @@ class TelegramController extends Controller
         $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
         if (isset($meetingRoomUserData["users"]["duplicate"]) && $meetingRoomUserData["users"]["duplicate"]) {
             foreach ($meetingRoomUserData["users"]["duplicate"] as $id => $memberDuplicate) {
-                $repository = $this->getDoctrine()->getRepository(TgUsers::class);
-                $tgUsers = $repository->findBy(["name" => $memberDuplicate["name"]]);
+
+
+                $tgUsers = $this->tgDb->getTgUsers(["name" => $memberDuplicate["name"]]);
                 $keyboard = [];
 
 
@@ -1284,7 +1268,6 @@ class TelegramController extends Controller
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
         $members = null;
-        $repository = $this->getDoctrine()->getRepository(TgUsers::class);
 
         if (!$meetingRoomUser->getEventMembers()) {
 
@@ -1296,7 +1279,7 @@ class TelegramController extends Controller
             }
 
             if ($members) {
-                $tgUsers = $repository->findBy(["name" => $members]);
+                $tgUsers = $this->tgDb->getTgUsers(["name" => $members]);
 
                 $membersFound = [];
                 foreach ($tgUsers as $tgUser) {
@@ -1317,16 +1300,19 @@ class TelegramController extends Controller
                         );
                     }
                 }
+
                 // Добавляем дубликатов и неизвестных
-                foreach ($membersDuplicate as $memberDuplicate => $count)
+                foreach ($membersDuplicate as $memberDuplicate => $count) {
                     $meetingRoomUserData["users"]["duplicate"][] = ["name" => $memberDuplicate, "count" => $count];
-                foreach ($membersNotFound as $memberNotFound)
+                }
+
+                foreach ($membersNotFound as $memberNotFound) {
                     $meetingRoomUserData["users"]["not_found"][] = ["name" => $memberNotFound];
+                }
             }
 
             // Добавляем организатора (себя)
-            $organizer = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
-            $organizer = $organizer[0];
+            $organizer = $this->tgDb->getTgUser();
 
             $meetingRoomUserData["users"]["organizer"][] = $this->membersFormat(
                 $organizer->getChatId(),
@@ -1353,8 +1339,8 @@ class TelegramController extends Controller
 
         // Сразу же смотрим, добавились ли участники
         if ($meetingRoomUser->getEventMembers()) {
-            $tgUsers = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
-            if ($tgUsers) {
+            $tgUser = $this->tgDb->getTgUser();
+            if ($tgUser) {
                 if ($meetingRoomUser->getEventMembers()) {
                     // Если мы нашли какие-то совпадения в базе, то идем сюда.
                     // foreach идет по одному хиту для каждого найденого участника
@@ -1395,14 +1381,11 @@ class TelegramController extends Controller
     }
 
     /**
-     * @var $meetingRoom TgCommandMeetingRoom
+     * @var $meetingRoom MeetingRoom
      * @param bool $nextMessage
      */
     public function meetingRoomConfirm($data = null, $nextMessage = false)
     {
-        $repository = $this->getDoctrine()->getRepository(TgCommandMeetingRoom::class);
-        $meetingRoom = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()])[0];
-
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $members = $this->membersList(json_decode($meetingRoomUser->getEventMembers(), true));
         $text = null;
@@ -1442,13 +1425,13 @@ class TelegramController extends Controller
                 $text .= "\n*Данные успешно отправлены!*";
                 $keyboard = null;
 
-                $meetingRoomDate = $meetingRoom->getDate();
-                $meetingRoomTime = explode("-", $meetingRoom->getTime());
+                $meetingRoomDate = $meetingRoomUser->getDate();
+                $meetingRoomTime = explode("-", $meetingRoomUser->getTime());
                 $meetingRoomDateTimeStart = (new \DateTime("{$meetingRoomDate} {$meetingRoomTime[0]}"))->format(\DateTime::RFC3339);
                 $meetingRoomDateTimeEnd = (new \DateTime("{$meetingRoomDate} {$meetingRoomTime[1]}"))->format(\DateTime::RFC3339);
-                $meetingRoomEventName = $meetingRoom->getEventName();
-                $meetingRoomMembers = json_decode($meetingRoom->getEventMembers(), true);
-                $meetingRoomName = $meetingRoom->getMeetingRoom();
+                $meetingRoomEventName = $meetingRoomUser->getEventName();
+                $meetingRoomMembers = json_decode($meetingRoomUser->getEventMembers(), true);
+                $meetingRoomName = $meetingRoomUser->getMeetingRoom();
                 $calendarId = $this->googleCalendar->getCalendarId($meetingRoomName);
 
                 $meetingRoomMembers["users"] = array_reverse($meetingRoomMembers["users"]);
@@ -1459,19 +1442,13 @@ class TelegramController extends Controller
                 foreach ($emailList as $email)
                     $attendees[] = ['email' => $email];
 
-                $hash = new Verification;
                 $hashService = new Hash;
-                $hashKey = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
-                $hash->setHash($hashKey);
-                $hash->setDate(new \DateTime($meetingRoomDateTimeStart));
-                $hash->setCreated(new \DateTime);
-                $this->tgDb->insert($hash);
+                $hash = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
+                $this->tgDb->setHash($hash, (new \DateTime($meetingRoomDateTimeStart)));
 
                 if ($meetingRoomUser->getEventId() && $meetingRoomUser->getStatus() == "edit") {
-                    $repository = $this->getDoctrine()->getRepository(Tgusers::class);
-                    $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+                    $tgUser = $this->tgDb->getTgUser();
                     if ($tgUser) {
-                        $tgUser = $tgUser[0];
                         $filter = ["eventIdShort" => $meetingRoomUser->getEventId(), "attendees" => $tgUser->getEmail()];
                         $event = $this->googleCalendar->getList($filter);
 
@@ -1507,12 +1484,12 @@ class TelegramController extends Controller
                         $attendees
                     );
                 }
-                $this->tgDb->getMeetingRoomUser(false, false);
+                $this->tgDb->getMeetingRoomUser();
             } elseif ($data["data"]["ready"] == "no") {
                 $text .= "\n*Отмена!* Данные удалены!";
                 $keyboard = null;
 
-                $this->tgDb->getMeetingRoomUser(false, true);
+                $this->tgDb->getMeetingRoomUser(true);
             }
         }
 
@@ -1530,11 +1507,9 @@ class TelegramController extends Controller
 
     public function userMeetingRoomList()
     {
-        $repository = $this->getDoctrine()->getRepository(TgUsers::class);
-        $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+        $tgUser = $this->tgDb->getTgUser();
 
         if ($tgUser) {
-            $tgUser = $tgUser[0];
             $dateToday = date("d.m.Y", strtotime("today"));
             $dateRange = date("d.m.Y", strtotime("+{$this->dateRange} day"));
 
@@ -1633,11 +1608,9 @@ class TelegramController extends Controller
         if (isset($data["data"]["args"]))
             $args = $data["data"]["args"];
 
-        $repository = $this->getDoctrine()->getRepository(Tgusers::class);
-        $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+        $tgUser = $this->tgDb->getTgUser();
 
         if ($tgUser) {
-            $tgUser = $tgUser[0];
 
             $filter = ["eventIdShort" => $args, "attendees" => $tgUser->getEmail()];
             $event = $this->googleCalendar->getList($filter);
@@ -1699,11 +1672,9 @@ class TelegramController extends Controller
 
     public function eventEdit($data = null, $dataMessage = null)
     {
-        $repository = $this->getDoctrine()->getRepository(TgCommandMeetingRoom::class);
-        $meetingRoom = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+        $meetingRoom = $this->tgDb->getMeetingRoomUser();
 
         if ($meetingRoom) {
-            $meetingRoom = $meetingRoom[0];
             $args = $this->getEventArgs();
 
             if (isset($data["data"]["args"]))
@@ -1711,11 +1682,9 @@ class TelegramController extends Controller
             elseif ($meetingRoom->getEventId())
                 $args = $meetingRoom->getEventId();
 
-            $repository = $this->getDoctrine()->getRepository(Tgusers::class);
-            $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+            $tgUser = $this->tgDb->getTgUser();
 
             if ($tgUser) {
-                $tgUser = $tgUser[0];
 
                 $filter = ["eventIdShort" => $args, "attendees" => $tgUser->getEmail()];
                 $event = $this->googleCalendar->getList($filter);

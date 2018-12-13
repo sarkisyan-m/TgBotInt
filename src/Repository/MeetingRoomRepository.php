@@ -19,9 +19,9 @@ class MeetingRoomRepository extends ServiceEntityRepository
         parent::__construct($registry, MeetingRoom::class);
     }
 
-//    /**
-//     * @return MeetingRoom[] Returns an array of MeetingRoom objects
-//     */
+    // /**
+    //  * @return MeetingRoom[] Returns an array of MeetingRoom objects
+    //  */
     /*
     public function findByExampleField($value)
     {

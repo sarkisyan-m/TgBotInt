@@ -17,12 +17,13 @@ class CallbackQuery
     private $id;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\OneToOne(targetEntity="App\Entity\TgUsers", cascade={"persist", "remove"})
+     * @ORM\JoinColumn(nullable=false)
      */
-    private $chat_id;
+    private $tg_user;
 
     /**
-     * @ORM\Column(type="string", length=16384)
+     * @ORM\Column(type="string", length=16384, nullable=true)
      */
     private $data;
 
@@ -36,14 +37,14 @@ class CallbackQuery
         return $this->id;
     }
 
-    public function getChatId(): ?string
+    public function getTgUser(): ?TgUsers
     {
-        return $this->chat_id;
+        return $this->tg_user;
     }
 
-    public function setChatId(string $chat_id): self
+    public function setTgUser(TgUsers $tg_user): self
     {
-        $this->chat_id = $chat_id;
+        $this->tg_user = $tg_user;
 
         return $this;
     }
@@ -53,7 +54,7 @@ class CallbackQuery
         return $this->data;
     }
 
-    public function setData(string $data): self
+    public function setData(?string $data): self
     {
         $this->data = $data;
 

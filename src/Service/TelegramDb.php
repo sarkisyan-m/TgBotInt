@@ -3,8 +3,9 @@
 namespace App\Service;
 
 use App\Entity\CallbackQuery;
-use App\Entity\TgCommandMeetingRoom;
+use App\Entity\MeetingRoom;
 use App\Entity\TgUsers;
+use App\Entity\Verification;
 use Doctrine\ORM\EntityManagerInterface;
 use Rhumsaa\Uuid\Uuid;
 
@@ -12,14 +13,11 @@ class TelegramDb
 {
     protected $entityManager;
     protected $tgRequest;
-    protected $roomActualDate;
-
     protected $dataCallbackQuery;
 
-    function __construct(EntityManagerInterface $entityManager, TelegramRequest $tgRequest, $roomActualDate)
+    function __construct(EntityManagerInterface $entityManager, TelegramRequest $tgRequest)
     {
         $this->entityManager = $entityManager;
-        $this->roomActualDate = $roomActualDate;
         $this->tgRequest = $tgRequest;
     }
 
@@ -36,86 +34,40 @@ class TelegramDb
 
     public function delete($entity)
     {
-        foreach ($entity as $item) {
-            $this->entityManager->remove($item);
+        if (is_array($entity)) {
+            foreach ($entity as $item) {
+                $this->entityManager->remove($item);
+            }
+        } else {
+            $this->entityManager->remove($entity);
         }
 
         $this->entityManager->flush();
     }
 
-    public function getTimeDiff($time)
+    public function getMeetingRoomUser($refresh = false)
     {
-        if ((time() - $time) / 60 <= $this->roomActualDate) {
-            return true;
-        }
+        $repository = $this->entityManager->getRepository(MeetingRoom::class);
+        $meetingRoomUser = $repository->findBy(["tg_user" => $this->getTgUser()]);
 
-        return false;
-    }
+        if (!$meetingRoomUser || $refresh) {
+            if ($refresh && $meetingRoomUser) {
+                $this->delete($meetingRoomUser);
+            }
 
-    public function setMeetingRoomUser()
-    {
-        $repository = $this->entityManager->getRepository(TgCommandMeetingRoom::class);
-
-        if (empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]))) {
-            $meetingRoomUser = new TgCommandMeetingRoom;
-            $meetingRoomUser->setChatId($this->tgRequest->getChatId());
+            $meetingRoomUser = new MeetingRoom;
+            $meetingRoomUser->setTgUser($this->getTgUser());
             $meetingRoomUser->setCreated(new \DateTime);
             $this->insert($meetingRoomUser);
 
             return $meetingRoomUser;
-        }
-
-        return false;
-    }
-
-    public function removeMeetingRoomUser()
-    {
-        $repository = $this->entityManager->getRepository(TgCommandMeetingRoom::class);
-
-        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]))) {
-            $this->delete($meetingRoomUser);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public function getMeetingRoomUser($start = false, $refresh = false)
-    {
-        /**
-         * @var $meetingRoomUser TgCommandMeetingRoom
-         */
-
-        $repository = $this->entityManager->getRepository(TgCommandMeetingRoom::class);
-
-        if (!empty($meetingRoomUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]))) {
+        } elseif ($meetingRoomUser) {
             $meetingRoomUser = $meetingRoomUser[0];
 
-            if ($start && !$this->getTimeDiff($meetingRoomUser->getCreated()->getTimestamp()) || $refresh) {
-                $this->removeMeetingRoomUser();
-                $meetingRoomUser = $this->setMeetingRoomUser();
-
-                return $meetingRoomUser;
-            }
-
-            return $meetingRoomUser;
-        } else {
-            $this->setMeetingRoomUser();
-
             return $meetingRoomUser;
         }
-    }
 
-    public function userAuth()
-    {
-        $repository = $this->entityManager->getRepository(TgUsers::class);
-        $user = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]);
-
-        if ($user)
-            return true;
-
-        return false;
+        return $meetingRoomUser;
     }
 
     public function prepareCallbackQuery($data)
@@ -132,23 +84,25 @@ class TelegramDb
             return false;
         }
 
-        $callBackQueryRepository = $this->entityManager->getRepository(CallbackQuery::class);
-        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]);
+        $repository = $this->entityManager->getRepository(CallbackQuery::class);
+        $callbackQuery = $repository->findBy(["tg_user" => $this->getTgUser()]);
 
-        if ($callbackQueryEntity) {
-            $callbackQueryEntity = $callbackQueryEntity[0];
-            $callbackQueryEntity->setData(json_encode($this->dataCallbackQuery));
-            $callbackQueryEntity->setCreated(new \DateTime);
+        if ($callbackQuery) {
+            $callbackQuery = $callbackQuery[0];
+            $callbackQuery->setData(json_encode($this->dataCallbackQuery));
+            $callbackQuery->setCreated(new \DateTime);
         } else {
-            $callbackQueryEntity = new CallbackQuery;
-            $callbackQueryEntity->setChatId($this->tgRequest->getChatId());
-            $callbackQueryEntity->setData(json_encode($this->dataCallbackQuery));
-            $callbackQueryEntity->setCreated(new \DateTime);
+            $callbackQuery = new CallbackQuery;
+            $callbackQuery->setTgUser($this->getTgUser());
+            $callbackQuery->setData(json_encode($this->dataCallbackQuery));
+            $callbackQuery->setCreated(new \DateTime);
         }
-        $this->insert($callbackQueryEntity);
 
-        if ($callbackQueryEntity->getId()) {
+        $this->insert($callbackQuery);
+
+        if ($callbackQuery->getId()) {
             $this->dataCallbackQuery = null;
+
             return true;
         }
 
@@ -157,24 +111,90 @@ class TelegramDb
 
     public function getCallbackQuery()
     {
-        $callBackQueryRepository = $this->entityManager->getRepository(CallbackQuery::class);
-        $callbackQueryEntity = $callBackQueryRepository->findBy(["chat_id" => $this->tgRequest->getChatId()], ["created" => "DESC"]);
+        $repository = $this->entityManager->getRepository(CallbackQuery::class);
+        $callbackQuery = $repository->findBy(["tg_user" => $this->getTgUser()]);
 
-        if ($callbackQueryEntity) {
-            $callbackQueryEntity = $callbackQueryEntity[0];
-            return json_decode($callbackQueryEntity->getData(), true);
+        if ($callbackQuery) {
+            $callbackQuery = $callbackQuery[0];
+
+            return json_decode($callbackQuery->getData(), true);
         }
 
         return false;
     }
 
-    public function isAuth()
+    public function getTgUser()
     {
-        $tgUsersRepository = $this->entityManager->getRepository(TgUsers::class);
-        $tgUsersEntity = $tgUsersRepository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
-        if ($tgUsersEntity)
+        $repository = $this->entityManager->getRepository(TgUsers::class);
+        $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+
+        if ($tgUser) {
+            return $tgUser[0];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array $params
+     * @return TgUsers[]|\App\Entity\Verification[]|null|object[]
+     */
+    public function getTgUsers(array $params)
+    {
+        $repository = $this->entityManager->getRepository(TgUsers::class);
+        $tgUsers = $repository->findBy($params);
+
+        if ($tgUsers) {
+            return $tgUsers;
+        }
+
+        return [];
+    }
+
+    /**
+     * @param $params
+     * @return Verification[]|null|object[]
+     */
+    public function getHash($params)
+    {
+        $repository = $this->entityManager->getRepository(Verification::class);
+        $hash = $repository->findBy($params);
+
+        if ($hash) {
+            return $hash;
+        }
+
+        return [];
+    }
+
+    public function setHash($hashVal, $salt)
+    {
+        $hash = new Verification;
+        $hash->setTgUser($this->getTgUser());
+        $hash->setHash($hashVal);
+        $hash->setDate($salt);
+        $hash->setCreated(new \DateTime);
+        $this->insert($hash);
+
+        if ($hash) {
             return true;
+        }
 
         return false;
+    }
+
+
+    public function getMeetingRoom($params)
+    {
+        $repository = $this->entityManager->getRepository(MeetingRoom::class);
+        $meetingRoom = $repository->findBy($params);
+
+        if ($meetingRoom) {
+            $meetingRoom = $meetingRoom[0];
+
+            return $meetingRoom;
+        }
+
+        return null;
     }
 }

@@ -2,23 +2,26 @@
 
 namespace App\Service;
 
-use App\Service\Helper as MethodsService;
 use Symfony\Component\Routing\RouterInterface;
 
 class GoogleCalendarAPI
 {
     protected $container;
-    protected $methods;
     protected $isGoogle;
     protected $googleToken;
     protected $router;
+    protected $notificationTime;
 
-    function __construct($googleToken, RouterInterface $router)
+    function __construct($googleToken, $notificationTime, RouterInterface $router)
     {
         $this->googleToken = $googleToken;
-        $this->isGoogle = isset($_GET[$this->googleToken]);
-        $this->methods = new MethodsService;
         $this->router = $router;
+        $this->notificationTime = $notificationTime;
+    }
+
+    public function getNot()
+    {
+        return $this->notificationTime;
     }
 
     /**
@@ -110,17 +113,22 @@ class GoogleCalendarAPI
             'reminders' => [
                 'useDefault' => false,
                 'overrides' => [
-                    ['method' => 'email', 'minutes' => 24 * 60],
+                    ['method' => 'email', 'minutes' => $this->notificationTime],
                 ],
             ],
         ];
 
-        $event = json_encode($event);
+        $params = [
+            'sendUpdates' => "all"
+        ];
 
+        $event = json_encode($event);
+        $params = json_encode($params);
 
         $args = [
             "calendarId" => $calendarId,
-            "event" => $event
+            "event" => $event,
+            "params" => $params
         ];
 
         return Helper::curl($url, $args, true);
@@ -143,18 +151,24 @@ class GoogleCalendarAPI
             'reminders' => [
                 'useDefault' => false,
                 'overrides' => [
-                    ['method' => 'email', 'minutes' => 24 * 60],
+                    ['method' => 'email', 'minutes' => $this->notificationTime],
                 ],
             ],
         ];
 
+        $params = [
+            'sendUpdates' => "all"
+        ];
+
         $event = json_encode($event);
+        $params = json_encode($params);
 
 
         $args = [
             "calendarId" => $calendarId,
             "eventId" => $eventId,
-            "event" => $event
+            "event" => $event,
+            "params" => $params
         ];
 
         return Helper::curl($url, $args, true);
@@ -164,9 +178,16 @@ class GoogleCalendarAPI
     {
         $url = $this->router->generate('google_service_calendar_event_remove', [], 0);
 
+        $params = [
+            'sendUpdates' => "all"
+        ];
+
+        $params = json_encode($params);
+
         $args = [
             "calendarId" => $calendarId,
-            "eventId" => $eventId
+            "eventId" => $eventId,
+            "params" => $params
         ];
 
         return Helper::curl($url, $args, true);
