@@ -2,19 +2,29 @@
 
 namespace App\Service;
 
+use Symfony\Component\Translation\TranslatorInterface;
+
 class Calendar
 {
     protected $container;
     protected $tgBot;
     protected $tgDb;
     protected $tgRequest;
+    protected $translator;
 
-    function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest)
+    function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest, TranslatorInterface $translator)
     {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->tgRequest = $tgRequest;
+        $this->translator = $translator;
     }
+
+    public function translate($key, array $params = [])
+    {
+        return $this->translator->trans($key, $params, 'telegram', 'ru');
+    }
+
 
     public function getDays(int $day = 0, int $month = 0, int $year = 0)
     {
@@ -43,8 +53,9 @@ class Calendar
     {
         $days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
-        if ($returnArrayKeys)
+        if ($returnArrayKeys) {
             return array_search($days[(date('w', strtotime("-{$day} day -{$month} month -{$year} year")))], $days);
+        }
 
         return $days[(date('w', strtotime("-{$day} day -{$month} month -{$year} year"))) - 1];
     }
@@ -65,12 +76,8 @@ class Calendar
         $curDay = null;
         $emptyCallback = ["empty" => true];
         $eventName = "calendar";
-        $data = [];
 
         $ln = 0;
-
-//        $callback = $this->tgDb->prepareCallbackQuery();
-
         $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "current"], "data" => ["day" => $day, "month" => $month, "year" => $year]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("{$this->getMonthText($day, $month, $year)}, {$this->getYear($day, $month, $year)}", $callback);
 
@@ -83,8 +90,9 @@ class Calendar
         $dWeekCount = 0;
         for ($i = 0; $i < $this->getDays($day, $month, $year); $i++) {
             // в одной строке 7 кнопок (одна неделя)
-            if ($dWeekCount % 7 == 0 && $dWeekCount != 0)
+            if ($dWeekCount % 7 == 0 && $dWeekCount != 0) {
                 $ln++;
+            }
 
             $curDay = $i + 1;
 
@@ -114,20 +122,20 @@ class Calendar
         }
         $ln++;
         $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "previous"], "data" => ["day" => $day, "month" => $month, "year" => $year]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("\u{2190}", $callback);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate("calendar.back"), $callback);
 
         $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "following"], "data" => ["day" => $day, "month" => $month, "year" => $year]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("\u{2192}", $callback);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate("calendar.forward"), $callback);
 
         $ln++;
-        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("0"), "month" => $this->getMonth($day, $month, $year), "year" => $this->getYear($day, $month, $year)]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Сегодня", $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("0"), "month" => $this->getMonth(), "year" => $this->getYear()]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate("calendar.today"), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("-1"), "month" => $this->getMonth($day, $month, $year), "year" => $this->getYear($day, $month, $year)]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Завтра", $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("-1"), "month" => $this->getMonth(), "year" => $this->getYear()]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate("calendar.tomorrow"), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("-2"), "month" => $this->getMonth($day, $month, $year), "year" => $this->getYear($day, $month, $year)]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("Послезавтра", $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(["event" => [$eventName => "selectDay"], "data" => ["day" => $this->getDay("-2"), "month" => $this->getMonth(), "year" => $this->getYear()]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate("calendar.day_after_tomorrow"), $callback);
 
         $this->tgDb->setCallbackQuery();
 
@@ -137,8 +145,10 @@ class Calendar
 
     public function validateDate($date, $dateRange, $format = 'd.m.Y')
     {
-        if (date_create_from_format($format, $date) && strtotime($date) > strtotime("yesterday") && strtotime($date) < strtotime("{$dateRange} day"))
+        if (date_create_from_format($format, $date) && strtotime($date) > strtotime("yesterday") && strtotime($date) < strtotime("{$dateRange} day")) {
             return true;
+        }
+
         return false;
     }
 
@@ -151,12 +161,14 @@ class Calendar
         $minutes = $timeDiff % ($hoursTemp * 60);
 
         if ($timeDiff > 0 ) {
-            if (intval($hours) == 0)
+            if (intval($hours) == 0) {
                 return "{$minutes} мин.";
-            elseif (intval($minutes) == 0)
+            } elseif (intval($minutes) == 0) {
                 return "{$hours} ч.";
-            else
+            } else {
                 return "{$hours} ч. {$minutes} мин.";
+            }
+
         }
 
         return false;
@@ -166,20 +178,24 @@ class Calendar
     {
         if (strtotime($timeStart) < strtotime($workTimeStart) ||
             strtotime($timeEnd) > strtotime($workTimeEnd) ||
-            strlen($timeStart) != 5 || strlen($timeEnd) != 5)
+            strlen($timeStart) != 5 || strlen($timeEnd) != 5) {
             return false;
+        }
 
         $timeDiff = (strtotime($timeEnd) - strtotime($timeStart)) / 60;
         $workTimeDiff = (strtotime($workTimeEnd) - strtotime($workTimeStart)) / 60;
 
-        if ($timeDiff > 0 && $timeDiff <= $workTimeDiff)
+        if ($timeDiff > 0 && $timeDiff <= $workTimeDiff) {
             return true;
+        }
+
         return false;
     }
 
     public function makeAvailableTime($timeStart, $timeEnd)
     {
         $timeText = $this->timeDiff($timeStart, $timeEnd);
+
         return [
             "timeStart" => date("H:i", $timeStart),
             "timeEnd" => date("H:i", $timeEnd),
@@ -198,8 +214,10 @@ class Calendar
         if (!$times) {
             $result[] = $this->makeAvailableTime($workTimeStart, $workTimeEnd);
         }
+
         $total = count($times);
         $counter = 0;
+
         foreach ($times as $timeKey => $time) {
             $counter++;
             $end = $counter == $total;
@@ -216,12 +234,14 @@ class Calendar
                 } elseif ($time["timeEnd"] >= $workTimeStart && $end) {
                     $result[] = $this->makeAvailableTime($time["timeEnd"], $workTimeEnd);
                 }
+
                 continue;
             }
 
             if ($time["timeStart"] < $workTimeStart) {
                 if ($time["timeEnd"] > $workTimeStart && $time["timeEnd"] < $workTimeEnd && $notEnd) {
                     $workTimeStart = $time["timeEnd"];
+
                     continue;
                 } elseif ($time["timeEnd"] >= $workTimeStart && $time["timeEnd"] <= $workTimeEnd && $end) {
                     break;
@@ -234,6 +254,7 @@ class Calendar
 //                        $result[] = $this->makeAvailableTime($tempTime["timeEnd"], $tempTime["timeEnd"]);
                     }
                 }
+
                 continue;
             } elseif ($time["timeStart"] <= $workTimeEnd && $time["timeEnd"] > $workTimeEnd) {
                 if ($tempTime) {
@@ -274,23 +295,28 @@ class Calendar
         // Пустой результат бывает либо когда день полностью занят, либо события,
         // нахохдящиеся не в промежутке workTimeStart - workTimeEnd
         if ($times && !$result) {
+
             $allDay = false;
             foreach ($times as $time) {
                 $time["timeStart"] = strtotime($time["timeStart"]);
                 $time["timeEnd"] = strtotime($time["timeEnd"]);
 
                 if ($time["timeStart"] >= $workTimeStart && $time["timeStart"] < $workTimeEnd
-                || !$time["timeStart"] && !$time["timeEnd"])
+                || !$time["timeStart"] && !$time["timeEnd"]) {
                     $allDay = true;
+                }
             }
-            if (!$allDay)
+
+            if (!$allDay) {
                 $result[] = $this->makeAvailableTime($workTimeStart, $workTimeEnd);
+            }
         }
 
         if ($returnString) {
             $text = null;
-            foreach ($result as $time)
+            foreach ($result as $time) {
                 $text .= sprintf("%s-%s (%s)\n", $time["timeStart"], $time["timeEnd"], $time["timeText"]);
+            }
             $result = $text;
         }
 
@@ -302,8 +328,10 @@ class Calendar
         $timeStart = strtotime($timeStart);
         $timeEnd = strtotime($timeEnd);
 
-        if (!$times)
+        if (!$times) {
             return true;
+        }
+
         foreach ($times as $time) {
             $time["timeStart"] = strtotime($time["timeStart"]);
             $time["timeEnd"] = strtotime($time["timeEnd"]);
@@ -312,7 +340,7 @@ class Calendar
                 return true;
             }
         }
+
         return false;
     }
-
 }

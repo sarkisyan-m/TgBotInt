@@ -2,10 +2,7 @@ top_menu:
     items:
         index: 'Главная'
     is_auth:
-        add_book: 'Добавить книгу'
         profile: 'Профиль'
     is_not_auth:
         auth: 'Авторизация'
         register: 'Регистрация'
-    admin:
-        admin: 'Админка'

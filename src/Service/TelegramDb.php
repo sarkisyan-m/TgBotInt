@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\AntiFlood;
 use App\Entity\CallbackQuery;
 use App\Entity\MeetingRoom;
 use App\Entity\TgUsers;
@@ -43,31 +44,6 @@ class TelegramDb
         }
 
         $this->entityManager->flush();
-    }
-
-    public function getMeetingRoomUser($refresh = false)
-    {
-        $repository = $this->entityManager->getRepository(MeetingRoom::class);
-        $meetingRoomUser = $repository->findBy(["tg_user" => $this->getTgUser()]);
-
-        if (!$meetingRoomUser || $refresh) {
-            if ($refresh && $meetingRoomUser) {
-                $this->delete($meetingRoomUser);
-            }
-
-            $meetingRoomUser = new MeetingRoom;
-            $meetingRoomUser->setTgUser($this->getTgUser());
-            $meetingRoomUser->setCreated(new \DateTime);
-            $this->insert($meetingRoomUser);
-
-            return $meetingRoomUser;
-        } elseif ($meetingRoomUser) {
-            $meetingRoomUser = $meetingRoomUser[0];
-
-            return $meetingRoomUser;
-        }
-
-        return $meetingRoomUser;
     }
 
     public function prepareCallbackQuery($data)
@@ -135,12 +111,47 @@ class TelegramDb
         return null;
     }
 
+    public function isActiveTgUser($bitrixUsers)
+    {
+        $repository = $this->entityManager->getRepository(TgUsers::class);
+        $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+
+        if ($tgUser) {
+            $tgUser = $tgUser[0];
+
+            foreach ($bitrixUsers as $bitrixUser) {
+                $userName = "{$bitrixUser["NAME"]} {$bitrixUser["LAST_NAME"]}";
+                if ($tgUser->getName() == $userName &&
+                    $tgUser->getEmail() == $bitrixUser["EMAIL"] &&
+                    $tgUser->getPhone() == $bitrixUser["PERSONAL_MOBILE"]) {
+
+                    if ($bitrixUser["ACTIVE"] == true) {
+                        if (!$tgUser->getActive()) {
+                            $tgUser->setActive(true);
+                            $this->insert($tgUser);
+                        }
+
+                        return true;
+                    } else {
+                        $tgUser->setActive(false);
+                        $this->insert($tgUser);
+
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param array $params
      * @return TgUsers[]|\App\Entity\Verification[]|null|object[]
      */
     public function getTgUsers(array $params)
     {
+        $params += ["active" => true];
         $repository = $this->entityManager->getRepository(TgUsers::class);
         $tgUsers = $repository->findBy($params);
 
@@ -183,18 +194,56 @@ class TelegramDb
         return false;
     }
 
+//    public function getMeetingRoom($params)
+//    {
+//        $repository = $this->entityManager->getRepository(MeetingRoom::class);
+//        $meetingRoom = $repository->findBy($params);
+//
+//        if ($meetingRoom) {
+//            $meetingRoom = $meetingRoom[0];
+//
+//            return $meetingRoom;
+//        }
+//
+//        return null;
+//    }
 
-    public function getMeetingRoom($params)
+    public function getMeetingRoomUser($refresh = false)
     {
         $repository = $this->entityManager->getRepository(MeetingRoom::class);
-        $meetingRoom = $repository->findBy($params);
+        $meetingRoomUser = $repository->findBy(["tg_user" => $this->getTgUser()]);
 
-        if ($meetingRoom) {
-            $meetingRoom = $meetingRoom[0];
+        if (!$meetingRoomUser || $refresh) {
+            if ($refresh && $meetingRoomUser) {
+                $this->delete($meetingRoomUser);
+            }
 
-            return $meetingRoom;
+            $meetingRoomUser = new MeetingRoom;
+            $meetingRoomUser->setTgUser($this->getTgUser());
+            $meetingRoomUser->setCreated(new \DateTime);
+            $this->insert($meetingRoomUser);
+        } elseif ($meetingRoomUser) {
+            $meetingRoomUser = $meetingRoomUser[0];
         }
 
-        return null;
+        return $meetingRoomUser;
+    }
+
+    public function getAntiFlood()
+    {
+        $repository = $this->entityManager->getRepository(AntiFlood::class);
+        $antiFlood = $repository->findBy(["tg_user" => $this->getTgUser()]);
+
+        if ($antiFlood) {
+            $antiFlood = $antiFlood[0];
+        } else {
+            $antiFlood = new AntiFlood;
+            $antiFlood->setDate(new \DateTime());
+            $antiFlood->setMessages(0);
+            $antiFlood->setTgUser($this->getTgUser());
+            $this->insert($antiFlood);
+        }
+
+        return $antiFlood;
     }
 }

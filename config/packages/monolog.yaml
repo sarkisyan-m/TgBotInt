@@ -1,9 +1,19 @@
 monolog:
+    channels: ["telegram_request_channel"]
     handlers:
         main:
             type: rotating_file
-            path: '%kernel.logs_dir%/php/%kernel.environment%.log'
+            path: '%kernel.logs_dir%/php/php-%kernel.environment%.log'
+#            level: error
             level: error
             # max number of log files to keep
             # defaults to zero, which means infinite files
             max_files: 10
+
+        telegram_request:
+            type: rotating_file
+            path: '%kernel.logs_dir%/tg/tg-%kernel.environment%.log'
+            level: debug
+            bubble: true
+            max_files: 10
+            channels: ['telegram_request_channel']

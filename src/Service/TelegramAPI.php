@@ -301,17 +301,6 @@ class TelegramAPI
      */
     public function editMessageText(string $text, $chat_id = null, int $message_id = null, string $inline_message_id = null, string $parse_mode = null, bool $disable_web_page_preview = false, $reply_markup = null)
     {
-//        $text = urlencode($text);
-//        $args = [
-//            "text={$text}",
-//            "chat_id={$chat_id}",
-//            "message_id={$message_id}",
-//            "inline_message_id={$inline_message_id}",
-//            "parse_mode={$parse_mode}",
-//            "disable_web_page_preview={$disable_web_page_preview}",
-//            "reply_markup={$reply_markup}",
-//        ];
-
         $args = [
             "text" => $text,
             "chat_id" => $chat_id,
@@ -332,11 +321,6 @@ class TelegramAPI
      */
     public function deleteMessage($chat_id, int $message_id)
     {
-//        $args = [
-//            "chat_id={$chat_id}",
-//            "message_id={$message_id}",
-//        ];
-
         $args = [
             "chat_id" => $chat_id,
             "message_id" => $message_id,

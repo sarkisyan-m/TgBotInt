@@ -5,9 +5,9 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\CallbackQueryRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\AntiFloodRepository")
  */
-class CallbackQuery
+class AntiFlood
 {
     /**
      * @ORM\Id()
@@ -16,7 +16,6 @@ class CallbackQuery
      */
     private $id;
 
-//, cascade={"persist", "remove"}
     /**
      * @ORM\OneToOne(targetEntity="App\Entity\TgUsers")
      * @ORM\JoinColumn(nullable=false, onDelete="cascade")
@@ -24,14 +23,14 @@ class CallbackQuery
     private $tg_user;
 
     /**
-     * @ORM\Column(type="string", length=16384, nullable=true)
+     * @ORM\Column(type="integer", nullable=true)
      */
-    private $data;
+    private $messages;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @ORM\Column(type="datetime", nullable=true)
      */
-    private $created;
+    private $date;
 
     public function getId(): ?int
     {
@@ -50,26 +49,26 @@ class CallbackQuery
         return $this;
     }
 
-    public function getData(): ?string
+    public function getMessages(): ?int
     {
-        return $this->data;
+        return $this->messages;
     }
 
-    public function setData(?string $data): self
+    public function setMessages(?int $messages): self
     {
-        $this->data = $data;
+        $this->messages = $messages;
 
         return $this;
     }
 
-    public function getCreated(): ?\DateTimeInterface
+    public function getDate(): ?\DateTimeInterface
     {
-        return $this->created;
+        return $this->date;
     }
 
-    public function setCreated(\DateTimeInterface $created): self
+    public function setDate(?\DateTimeInterface $date): self
     {
-        $this->created = $created;
+        $this->date = $date;
 
         return $this;
     }

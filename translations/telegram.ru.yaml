@@ -1,0 +1,135 @@
+account:
+    active_false: "*Ваш аккаунт заблокирован!* Пожалуйста, обратитесь к администратору."
+
+bot_command:
+    meeting_room_list: "\U0001F525 Забронировать переговорку"
+    event_list: "\U0001F4C4 Список моих событий"
+    help: "\U00002049 Помощь"
+    exit: "\U0001F680 Завершитьс сеанс"
+
+anti_flood:
+    active: "*Анти-флуд!*\n_Следующая отправка возможна через %reversDiff% сек._"
+
+command:
+    help: "Бот умеет бронировать переговорки!\n\n*Список доступных команд*\n/meetingroomlist - список переговорок,
+    начало бронирования.\n/eventlist - список ваших событий. В этом списке доступны команды /e\_ и /d\_,
+    которые редактируют и удаляют ваши события соответственно.\n/exit - завершить все текущие сеансы.
+    Команды, не относящиеся к текущему действию, так же завершают все сеансы.\n"
+    exit: "\U0001F413 Сеанс завершен!"
+
+no_command_word:
+    count: "5"
+    0: "-"
+    1: "нет"
+    2: "отказ"
+    3: "не хочу"
+    4: "отсутствует"
+
+request:
+    error: "Не удалось обработать запрос!"
+    
+user:
+    registration:
+        info: "Для продолжения необходимо зарегистрироваться! Пожалуйста, отправьте свой номер для проверки!"
+        failure: "\U000026A0 Регистрация отклонена! *Номер найден*, но необходимо обязательно указать Email в bitrix24 для получения уведомлений!"
+        success: "Регистрация прошла успешно! Здравствуйте, %username%!"
+        cancel: "\U000026A0 Номер не найден! Регистрация отклонена!"
+
+keyboard:
+    send_phone: "\U0000260E Выслать номер"
+    duplicate_user: "%name%, тел.: %phone%, email: %email%"
+    continue: "Продолжить"
+    back: "Назад"
+    send: "Отправить"
+    cancel: "Отменить"
+    remove: "Удалить"
+    event_edit:
+        change_room_time: "Сменить комнату и время"
+        change_event_name: "Изменить название события"
+        change_event_members: "Изменить список участников"
+
+meeting_room:
+    meeting_room:
+        info: "\U0001F4AC Список доступных переговорок"
+        selected: "Выбрана комната *%meetingRoom%*. Укажите дату."
+    date:
+        info: "Доступны только даты в промежутке *[%getDate%-%dateRange%]*"
+        validate_failed: "\U000026A0 _Дата %date% не подходит!_\nНадо попасть в промежуток *[%getDate%-%dateRange%]*"
+        error: "Необходимо выбрать дату!"
+    google_event:
+        current_day:
+            info: "\U0001F4C5 *%meetingRoomName%, %date%*\n"
+            event_editing: "\U000026A0 _В настоящий момент вы редактируете это событие_"
+            event_empty: "Список событий на этот день пуст!"
+            day_busy: "День полностью занят!"
+            example: "\U0001F4DD Теперь надо написать время %workTimeStart%-%workTimeEnd%.\n_Например: %exampleRandomTime%._"
+            available_times: "\n\U000023F0 *Доступные времена в этот день*\n%times%\n%example%"
+    time:
+        selected: "Выбрано время _%time0%-%time1% (%timeDiff%)_\n\n"
+        validate_failed: "В это время уже существует событие!"
+        error: "Время имеет неверный формат!"
+    event_name: "*Введите название события*"
+    event_members:
+        info: "*Укажите список участников.* В списке должны быть реальные имена и фамилии,
+        которые находятся в базе. В противном случае будет ошибка. Если участников нет, необходимо
+        отправить команду отказа: *%noCommandList%*\n_Пример:
+        Иван Иванов, Петр Петров, Сергей Сергеев_"
+        form:
+            head: "*Поиск участников...*\n\n"
+            found: "*Найдено:* %membersFound%\n"
+            duplicate: "*Требуется уточнение:* %membersDuplicate%\n"
+            not_found: "*Не найдено:* %membersNotFound%\n"
+            specify_duplicate: "Уточните, какого именно участника *%membersDuplicateName%* вы имели ввиду.\n"
+            specify_not_found: "*Не все участники были найдены!* Они не смогут получать уведомления!\n"
+        cancel_info: "*Введите список заново!*\n\n"
+        list_formed: "*Список сформирован!*\n\n"
+    confirm:
+        data_info: "*Данные для отправки*"
+        data_sent: "*Данные успешно отправлены!*"
+        data_cancel: "*Отмена!* Данные удалены!"
+
+event_list:
+    room: "\n\U0001F510 *%calendarName%*\n"
+    event_edit: "[[Изм. /e_%eventId%]] "
+    event_remove: "[[Удал. /d_%eventId%]]\n"
+    event_empty: "Список событий пуст!\n"
+    remove:
+        confirmation: "*Вы действительно хотите удалить событие?*\n\n"
+        success: "\n*Событие успешно удалено!*"
+        cancel: "\n*Удаление отменено!*"
+    edit:
+        new_event_name: "*Напишите новое название события*\n"
+        new_members_list:
+            error: "*Необходимо выбрать переговорку из списка!*"
+    event_not_found: "Событие не найдено!"
+
+
+event_info:
+    room: "*Команата:* %room%\n"
+    date: "*Дата:* %date%\n"
+    time: "*Время:* %time%\n"
+    event_name: "*Название:* %eventName%\n"
+    event_members: "*Участники:* %eventMembers%\n"
+    event_organizer: "*Организатор:* %eventOrganizer%\n"
+
+event_info_string:
+    event_name: "Название: %eventName%."
+    event_members: " Участники: %eventMembers%"
+    event_organizer: "Организатор: %eventOrganizer%"
+
+google:
+    service_account_email: ".iam.gserviceaccount.com"
+
+members:
+    type:
+        organizer: "Организатор"
+        members: "Участники"
+    email:
+        unknown: "Неизвестно"
+
+calendar:
+    today: "Сегодня"
+    tomorrow: "Завтра"
+    day_after_tomorrow: "Послезавтра"
+    forward: "\U00002192"
+    back: "\U00002190"

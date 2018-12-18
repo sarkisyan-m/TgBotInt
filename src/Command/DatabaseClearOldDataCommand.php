@@ -13,6 +13,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 
 class DatabaseClearOldDataCommand extends Command
 {
+    // Скорее, я сюда повешу крон. Но это неточно
     protected $doctrine;
     public function __construct(Container $container, ?string $name = null)
     {

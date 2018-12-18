@@ -6,7 +6,6 @@ class Helper
 {
     public static function curl($url, $args = null, $assoc = false)
     {
-
         $args = "?" . http_build_query($args);
         $url = $url . $args;
 
@@ -26,14 +25,28 @@ class Helper
     }
 
     public static function getDateStr($dateStr) {
-        if (!$dateStr)
+        if (!$dateStr) {
             return null;
+        }
+
         return date("d.m.Y", strtotime($dateStr));
     }
 
     public static function getTimeStr($timeStr) {
-        if (!$timeStr)
+        if (!$timeStr) {
             return null;
+        }
+
         return date("H:i", strtotime($timeStr));
+    }
+
+    public static function getDateDiffDays($dateStart, $dateEnd)
+    {
+        $dateStart = new \DateTime($dateStart);
+        $dateEnd  = new \DateTime($dateEnd);
+        $dateDiff = $dateStart->diff($dateEnd);
+        $sing = $dateDiff->format('%R');
+
+        return (int)"{$sing}{$dateDiff->days}";
     }
 }

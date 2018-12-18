@@ -18,7 +18,7 @@ class MeetingRoom
 
     /**
      * @ORM\OneToOne(targetEntity="App\Entity\TgUsers")
-     * @ORM\JoinColumn(nullable=false)
+     * @ORM\JoinColumn(nullable=false, onDelete="cascade")
      */
     private $tg_user;
 
