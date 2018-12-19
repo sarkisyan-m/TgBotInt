@@ -2,8 +2,7 @@
 
 namespace App\Controller;
 
-use App\Entity\MeetingRoom;
-use App\Entity\TgUsers;
+use App\Model\BitrixUser;
 use App\Service\Bitrix24API;
 use App\Service\Calendar;
 use App\Service\GoogleCalendarAPI;
@@ -18,7 +17,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Translation\TranslatorInterface;
-
 
 class TelegramController extends Controller
 {
@@ -106,35 +104,45 @@ class TelegramController extends Controller
         if ($this->isTg && $this->tgRequest->getRequestType()) {
             // Если пользователь найден, то не предлагаем ему регистрацию.
             // После определения типа ответа отправляем в соответствующий путь
-            $bitrixUsers = $this->bitrix24->getUsers();
-            if ($this->tgDb->isActiveTgUser($bitrixUsers)) {
 
-                if ($this->antiFlood()) {
-                    return new Response();
-                }
+//            $this->tgBot->sendMessage($this->tgRequest->getChatId(), 123);
 
-                if ($this->tgRequest->getRequestType() == $this->tgRequest->getRequestTypeMessage()) {
-                    if ($this->handlerRequestMessage()) {
-                        return new Response();
-                    }
-                } elseif ($this->tgRequest->getRequestType() == $this->tgRequest->getRequestTypeCallbackQuery()) {
-                    if ($this->handlerRequestCallbackQuery()) {
-                        return new Response();
-                    }
-                }
-                // Если пользователь отправил нам номер, то ищем его в bitrix24 и регаем
-            } elseif ($this->tgDb->isActiveTgUser($bitrixUsers) === false) {
-                $this->tgBot->sendMessage(
-                    $this->tgRequest->getChatId(),
-                    $this->translate('account.active_false'),
-                    "Markdown",
-                    false,
-                    false,
-                    null,
-                    $this->tgBot->hideKeyboard()
-                );
+            $tgUser = $this->tgDb->getTgUser();
+
+            if ($tgUser && $this->tgRequest->getText() == "/stop") {
+                $this->tgDb->userDelete();
 
                 return new Response();
+            }
+
+            if ($tgUser) {
+                if (!is_null($bitrixUser = $this->bitrix24->getUsers(["id" => $tgUser->getBitrixId()]))) {
+                    $bitrixUser = $bitrixUser[0];
+
+                    if ($bitrixUser->getActive()) {
+                        if ($this->antiFlood()) {
+                            return new Response();
+                        }
+
+                        if ($this->tgRequest->getRequestType() == $this->tgRequest->getRequestTypeMessage()) {
+                            if ($this->handlerRequestMessage()) {
+                                return new Response();
+                            }
+                        } elseif ($this->tgRequest->getRequestType() == $this->tgRequest->getRequestTypeCallbackQuery()) {
+                            if ($this->handlerRequestCallbackQuery()) {
+                                return new Response();
+                            }
+                        }
+                    } else {
+                        $this->tgBot->sendMessage(
+                            $this->tgRequest->getChatId(),
+                            $this->translate('account.active_false'),
+                            "Markdown"
+                        );
+
+                        return new Response();
+                    }
+                }
             } elseif ($this->tgRequest->getPhoneNumber()) {
                 if ($this->userRegistration("registration")) {
                     return new Response();
@@ -175,6 +183,7 @@ class TelegramController extends Controller
                     $text,
                     "Markdown"
                 );
+
                 return true;
             }
 
@@ -237,8 +246,6 @@ class TelegramController extends Controller
     // Сообщение о регистрации и сама регистрация через bitrix24 webhook
     public function userRegistration($stage)
     {
-        $tgUser = new TgUsers;
-
         if ($stage == "info") {
             $keyboard[][] = $this->tgBot->keyboardButton($this->translate('keyboard.send_phone'), true);
             $this->tgBot->sendMessage(
@@ -255,36 +262,16 @@ class TelegramController extends Controller
         }
 
         if ($stage == "registration") {
-            $phone = $this->tgRequest->getPhoneNumber();
-            $users = $this->bitrix24->getUsers();
-            foreach ($users as $user) {
-                if ($user["PERSONAL_MOBILE"] == $phone) {
-                    if ($user["NAME"] && $user["LAST_NAME"] && $user["EMAIL"]) {
-                        $tgUser->setChatId($this->tgRequest->getChatId());
-                        $tgUser->setPhone($user["PERSONAL_MOBILE"]);
-                        $tgUser->setName($user["NAME"] . " " . $user["LAST_NAME"]);
-                        $tgUser->setEmail($user["EMAIL"]);
-                        $tgUser->setActive(true);
-                        $this->tgDb->insert($tgUser);
-
-                        break;
-                    } else {
-                        $this->tgBot->sendMessage(
-                            $this->tgRequest->getChatId(),
-                            $this->translate('user.registration.failure'),
-                            "Markdown"
-                        );
-
-                        return true;
-                    }
-                }
+            $bitrixUser = $this->bitrix24->getUsers(["phone" => $this->tgRequest->getPhoneNumber()]);
+            if ($bitrixUser) {
+                $bitrixUser = $bitrixUser[0];
             }
 
-            if ($tgUser->getId()) {
+            if ($bitrixUser->getActive() && $this->tgDb->userRegistration($bitrixUser->getId())) {
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
-                    $this->translate('user.registration.success', ["%username%" => $tgUser->getName()]),
-                    null,
+                    $this->translate('user.registration.success', ["%name%" => $bitrixUser->getFirstName()]),
+                    "Markdown",
                     false,
                     false,
                     null,
@@ -468,10 +455,12 @@ class TelegramController extends Controller
                 $data = $uuidList[$callBackUuid];
         }
 
-        if (isset($data["empty"]))
+        if (isset($data["empty"])) {
             return true;
-        if (!isset($data["event"]))
+        }
+        if (!isset($data["event"])) {
             return false;
+        }
 
         if (isset($data["event"]["meetingRoom"]) && $data["event"]["meetingRoom"] == "list") {
             $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
@@ -485,6 +474,7 @@ class TelegramController extends Controller
                 $this->translate("meeting_room.date.info", ["%getDate%" => $this->calendar->getDate(), "%dateRange%" => $this->calendar->getDate("-" . $this->dateRange)]),
                 "Markdown"
             );
+
             return true;
         }
 
@@ -492,6 +482,7 @@ class TelegramController extends Controller
 
             if ($data["event"]["calendar"] == "selectDay") {
                 $this->meetingRoomSelectTime($data);
+
                 return true;
             }
 
@@ -548,9 +539,6 @@ class TelegramController extends Controller
 
     public function meetingRoomSelect()
     {
-        /**
-         * @var $item MeetingRoom
-         */
         $keyboard = [];
         $meetingRoom = $this->googleCalendar->getCalendarNameList();
 
@@ -667,18 +655,22 @@ class TelegramController extends Controller
             if ($memberType == "none")
                 continue;
             foreach ($memberList as $member) {
-                if (isset($member["chatId"]))
-                    $member["chat_id"] = $member["chatId"];
-                if (isset($member["email"]))
+                if (isset($member["email"])) {
                     $emailList[] = $member["email"];
-                if ($memberType == "found") {
-                    if (isset($member["chat_id"]))
-                        $textMembersFound .= "\n- {$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}";
-                    else
-                        $textMembersFound .= "\n- {$member["name"]} id#none";
                 }
-                if ($memberType == "organizer")
-                    $textMembersOrganizer .= "\n- {$member["name"]} id#{$member["chat_id"]}, {$member["phone"]}, {$member["email"]}";
+                if (isset($member["id"])) {
+                    $member["bitrix_id"] = $member["id"];
+                }
+                if ($memberType == "found") {
+                    if (isset($member["bitrix_id"])) {
+                        $textMembersFound .= "\n- {$member["name"]} id#{$member["bitrix_id"]}, {$member["phone"]}, {$member["email"]}";
+                    } else {
+                        $textMembersFound .= "\n- {$member["name"]} id#none";
+                    }
+                }
+                if ($memberType == "organizer") {
+                    $textMembersOrganizer .= "\n- {$member["name"]} id#{$member["bitrix_id"]}, {$member["phone"]}, {$member["email"]}";
+                }
             }
         }
 
@@ -693,7 +685,6 @@ class TelegramController extends Controller
         return $textMembers;
     }
 
-
     public function googleCalendarDescriptionConvertLtextToText($membersText, $returnArray = false)
     {
         $membersText = explode("\n", $membersText);
@@ -707,10 +698,12 @@ class TelegramController extends Controller
             if ($member == $this->translate("members.type.members")) {
                 $memberType = "found";
                 unset($members[$key]);
+
                 continue;
             } elseif ($member == $this->translate("members.type.organizer")) {
                 $memberType = "organizer";
                 unset($members[$key]);
+
                 continue;
             }
 
@@ -725,23 +718,30 @@ class TelegramController extends Controller
         foreach ($members["users"] as $membersType => $membersValue) {
             foreach ($membersValue as $key => $memberValue) {
                 $membersChatId[$membersType][] = $memberValue[1];
-                if ($memberValue[1] == "none")
+                if ($memberValue[1] == "none") {
                     $data["users"]["found"][] = ["name" => $members["users"][$membersType][$key][0]];
+                }
             }
         }
 
-        $serializer = $this->container->get('serializer');
-
         if (isset($membersChatId["found"])) {
 
-            $members = $this->tgDb->getTgUsers(["chat_id" => $membersChatId["found"]]);
-            $members = json_decode($serializer->serialize($members, 'json'), true);
+            $bitrixUsers = $this->bitrix24->getUsers(["id" => $membersChatId["found"]]);
+            $members = [];
+            foreach ($bitrixUsers as $bitrixUser) {
+                $members[] = $this->membersFormat($bitrixUser);
+            }
+
             $data["users"]["found"] = array_merge($members, $data["users"]["found"]);
         }
 
         if (isset($membersChatId["organizer"])) {
-            $organizer = $this->tgDb->getTgUsers(["chat_id" => $membersChatId["organizer"]]);
-            $organizer = json_decode($serializer->serialize($organizer, 'json'), true);
+            $organizer = $this->bitrix24->getUsers(["id" => $membersChatId["organizer"]]);
+            if ($organizer) {
+                $organizer = $organizer[0];
+                $organizer = [$this->membersFormat($organizer)];
+            }
+
             $data["users"]["organizer"] = $organizer;
         }
 
@@ -769,24 +769,21 @@ class TelegramController extends Controller
 
         if ($this->verifyHash($event["description"], $event["dateTimeStart"])) {
             $description = $this->googleCalendarDescriptionConvertLtextToText($event["description"]);
-            if ($description["found"])
+            if ($description["found"]) {
                 $textMembers = $description["found"];
+            }
+
             $textOrganizer = $description["organizer"];
         } else {
             if ($this->isGoogleCalendarBotEmail($event["organizerEmail"])) {
                 if ($event["attendees"]) {
                     $event["organizerEmail"] = $event["attendees"][0];
 
-                    $tgUser = $this->tgDb->getTgUsers(["email" => $event["organizerEmail"]]);
+                    $bitrixUser = $this->bitrix24->getUsers(["email" => $event["organizerEmail"]]);
+                    if ($bitrixUser) {
+                        $bitrixUser = $bitrixUser[0];
 
-                    if ($tgUser) {
-                        $tgUser = $tgUser[0];
-                        $organizer["users"]["organizer"][] = $this->membersFormat(
-                            $tgUser->getChatId(),
-                            $tgUser->getName(),
-                            $tgUser->getPhone(),
-                            $tgUser->getEmail()
-                        );
+                        $organizer["users"]["organizer"][] = $this->membersFormat($bitrixUser);
                         $organizer = $this->membersList($organizer, false, true);
                         if (isset($organizer["organizer"])) {
                             $event["organizerEmail"] = $organizer["organizer"];
@@ -794,11 +791,11 @@ class TelegramController extends Controller
                             $event["organizerEmail"] = time();
                         }
                     }
-
                 } else {
                     $event["organizerEmail"] = $this->translate("members.email.unknown");
                 }
             }
+
             $textOrganizer = $event["organizerEmail"];
         }
 
@@ -847,6 +844,7 @@ class TelegramController extends Controller
 
                 $textName = $this->translate("event_info_string.event_name", ["%eventName%" => $event["calendarEventName"]]);
                 $verifyDescription = $this->googleVerifyDescription($event);
+//                $this->tgBot->sendMessage($this->tgRequest->getChatId(), 123);
                 if ($verifyDescription["textMembers"]) {
                     $verifyDescription["textMembers"] = $this->translate("event_info_string.event_members", ["%eventMembers%" => $verifyDescription["textMembers"]]);
                 }
@@ -995,46 +993,68 @@ class TelegramController extends Controller
         $tgLink ? $tgLink = "[#name#](tg://user?id=#id#)" : $tgLink = null;
 
         foreach ($meetingRoomUserData["users"] as $status => $users) {
-            if ($status == "none")
+            if ($status == "none") {
                 continue;
+            }
+
             foreach ($users as $user) {
-                if ($status) {
-                    if (isset($user["chatId"]))
-                        $user["chat_id"] = $user["chatId"];
 
-                    if ($tgLink && $status == "organizer" && isset($user["chat_id"])) {
-                        $user["name"] = str_replace("#name#", $user["name"], $tgLink);
-                        $user["name"] = str_replace("#id#", $user["chat_id"], $user["name"]);
-                    }
-
-                    if ($status == "found") {
-                        if (isset($user["name"]) && isset($user["phone"]) && isset($user["email"]))
-                            $result[$status] .= "{$user["name"]} ({$italic}{$user["phone"]}, {$user["email"]}{$italic})";
-                        else
-                            $result[$status] .= "{$user["name"]}";
-                    }
-                    if ($status == "duplicate")
-                        $result[$status] .= "{$user["name"]} ({$italic}{$user["count"]} совп.{$italic})";
-                    if ($status == "not_found")
-                        $result[$status] .= "{$user["name"]}";
-                    if ($status == "organizer")
-                        $result[$status] .= "{$user["name"]} ({$italic}{$user["phone"]}, {$user["email"]}{$italic})";
-
-                    next($users) ? $result[$status] .= ", " : $result[$status] .= ".";
+                if (!isset($user["name"])) {
+                    $user["name"] = null;
                 }
+
+                if (!isset($user["phone"])) {
+                    $user["phone"] = null;
+                }
+
+                if (!isset($user["email"])) {
+                    $user["email"] = null;
+                }
+
+                if ($tgLink && $status == "organizer" && isset($user["id"])) {
+                    $tgUser = $this->tgDb->getTgUser();
+                    if ($tgUser->getBitrixId() == $user["id"]) {
+                        $user["name"] = str_replace("#name#", $user["name"], $tgLink);
+                        $user["name"] = str_replace("#id#", $tgUser->getChatId(), $user["name"]);
+                    }
+
+                }
+
+                if ($status == "duplicate") {
+                    $result[$status] .= "{$user["name"]} ({$italic}{$user["count"]} совп.{$italic})";
+                }
+
+                if ($status == "not_found") {
+                    $result[$status] .= "{$user["name"]}";
+                }
+
+                if ($status == "found" || $status == "organizer") {
+                    $contact = implode(", ", array_filter([$user["phone"], $user["email"]]));
+
+                    if ($user["name"] && $contact) {
+                        $result[$status] .= "{$user["name"]} ({$italic}{$contact}{$italic})";
+                    } elseif ($user["name"]) {
+                        $result[$status] .= "{$user["name"]}";
+                    } else {
+                        $result[$status] .= "Неизвестно";
+                    }
+                }
+
+                next($users) ? $result[$status] .= ", " : $result[$status] .= ".";
             }
         }
 
         return $result;
     }
 
-    public function membersFormat($chatId, $name, $phone, $email)
+
+    public function membersFormat(BitrixUser $bitrixUser)
     {
         return [
-            "chat_id" => $chatId,
-            "name" => $name,
-            "phone" => $phone,
-            "email" => $email
+            "bitrix_id" => $bitrixUser->getId(),
+            "name" => $bitrixUser->getName(),
+            "phone" => $bitrixUser->getFirstPhone(),
+            "email" => $bitrixUser->getEmail()
         ];
     }
 
@@ -1045,32 +1065,60 @@ class TelegramController extends Controller
         if (isset($meetingRoomUserData["users"]["duplicate"]) && $meetingRoomUserData["users"]["duplicate"]) {
             foreach ($meetingRoomUserData["users"]["duplicate"] as $id => $memberDuplicate) {
 
-                $tgUsers = $this->tgDb->getTgUsers(["name" => $memberDuplicate["name"]]);
                 $keyboard = [];
+                $bitrixUsers = $this->bitrix24->getUsers(["name" => $memberDuplicate["name"]]);
 
-                foreach ($tgUsers as $tgUser) {
-                    // попадаем сюда по коллбеку после выбора кнопки пользователем
-                    if (isset($data) && $data &&
-                        $data["event"]["members"] == "duplicate" &&
-                        $data["data"]["chatId"] == $tgUser->getChatId()) {
+                if ($bitrixUsers) {
+                    foreach ($bitrixUsers as $bitrixUser) {
+                        // попадаем сюда по коллбеку после выбора кнопки пользователем
+                        if (isset($data) && $data && $data["event"]["members"] == "duplicate") {
+                            if (isset($data["data"]["ready"]) && $data["data"]["ready"] == "no") {
+                                $meetingRoomUser->setEventMembers('');
+                                $this->tgDb->insert($meetingRoomUser);
 
-                        $meetingRoomUserData["users"]["found"][] = $this->membersFormat(
-                            $tgUser->getChatId(),
-                            $tgUser->getName(),
-                            $tgUser->getPhone(),
-                            $tgUser->getEmail()
-                        );
-                        unset($meetingRoomUserData["users"]["duplicate"][$id]);
-                        unset($data);
-                        $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
-                        $this->tgDb->insert($meetingRoomUser);
-                        break;
+                                $text = $this->translate("meeting_room.event_members.cancel_info");
+                                $text .= $this->translate("meeting_room.event_members.info", ["%noCommandList%" => $this->noCommandList(null, true)]);
+
+                                $this->tgBot->editMessageText(
+                                    $text,
+                                    $this->tgRequest->getChatId(),
+                                    $messageId,
+                                    null,
+                                    "Markdown"
+                                );
+
+                                return true;
+                            }
+
+                            if ($data["data"]["bitrix_id"] == $bitrixUser->getId()) {
+                                $meetingRoomUserData["users"]["found"][] = $this->membersFormat($bitrixUser);
+                            } else {
+                                $meetingRoomUserData["users"]["not_found"][] = [
+                                    "name" => $bitrixUser->getName()
+                                ];
+                            }
+
+                            unset($meetingRoomUserData["users"]["duplicate"][$id]);
+                            unset($data);
+                            $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                            $this->tgDb->insert($meetingRoomUser);
+
+                            break;
+                        }
+
+                        $userData = array_filter([$bitrixUser->getName(), $bitrixUser->getFirstPhone(), $bitrixUser->getEmail()]);
+                        $text = implode(", ", $userData);
+                        $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => $bitrixUser->getId()]]);
+                        $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
                     }
 
-                    $text = $this->translate("keyboard.duplicate_user", ["%name%" => $tgUser->getName(), "%phone%" => $tgUser->getPhone(), "%email%" => $tgUser->getEmail()]);
-                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["chatId" => $tgUser->getChatId()]]);
-                    $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
+
+                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none"]]);
+                    $keyboard[][] = $this->tgBot->inlineKeyboardButton("Нет в списке!", $callback);
+                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none", "ready" => "no"]]);
+                    $keyboard[][] = $this->tgBot->inlineKeyboardButton("Назад", $callback);
                 }
+
 
                 $this->tgDb->setCallbackQuery();
 
@@ -1081,8 +1129,10 @@ class TelegramController extends Controller
                     unset($meetingRoomUserData["users"]["duplicate"]);
                     $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
                     $this->tgDb->insert($meetingRoomUser);
+
                     break;
                 } elseif (!isset($meetingRoomUserData["users"]["duplicate"][$id])) {
+
                     continue;
                 }
                 $members = $this->membersList($meetingRoomUserData);
@@ -1098,7 +1148,6 @@ class TelegramController extends Controller
                 }
 
                 $this->tgBot->editMessageText(
-//                    "{$text}\nУточните, какого именно участника *{$memberDuplicate["name"]}* вы имели ввиду.\n",
                     "{$text}\n{$this->translate("meeting_room.event_members.form.specify_duplicate", ["%membersDuplicateName%" => $memberDuplicate["name"]])}",
                     $this->tgRequest->getChatId(),
                     $messageId,
@@ -1107,6 +1156,7 @@ class TelegramController extends Controller
                     false,
                     $this->tgBot->inlineKeyboardMarkup($keyboard)
                 );
+
                 return true;
             }
         }
@@ -1147,6 +1197,7 @@ class TelegramController extends Controller
                         null,
                         "Markdown"
                     );
+
                     return true;
                 }
             } else {
@@ -1212,6 +1263,7 @@ class TelegramController extends Controller
                         null,
                         "Markdown"
                     );
+
                     return true;
                 }
             }
@@ -1241,6 +1293,7 @@ class TelegramController extends Controller
                 false,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
+
             return true;
         }
 
@@ -1266,31 +1319,58 @@ class TelegramController extends Controller
             }
 
             if ($members) {
-                $tgUsers = $this->tgDb->getTgUsers(["name" => $members]);
+                $bitrixUsers = $this->bitrix24->getUsers(["name" => $members]);
 
-                $membersFound = [];
-                foreach ($tgUsers as $tgUser) {
-                    $membersFound[] = $tgUser->getName();
+                $membersListFound = [];
+                foreach ($bitrixUsers as $bitrixUser) {
+                    $membersListFound[] = $bitrixUser->getName();
+                    foreach ($members as $id => $member) {
+                        $lastNameFirstName = "{$bitrixUser->getLastName()} {$bitrixUser->getFirstName()}";
+                        if ($member == $lastNameFirstName) {
+                            $members[$id] = $bitrixUser->getName();
+                        }
+                    }
                 }
 
-                $membersDuplicate = array_diff(array_count_values($membersFound), [1]);
-                $membersNotFound = array_diff($members, $membersFound);
+                $membersDuplicate = array_diff(array_count_values($membersListFound), [1]);
 
-                // Добавляем найденных пользователей в массив
-                foreach ($tgUsers as $tgUser) {
-                    if (!array_key_exists($tgUser->getName(), $membersDuplicate)) {
-                        $meetingRoomUserData["users"]["found"][] = $this->membersFormat(
-                            $tgUser->getChatId(),
-                            $tgUser->getName(),
-                            $tgUser->getPhone(),
-                            $tgUser->getEmail()
-                        );
+                $resultDuplicate = [];
+                $membersListDuplicate = [];
+                $overDuplicate = [];
+                foreach ($membersDuplicate as $memberDuplicate => $count) {
+                    $memberCount = 0;
+                    foreach ($members as $key => $member) {
+                        if ($member == $memberDuplicate) {
+                            if ($memberCount++ < $count) {
+                                $resultDuplicate[] = [
+                                    "name" => $memberDuplicate,
+                                    "count" => $count
+                                ];
+
+                                $membersListDuplicate[] = $memberDuplicate;
+
+                                unset($members[$key]);
+                            } else {
+                                $overDuplicate[] = $memberDuplicate;
+                            }
+                        }
+                    }
+                }
+
+                $membersFound = array_diff($members, $membersListDuplicate);
+                $membersNotFound = array_merge(array_diff($members, $membersListFound), $overDuplicate);
+
+                // Добавляем найденных пользователей в массив, исключая дубликатов
+                foreach ($bitrixUsers as $bitrixUser) {
+                    if (array_search($bitrixUser->getName(), $membersFound) !== false &&
+                        array_search($bitrixUser->getName(), $membersListDuplicate) === false) {
+                        $meetingRoomUserData["users"]["found"][] = $this->membersFormat($bitrixUser);
                     }
                 }
 
                 // Добавляем дубликатов и неизвестных
-                foreach ($membersDuplicate as $memberDuplicate => $count) {
-                    $meetingRoomUserData["users"]["duplicate"][] = ["name" => $memberDuplicate, "count" => $count];
+                foreach ($resultDuplicate as $memberDuplicate) {
+                    $meetingRoomUserData["users"]["duplicate"][] = ["name" => $memberDuplicate["name"], "count" => $memberDuplicate["count"]];
                 }
 
                 foreach ($membersNotFound as $memberNotFound) {
@@ -1300,25 +1380,24 @@ class TelegramController extends Controller
 
             // Добавляем организатора (себя)
             $organizer = $this->tgDb->getTgUser();
+            $bitrixUser = $this->bitrix24->getUsers(["id" => $organizer->getBitrixId()]);
 
-            $meetingRoomUserData["users"]["organizer"][] = $this->membersFormat(
-                $organizer->getChatId(),
-                $organizer->getName(),
-                $organizer->getPhone(),
-                $organizer->getEmail()
-            );
+            if ($bitrixUser) {
+                $bitrixUser = $bitrixUser[0];
+                $meetingRoomUserData["users"]["organizer"][] = $this->membersFormat($bitrixUser);
 
-            $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
-            $this->tgDb->insert($meetingRoomUser);
+                $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                $this->tgDb->insert($meetingRoomUser);
 
-            $this->tgBot->sendMessage(
-                $this->tgRequest->getChatId(),
-                $this->translate("meeting_room.event_members.form.head"),
-                "Markdown"
-            );
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $this->translate("meeting_room.event_members.form.head"),
+                    "Markdown"
+                );
 
-            // для редактирование будущего сообщения, единожды
-            $preMessage = 1;
+                // для редактирование будущего сообщения, единожды
+                $preMessage = 1;
+            }
         }
 
         // Определяем заранее messageId для редактирования сообщений
@@ -1368,10 +1447,6 @@ class TelegramController extends Controller
         return $text;
     }
 
-    /**
-     * @var $meetingRoom MeetingRoom
-     * @param bool $nextMessage
-     */
     public function meetingRoomConfirm($data = null, $nextMessage = false)
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
@@ -1438,8 +1513,11 @@ class TelegramController extends Controller
 
                 if ($meetingRoomUser->getEventId() && $meetingRoomUser->getStatus() == "edit") {
                     $tgUser = $this->tgDb->getTgUser();
-                    if ($tgUser) {
-                        $filter = ["eventIdShort" => $meetingRoomUser->getEventId(), "attendees" => $tgUser->getEmail()];
+                    $bitrixUser = $this->bitrix24->getUsers(["id" => $tgUser->getBitrixId()]);
+
+                    if ($bitrixUser) {
+                        $bitrixUser = $bitrixUser[0];
+                        $filter = ["eventIdShort" => $meetingRoomUser->getEventId(), "attendees" => $bitrixUser->getEmail()];
                         $event = $this->googleCalendar->getList($filter);
 
                         if ($event["calendarName"] == $meetingRoomName) {
@@ -1474,7 +1552,7 @@ class TelegramController extends Controller
                         $attendees
                     );
                 }
-                $this->tgDb->getMeetingRoomUser();
+                $this->tgDb->getMeetingRoomUser(true);
             } elseif ($data["data"]["ready"] == "no") {
                 $text .= "\n{$this->translate("meeting_room.confirm.data_cancel")}";
                 $keyboard = null;
@@ -1496,11 +1574,13 @@ class TelegramController extends Controller
     public function userMeetingRoomList()
     {
         $tgUser = $this->tgDb->getTgUser();
+        $bitrixUser = $this->bitrix24->getUsers(["id" => $tgUser->getBitrixId()]);
 
-        if ($tgUser) {
+        if ($bitrixUser) {
+            $bitrixUser = $bitrixUser[0];
             $dateToday = date("d.m.Y", strtotime("today"));
 
-            $filter = ["startDateTime" => $dateToday, "attendees" => $tgUser->getEmail()];
+            $filter = ["startDateTime" => $dateToday, "attendees" => $bitrixUser->getEmail()];
             $eventListCurDay = $this->googleCalendar->getList($filter);
             if (!$eventListCurDay) {
                 return;
@@ -1516,7 +1596,7 @@ class TelegramController extends Controller
                     foreach ($calendar["listEvents"] as $event) {
                         $date = (new \DateTime($event["dateTimeStart"]))->format("d.m.Y");
                         if ($date != $dateTemp) {
-                            $text .= "\n\u{1F4C6} *{$date}*\n";
+                            $text .= $this->translate("event_list.date", ["%date%" => $date]);
                         }
                         $timeStart = (new \DateTime($event["dateTimeStart"]))->format("H:i");
                         $timeEnd = (new \DateTime($event["dateTimeEnd"]))->format("H:i");
@@ -1566,8 +1646,10 @@ class TelegramController extends Controller
     public function getEventArgs()
     {
         $args = substr($this->tgRequest->getText(), strpos($this->tgRequest->getText(), "_") + 1);
-        if ($args)
+        if ($args) {
             return $args;
+        }
+
         return null;
     }
 
@@ -1593,14 +1675,17 @@ class TelegramController extends Controller
     {
         $args = $this->getEventArgs();
 
-        if (isset($data["data"]["args"]))
+        if (isset($data["data"]["args"])) {
             $args = $data["data"]["args"];
+        }
 
         $tgUser = $this->tgDb->getTgUser();
+        $bitrixUser = $this->bitrix24->getUsers(["id" => $tgUser->getBitrixId()]);
 
-        if ($tgUser) {
+        if ($bitrixUser) {
+            $bitrixUser = $bitrixUser[0];
 
-            $filter = ["eventIdShort" => $args, "attendees" => $tgUser->getEmail()];
+            $filter = ["eventIdShort" => $args, "attendees" => $bitrixUser->getEmail()];
             $event = $this->googleCalendar->getList($filter);
 
             if (isset($event["eventId"])) {
@@ -1673,10 +1758,12 @@ class TelegramController extends Controller
             }
 
             $tgUser = $this->tgDb->getTgUser();
+            $bitrixUser = $this->bitrix24->getUsers(["id" => $tgUser->getBitrixId()]);
 
-            if ($tgUser) {
+            if ($bitrixUser) {
+                $bitrixUser = $bitrixUser[0];
 
-                $filter = ["eventIdShort" => $args, "attendees" => $tgUser->getEmail()];
+                $filter = ["eventIdShort" => $args, "attendees" => $bitrixUser->getEmail()];
                 $event = $this->googleCalendar->getList($filter);
 
                 if (isset($event["eventId"])) {

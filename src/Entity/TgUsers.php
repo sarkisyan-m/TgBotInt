@@ -22,24 +22,9 @@ class TgUsers
     private $chat_id;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="integer", nullable=true)
      */
-    private $name;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
-    private $phone;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
-    private $email;
-
-    /**
-     * @ORM\Column(type="boolean")
-     */
-    private $active;
+    private $bitrix_id;
 
     public function getId(): ?int
     {
@@ -58,50 +43,14 @@ class TgUsers
         return $this;
     }
 
-    public function getName(): ?string
+    public function getBitrixId(): ?int
     {
-        return $this->name;
+        return $this->bitrix_id;
     }
 
-    public function setName(string $name): self
+    public function setBitrixId(int $bitrix_id): self
     {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    public function getPhone(): ?string
-    {
-        return $this->phone;
-    }
-
-    public function setPhone(?string $phone): self
-    {
-        $this->phone = $phone;
-
-        return $this;
-    }
-
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(?string $email): self
-    {
-        $this->email = $email;
-
-        return $this;
-    }
-
-    public function getActive(): ?bool
-    {
-        return $this->active;
-    }
-
-    public function setActive(bool $active): self
-    {
-        $this->active = $active;
+        $this->bitrix_id = $bitrix_id;
 
         return $this;
     }

@@ -46,6 +46,25 @@ class TelegramDb
         $this->entityManager->flush();
     }
 
+    public function userDelete()
+    {
+        $this->delete($this->getTgUser());
+    }
+    public function userRegistration($bitrixId)
+    {
+        $tgUser = new TgUsers;
+
+        $tgUser->setChatId($this->tgRequest->getChatId());
+        $tgUser->setBitrixId($bitrixId);
+        $this->insert($tgUser);
+
+        if ($tgUser->getId()) {
+            return $tgUser->getId();
+        }
+
+        return null;
+    }
+
     public function prepareCallbackQuery($data)
     {
         $uuid = Uuid::uuid4()->toString();
@@ -111,40 +130,6 @@ class TelegramDb
         return null;
     }
 
-    public function isActiveTgUser($bitrixUsers)
-    {
-        $repository = $this->entityManager->getRepository(TgUsers::class);
-        $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
-
-        if ($tgUser) {
-            $tgUser = $tgUser[0];
-
-            foreach ($bitrixUsers as $bitrixUser) {
-                $userName = "{$bitrixUser["NAME"]} {$bitrixUser["LAST_NAME"]}";
-                if ($tgUser->getName() == $userName &&
-                    $tgUser->getEmail() == $bitrixUser["EMAIL"] &&
-                    $tgUser->getPhone() == $bitrixUser["PERSONAL_MOBILE"]) {
-
-                    if ($bitrixUser["ACTIVE"] == true) {
-                        if (!$tgUser->getActive()) {
-                            $tgUser->setActive(true);
-                            $this->insert($tgUser);
-                        }
-
-                        return true;
-                    } else {
-                        $tgUser->setActive(false);
-                        $this->insert($tgUser);
-
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
     /**
      * @param array $params
      * @return TgUsers[]|\App\Entity\Verification[]|null|object[]
@@ -193,20 +178,6 @@ class TelegramDb
 
         return false;
     }
-
-//    public function getMeetingRoom($params)
-//    {
-//        $repository = $this->entityManager->getRepository(MeetingRoom::class);
-//        $meetingRoom = $repository->findBy($params);
-//
-//        if ($meetingRoom) {
-//            $meetingRoom = $meetingRoom[0];
-//
-//            return $meetingRoom;
-//        }
-//
-//        return null;
-//    }
 
     public function getMeetingRoomUser($refresh = false)
     {
