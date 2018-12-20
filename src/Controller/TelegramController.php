@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Verification;
 use App\Model\BitrixUser;
 use App\Service\Bitrix24API;
 use App\Service\Calendar;
@@ -99,6 +100,7 @@ class TelegramController extends Controller
             "/d_" => "",
             "/start" => ""
         ];
+
 
         // Если это известный нам ответ от телеграма
         if ($this->isTg && $this->tgRequest->getRequestType()) {
@@ -1047,14 +1049,15 @@ class TelegramController extends Controller
         return $result;
     }
 
-
     public function membersFormat(BitrixUser $bitrixUser)
     {
+        $email = str_replace("_", "_\__", $bitrixUser->getEmail());
+
         return [
             "bitrix_id" => $bitrixUser->getId(),
             "name" => $bitrixUser->getName(),
             "phone" => $bitrixUser->getFirstPhone(),
-            "email" => $bitrixUser->getEmail()
+            "email" => $email
         ];
     }
 
@@ -1066,7 +1069,7 @@ class TelegramController extends Controller
             foreach ($meetingRoomUserData["users"]["duplicate"] as $id => $memberDuplicate) {
 
                 $keyboard = [];
-                $bitrixUsers = $this->bitrix24->getUsers(["name" => $memberDuplicate["name"]]);
+                $bitrixUsers = $this->bitrix24->getUsers(["name" => $memberDuplicate["name"], "active" => true]);
 
                 if ($bitrixUsers) {
                     foreach ($bitrixUsers as $bitrixUser) {
@@ -1091,11 +1094,28 @@ class TelegramController extends Controller
                             }
 
                             if ($data["data"]["bitrix_id"] == $bitrixUser->getId()) {
+                                if (isset($meetingRoomUserData["users"]["found"])) {
+                                    foreach ($meetingRoomUserData["users"]["found"] as $data) {
+
+                                        if ($data["bitrix_id"] == $bitrixUser->getId()) {
+                                            unset($meetingRoomUserData["users"]["duplicate"][$id]);
+                                            unset($data);
+                                            $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                                            $this->tgDb->insert($meetingRoomUser);
+
+                                            break 2;
+                                        }
+                                    }
+                                }
+
                                 $meetingRoomUserData["users"]["found"][] = $this->membersFormat($bitrixUser);
-                            } else {
+
+                            } elseif ($data["data"]["bitrix_id"] == "none") {
                                 $meetingRoomUserData["users"]["not_found"][] = [
-                                    "name" => $bitrixUser->getName()
+                                    "name" => $memberDuplicate["name"]
                                 ];
+                            } else {
+                                continue;
                             }
 
                             unset($meetingRoomUserData["users"]["duplicate"][$id]);
@@ -1114,11 +1134,10 @@ class TelegramController extends Controller
 
 
                     $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none"]]);
-                    $keyboard[][] = $this->tgBot->inlineKeyboardButton("Нет в списке!", $callback);
+                    $keyboard[][] = $this->tgBot->inlineKeyboardButton("Нет в списке! Оставить как {$memberDuplicate["name"]}", $callback);
                     $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none", "ready" => "no"]]);
                     $keyboard[][] = $this->tgBot->inlineKeyboardButton("Назад", $callback);
                 }
-
 
                 $this->tgDb->setCallbackQuery();
 
@@ -1284,6 +1303,7 @@ class TelegramController extends Controller
             $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "found"], "data" => ["ready" => "no"]]);
             $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate("keyboard.back"), $callback);
             $this->tgDb->setCallbackQuery();
+
             $this->tgBot->editMessageText(
                 $text,
                 $this->tgRequest->getChatId(),
@@ -1315,67 +1335,102 @@ class TelegramController extends Controller
                 $meetingRoomUserData["users"]["none"] = "none";
             } else {
                 $members = $this->tgRequest->getText();
+                $members = mb_convert_case(mb_strtolower($members), MB_CASE_TITLE, "UTF-8");
                 $members = explode(", ", $members);
             }
 
             if ($members) {
-                $bitrixUsers = $this->bitrix24->getUsers(["name" => $members]);
 
-                $membersListFound = [];
-                foreach ($bitrixUsers as $bitrixUser) {
-                    $membersListFound[] = $bitrixUser->getName();
-                    foreach ($members as $id => $member) {
-                        $lastNameFirstName = "{$bitrixUser->getLastName()} {$bitrixUser->getFirstName()}";
-                        if ($member == $lastNameFirstName) {
-                            $members[$id] = $bitrixUser->getName();
-                        }
-                    }
-                }
-
-                $membersDuplicate = array_diff(array_count_values($membersListFound), [1]);
-
-                $resultDuplicate = [];
-                $membersListDuplicate = [];
-                $overDuplicate = [];
-                foreach ($membersDuplicate as $memberDuplicate => $count) {
-                    $memberCount = 0;
-                    foreach ($members as $key => $member) {
-                        if ($member == $memberDuplicate) {
-                            if ($memberCount++ < $count) {
-                                $resultDuplicate[] = [
-                                    "name" => $memberDuplicate,
-                                    "count" => $count
-                                ];
-
-                                $membersListDuplicate[] = $memberDuplicate;
-
-                                unset($members[$key]);
+                /**
+                 * @var $bitrixUser BitrixUser
+                 */
+                $membersDuplicate = [];
+                $membersNotFound = [];
+                foreach ($members as $member) {
+                    $bitrixUser = $this->bitrix24->getUsers(["name" => $member, "active" => true]);
+                    if ($bitrixUser) {
+                        if (count($bitrixUser) > 1) {
+                            $membersDuplicate[] = ["data" => $bitrixUser, "name" => $member, "count" => count($bitrixUser)];
+                        } elseif (count($bitrixUser) == 1) {
+                            if ($member == $bitrixUser[0]->getName()) {
+                                $meetingRoomUserData["users"]["found"][] = $this->membersFormat($bitrixUser[0]);
                             } else {
-                                $overDuplicate[] = $memberDuplicate;
+                                $membersDuplicate[] = ["data" => $bitrixUser, "name" => $member, "count" => count($bitrixUser)];
                             }
                         }
+                    } else {
+                        $membersNotFound[] = $member;
                     }
                 }
 
-                $membersFound = array_diff($members, $membersListDuplicate);
-                $membersNotFound = array_merge(array_diff($members, $membersListFound), $overDuplicate);
-
-                // Добавляем найденных пользователей в массив, исключая дубликатов
-                foreach ($bitrixUsers as $bitrixUser) {
-                    if (array_search($bitrixUser->getName(), $membersFound) !== false &&
-                        array_search($bitrixUser->getName(), $membersListDuplicate) === false) {
-                        $meetingRoomUserData["users"]["found"][] = $this->membersFormat($bitrixUser);
-                    }
-                }
-
-                // Добавляем дубликатов и неизвестных
-                foreach ($resultDuplicate as $memberDuplicate) {
+                foreach ($membersDuplicate as $key => $memberDuplicate) {
                     $meetingRoomUserData["users"]["duplicate"][] = ["name" => $memberDuplicate["name"], "count" => $memberDuplicate["count"]];
                 }
 
                 foreach ($membersNotFound as $memberNotFound) {
                     $meetingRoomUserData["users"]["not_found"][] = ["name" => $memberNotFound];
                 }
+
+
+//                $bitrixUsers = $this->bitrix24->getUsers(["name" => $members, "active" => true]);
+//
+//                $membersListFound = [];
+//                foreach ($bitrixUsers as $bitrixUser) {
+//                    $membersListFound[] = $bitrixUser->getName();
+//                    foreach ($members as $id => $member) {
+//                        // Если имя и фамилия написаны наоборот - исправляем!
+//                        $lastNameFirstName = "{$bitrixUser->getLastName()} {$bitrixUser->getFirstName()}";
+//                        if ($member == $lastNameFirstName) {
+//                            $members[$id] = $bitrixUser->getName();
+//                        }
+//                    }
+//                }
+//
+//                // Сколько совпадений должно быть, чтобы включить функцию. Сейчас стоит [0]
+//                $membersDuplicate = array_diff(array_count_values($membersListFound), [0]);
+//
+//                $resultDuplicate = [];
+//                $membersListDuplicate = [];
+//                $overDuplicate = [];
+//                foreach ($membersDuplicate as $memberDuplicate => $count) {
+//                    $memberCount = 0;
+//                    foreach ($members as $key => $member) {
+//                        if ($member == $memberDuplicate) {
+//                            if ($memberCount++ < $count) {
+//                                $resultDuplicate[] = [
+//                                    "name" => $memberDuplicate,
+//                                    "count" => $count
+//                                ];
+//
+//                                $membersListDuplicate[] = $memberDuplicate;
+//
+//                                unset($members[$key]);
+//                            } else {
+//                                $overDuplicate[] = $memberDuplicate;
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                $membersFound = array_diff($members, $membersListDuplicate);
+//                $membersNotFound = array_merge(array_diff($members, $membersListFound), $overDuplicate);
+//
+//                // Добавляем найденных пользователей в массив, исключая дубликатов
+//                foreach ($bitrixUsers as $bitrixUser) {
+//                    if (array_search($bitrixUser->getName(), $membersFound) !== false &&
+//                        array_search($bitrixUser->getName(), $membersListDuplicate) === false) {
+//                        $meetingRoomUserData["users"]["found"][] = $this->membersFormat($bitrixUser);
+//                    }
+//                }
+//
+//                // Добавляем дубликатов и неизвестных
+//                foreach ($resultDuplicate as $memberDuplicate) {
+//                    $meetingRoomUserData["users"]["duplicate"][] = ["name" => $memberDuplicate["name"], "count" => $memberDuplicate["count"]];
+//                }
+//
+//                foreach ($membersNotFound as $memberNotFound) {
+//                    $meetingRoomUserData["users"]["not_found"][] = ["name" => $memberNotFound];
+//                }
             }
 
             // Добавляем организатора (себя)

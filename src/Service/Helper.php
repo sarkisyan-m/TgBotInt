@@ -49,4 +49,13 @@ class Helper
 
         return (int)"{$sing}{$dateDiff->days}";
     }
+
+    public static function getDateDiffDaysDateTime(\DateTimeInterface $dateStart, \DateTimeInterface $dateEnd)
+    {
+        $dateDiff = $dateStart->diff($dateEnd);
+        $sing = $dateDiff->format('%R');
+
+        return (int)"{$sing}{$dateDiff->d}";
+//        return $dateDiff;
+    }
 }
