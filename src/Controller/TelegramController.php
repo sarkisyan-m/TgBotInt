@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Verification;
 use App\Model\BitrixUser;
 use App\Service\Bitrix24API;
 use App\Service\Calendar;
@@ -95,19 +94,17 @@ class TelegramController extends Controller
             "/meetingroomlist" => $this->translate('bot_command.meeting_room_list'),
             "/eventlist" => $this->translate('bot_command.event_list'),
             "/help" => $this->translate('bot_command.help'),
+            "/helpmore" => "",
             "/exit" => $this->translate('bot_command.exit'),
             "/e_" => "",
             "/d_" => "",
             "/start" => ""
         ];
 
-
         // Если это известный нам ответ от телеграма
         if ($this->isTg && $this->tgRequest->getRequestType()) {
             // Если пользователь найден, то не предлагаем ему регистрацию.
             // После определения типа ответа отправляем в соответствующий путь
-
-//            $this->tgBot->sendMessage($this->tgRequest->getChatId(), 123);
 
             $tgUser = $this->tgDb->getTgUser();
 
@@ -201,6 +198,23 @@ class TelegramController extends Controller
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
             $this->translate('command.help'),
+            "Markdown",
+            false,
+            false,
+            null,
+            $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
+        );
+    }
+
+    public function commandHelpMore()
+    {
+        $this->tgBot->sendMessage(
+            $this->tgRequest->getChatId(),
+            $this->translate('command.helpmore', [
+                "%cacheTimeBitrix24%" => ($this->container->getParameter('cache_time_bitrix24') / (60 * 60)),
+                "%cacheTimeGoogleCalendar%" => ($this->container->getParameter('cache_time_google_calendar') / 60),
+                "%timeBeforeEvent%" => $this->container->getParameter('notification_time')
+            ]),
             "Markdown",
             false,
             false,
@@ -324,6 +338,7 @@ class TelegramController extends Controller
         foreach ($buttons as $button) {
             $result[][] = $button;
         }
+
         return $result;
     }
 
@@ -359,6 +374,12 @@ class TelegramController extends Controller
             if ($this->isBotCommand("/help") ||
                 $this->isBotCommand("/start")) {
                 $this->commandHelp();
+
+                return true;
+            }
+
+            if ($this->isBotCommand("/helpmore")) {
+                $this->commandHelpMore();
 
                 return true;
             }
@@ -1126,17 +1147,24 @@ class TelegramController extends Controller
                             break;
                         }
 
-                        $userData = array_filter([$bitrixUser->getName(), $bitrixUser->getFirstPhone(), $bitrixUser->getEmail()]);
-                        $text = implode(", ", $userData);
+                        $contact = array_filter([$bitrixUser->getFirstPhone(), $bitrixUser->getEmail()]);
+                        if (!$contact) {
+                            $contact[] = "id#" . $bitrixUser->getId();
+                        }
+
+                        $contact = implode(", ", $contact);
+                        $text = "{$bitrixUser->getName()} ({$contact})";
                         $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => $bitrixUser->getId()]]);
                         $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
                     }
 
 
-                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none"]]);
-                    $keyboard[][] = $this->tgBot->inlineKeyboardButton("Нет в списке! Оставить как {$memberDuplicate["name"]}", $callback);
-                    $callback = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none", "ready" => "no"]]);
-                    $keyboard[][] = $this->tgBot->inlineKeyboardButton("Назад", $callback);
+                    $callback1 = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none"]]);
+                    $callback2 = $this->tgDb->prepareCallbackQuery(["event" => ["members" => "duplicate"], "data" => ["bitrix_id" => "none", "ready" => "no"]]);
+                    $keyboard[] = [
+                        $this->tgBot->inlineKeyboardButton("Нет в списке!", $callback1),
+                        $this->tgBot->inlineKeyboardButton("Назад", $callback2)
+                    ];
                 }
 
                 $this->tgDb->setCallbackQuery();
@@ -1352,7 +1380,7 @@ class TelegramController extends Controller
                         if (count($bitrixUser) > 1) {
                             $membersDuplicate[] = ["data" => $bitrixUser, "name" => $member, "count" => count($bitrixUser)];
                         } elseif (count($bitrixUser) == 1) {
-                            if ($member == $bitrixUser[0]->getName()) {
+                            if ($member == $bitrixUser[0]->getName() || $member == "{$bitrixUser[0]->getLastName()} {$bitrixUser[0]->getFirstName()}") {
                                 $meetingRoomUserData["users"]["found"][] = $this->membersFormat($bitrixUser[0]);
                             } else {
                                 $membersDuplicate[] = ["data" => $bitrixUser, "name" => $member, "count" => count($bitrixUser)];

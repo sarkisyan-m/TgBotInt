@@ -167,7 +167,7 @@ class Bitrix24API
 
         $user = [
             "id" => 1001,
-            "email" => "test1@example.com",
+            "email" => null,
             "name" => "Иван Иванов",
             "first_name" => "Иван",
             "last_name" => "Иванов",
