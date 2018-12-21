@@ -1,5 +1,5 @@
-# Телеграм-бот для бронирования переговорок
-
+Телеграм-бот для бронирования переговорок
+======
 
 - Общие сведения
   - [Особенности](#Особенности)
@@ -7,26 +7,28 @@
 - Установка
   - [Рекомендуемые требования](#Рекомендуемые-требования)
   - [Конфигурация](#Конфигурация)
-  - [Telegram Webhook](#Telegram&nbsp;Webhook)
-  - [Bitrix24 Webhook](#Bitrix24&nbsp;Webhook)
-  - [Google API](#Google&nbsp;API)
+  - [Telegram Webhook](#Telegram-Webhook)
+  - [Bitrix24 Webhook](#Bitrix24-Webhook)
+  - [Google API](#Google-API)
 
 - Каркасы для работы с API
   - [\Service\TelegramAPI](#\Service\TelegramAPI)
   - [\Service\GoogleCalendarAPI](#\Service\GoogleCalendarAPI)
   - [\Service\Bitrix24API](#\Service\Bitrix24API)
 
-# Общие сведения
+Общие сведения
+======
 
-
-## Особенности
+Особенности
+------
 
 - **Google Calendar API v3** и **Google Service Account** для работы с событиями. 
 - **Bitrix24 Webhook** для получения данных о сотрудинках.
 - **Telegram API** для работы с ботом.
 - **Собственные каркасы** для работы с API
 
-## Возможности
+Возможности
+------
 
 - Регистрация
 - Бронирование переговорок
@@ -34,17 +36,18 @@
 - Поиск участников
 - Удаление персональных данных
 
-#Подготовка к установке
-
+Подготовка к установке
+======
 
 Рекомендуемые требования
-------------------------
+------
 
 - php 7.1
 - postgresql 9.3
 - Symfony 4
 
-##Конфигурация
+Конфигурация
+------
 
 **.env**
 - Доступ к БД
@@ -60,7 +63,9 @@
 - Время кеширование данных Google и Bitrix
 - Анти-флуд: сколько сообщений в минуту можно отправлять одному пользователю
 
-##Установка
+Установка
+------
+
 ```bash
 php7.1 composer.phar install
 yarn install
@@ -69,7 +74,9 @@ php7.1 bin/console doctrine:migrations:diff
 php7.1 bin/console doctrine:migrations:migrate
 ```
 
-##&nbsp;Telegram&nbsp;Webhook
+Telegram Webhook
+------
+
 Сайт обязательно должен иметь ssl-сертификат. Для самоподписанных сертификатов необходимо задать дополнительные
 параметры в методе setWebHook.
 ```php
@@ -86,16 +93,22 @@ public function tgWebhook(Request $request)
 ...
 ```
 
-##Bitrix24&nbsp;Webhook
+Bitrix24 Webhook
+------
+
 Получить доступ к вебхуку может любой пользователь, который имеет права на просмотр данных сотрудников.
 
-##Google&nbsp;API
+Google API
+------
+
 Создаем сервис-аккаунт, скачиваем json и добавляем в конфиг. Для того, чтобы сервис-аккаунт видел календари, необходимо
 добавить его почту и выдать необходимые права (минимум на изменение событий).
 
-#Каркасы для работы с API
+Каркасы для работы с API
+======
 
-##\Service\TelegramAPI
+\Service\TelegramAPI
+------
 
 ```php
 <?php
@@ -133,7 +146,8 @@ public function tgWebhook(Request $request)
 ...
 ```
 
-##\Service\GoogleCalendarAPI
+\Service\GoogleCalendarAPI
+------
 
 ```php
 <?php
@@ -175,7 +189,8 @@ public function tgWebhook(Request $request)
 ...
 ```
 
-##\Service\Bitrix24API
+\Service\Bitrix24API
+------
 
 ```php
 <?php
