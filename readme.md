@@ -12,9 +12,9 @@
   - [Google API](#Google-API)
 
 - Каркасы для работы с API
-  - [\Service\TelegramAPI](#\Service\TelegramAPI)
-  - [\Service\GoogleCalendarAPI](#\Service\GoogleCalendarAPI)
-  - [\Service\Bitrix24API](#\Service\Bitrix24API)
+  - [\Service\TelegramAPI](#Service-TelegramAPI)
+  - [\Service\GoogleCalendarAPI](#Service-GoogleCalendarAPI)
+  - [\Service\Bitrix24API](#Service-Bitrix24API)
 
 Общие сведения
 ======
@@ -107,7 +107,7 @@ Google API
 Каркасы для работы с API
 ======
 
-\Service\TelegramAPI
+Service-TelegramAPI
 ------
 
 ```php
@@ -146,7 +146,7 @@ public function tgWebhook(Request $request)
 ...
 ```
 
-\Service\GoogleCalendarAPI
+Service-GoogleCalendarAPI
 ------
 
 ```php
@@ -189,7 +189,7 @@ public function tgWebhook(Request $request)
 ...
 ```
 
-\Service\Bitrix24API
+Service-Bitrix24API
 ------
 
 ```php
