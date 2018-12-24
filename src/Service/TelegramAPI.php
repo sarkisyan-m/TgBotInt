@@ -2,26 +2,23 @@
 
 namespace App\Service;
 
-use App\Service\Helper as MethodsService;
-
 class TelegramAPI
 {
-    protected $tgBotApiUrl = 'https://api.telegram.org/bot';
+    protected $tgUrl;
     protected $tgToken;
     protected $proxy;
-    protected $methods;
 
     /**
      * TelegramAPI constructor.
+     * @param $tgUrl
      * @param $tgToken
      * @param array $proxy
      */
-    public function __construct($tgToken, array $proxy)
+    public function __construct($tgUrl, $tgToken, array $proxy)
     {
         $this->tgToken = $tgToken;
         $this->proxy = $proxy;
-        $this->tgBotApiUrl .= "{$this->tgToken}/";
-        $this->methods = new MethodsService;
+        $this->tgUrl = "{$tgUrl}{$this->tgToken}/";
     }
 
     /**
@@ -33,7 +30,7 @@ class TelegramAPI
     {
         $args = "?" . http_build_query($args);
 
-        $url = $this->tgBotApiUrl . $method . $args;
+        $url = $this->tgUrl . $method . $args;
         $ch = curl_init();
         $parameter = [
             CURLOPT_PROXY => $this->proxy[0],

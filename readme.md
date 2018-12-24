@@ -59,7 +59,7 @@
 **config/services.yaml**
 - Диапазон начала и конца рабочего дня
 - На сколько дней вперед можно бронировать
-- За сколько минут до начала события оповещать участинков
+- За сколько минут до начала события оповещать участников
 - Время кеширование данных Google и Bitrix
 - Анти-флуд: сколько сообщений в минуту можно отправлять одному пользователю
 
@@ -155,7 +155,6 @@ Service GoogleCalendarAPI
 ...
 public function tgWebhook(Request $request)
 {
-    // @param array|null $filter
     $filter = ["calendarName" => "Название календаря"];
     $this->googleCalendar->getList($filter);
     
@@ -199,7 +198,6 @@ Service Bitrix24API
 
 public function tgWebhook(Request $request)
 {
-    // @param array|string|null $filter
     $filter = ["id" => 1];
     $filter = ["name" => ["Иван Иванов", "Иван", "Иванов"]];
     $this->bitrix24->getUsers($filter);

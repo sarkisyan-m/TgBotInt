@@ -38,12 +38,12 @@ class MeetingRoom
     private $time;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="string", length=1024, nullable=true)
      */
     private $event_name;
 
     /**
-     * @ORM\Column(type="string", length=2048, nullable=true)
+     * @ORM\Column(type="string", length=4096, nullable=true)
      */
     private $event_members;
 

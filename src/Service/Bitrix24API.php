@@ -124,7 +124,8 @@ class Bitrix24API
 
 //            if ($name == "Михаил Саркисян") {
 //                $user["active"] = false;
-//            }
+//                $email = null;
+//             }
 
             $user = [
                 "id" => $user["id"],
@@ -296,8 +297,8 @@ class Bitrix24API
 
                     if ($filterKey == "id") {
                         if (is_array($filterValue)) {
-                            if (array_search($user->getId(), $filterValue) !== false) {
-                                $users[] = $user;
+                            if (($position = array_search($user->getId(), $filterValue)) !== false) {
+                                $users[(int)$position] = $user;
                             }
                         } else {
                             if ($user->getId() == $filterValue) {
@@ -312,12 +313,12 @@ class Bitrix24API
                         $fullName1 = "{$user->getFirstName()} {$user->getLastName()}";
                         $fullName2 = "{$user->getLastName()} {$user->getFirstName()}";
                         if (is_array($filterValue)) {
-                            if (array_search($fullName1, $filterValue) !== false ||
-                                array_search($fullName2, $filterValue) !== false ||
-                                array_search($user->getFirstName(), $filterValue) !== false ||
-                                array_search($user->getLastName(), $filterValue) !== false) {
+                            if (($position = array_search($fullName1, $filterValue)) !== false ||
+                                ($position = array_search($fullName2, $filterValue)) !== false ||
+                                ($position = array_search($user->getFirstName(), $filterValue)) !== false ||
+                                ($position = array_search($user->getLastName(), $filterValue)) !== false) {
 
-                                $users[] = $user;
+                                $users[(int)$position] = $user;
                             }
                         } else {
                             if ($fullName1 == $filterValue ||
@@ -334,11 +335,11 @@ class Bitrix24API
 
                     if ($filterKey == "phone") {
                         if (is_array($filterValue)) {
-                            if (array_search($user->getPersonalMobile(), $filterValue) !== false ||
-                                array_search($user->getPersonalPhone(), $filterValue) !== false ||
-                                array_search($user->getWorkPhone(), $filterValue) !== false) {
+                            if (($position = array_search($user->getPersonalMobile(), $filterValue)) !== false ||
+                                ($position = array_search($user->getPersonalPhone(), $filterValue)) !== false ||
+                                ($position = array_search($user->getWorkPhone(), $filterValue)) !== false) {
 
-                                $users[] = $user;
+                                $users[(int)$position] = $user;
                             }
                         } else {
                             if ($user->getPersonalMobile() == $filterValue ||
@@ -354,9 +355,8 @@ class Bitrix24API
 
                     if ($filterKey == "email") {
                         if (is_array($filterValue)) {
-                            if (array_search($user->getEmail(), $filterValue) !== false) {
-
-                                $users[] = $user;
+                            if (($position = array_search($user->getEmail(), $filterValue)) !== false) {
+                                $users[(int)$position] = $user;
                             }
                         } else {
                             if ($user->getEmail() == $filterValue) {
@@ -369,6 +369,8 @@ class Bitrix24API
                     }
                 }
             }
+
+            ksort($users);
 
             return $users;
         }

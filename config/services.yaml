@@ -19,6 +19,7 @@ parameters:
 
     # telegram
     tg_token: '%env(TG_TOKEN)%'
+    tg_url: 'https://api.telegram.org/bot'
 
     # bitrix24
     bitrix24_api: '%env(BITRIX24_API)%'
@@ -39,6 +40,15 @@ parameters:
     # насколько дней вперед максимум можно забронировать
     date_range: 30
 
+    # meeting_room
+    # У гугла максимальная длина заголовка 1024, а описания (где хранятся списки участников) 16384
+    meeting_room_event_name_len: 512;
+
+    # 1 участник ~200 байт (1 участинк - 1 элемент массива со свойствами)
+    # организатор не входит в список, но учитывается вместе с остальными в базе
+    # (10 участников + 1 организатор) * ~200 байт = string 2200 байт необходимо для столбца в базе
+    meeting_room_event_members_limit: 10
+
     # Оповещение за хх мин. до начала события
     notification_time: 30
 
@@ -50,7 +60,8 @@ parameters:
 
     # анти-флуд
     # сообщений в минуту
-    anti_flood_allowed_messages_number: 30
+    # это касается сообщений больше 512 байт
+    anti_flood_allowed_messages_number: 19
 
 services:
     # default configuration for services in *this* file
@@ -75,11 +86,9 @@ services:
 
     # add more service definitions when explicit configuration is needed
 
-    cache.cache_type:
-        class: Symfony\Component\Cache\Adapter\SimpleCacheAdapter
-
     App\Service\TelegramAPI:
         arguments:
+            $tgUrl: '%tg_url%'
             $tgToken: '%env(TG_TOKEN)%'
             $proxy:
             - '%env(PROXY_NAME)%'
