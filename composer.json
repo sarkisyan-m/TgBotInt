@@ -8,7 +8,6 @@
         "ext-gd": "^7.1",
         "ext-iconv": "*",
         "ext-json": "^1.5",
-        "friendsofsymfony/user-bundle": "^2.1",
         "google/apiclient": "^2.2",
         "ramsey/uuid": "^2.9",
         "sensio/framework-extra-bundle": "^5.2",

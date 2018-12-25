@@ -50,9 +50,10 @@ class TelegramDb
     {
         $this->delete($this->getTgUser());
     }
+
     public function userRegistration($bitrixId)
     {
-        $tgUser = new TgUsers;
+        $tgUser = new TgUsers();
 
         $tgUser->setChatId($this->tgRequest->getChatId());
         $tgUser->setBitrixId($bitrixId);
@@ -70,7 +71,7 @@ class TelegramDb
         $uuid = Uuid::uuid4()->toString();
         $this->dataCallbackQuery[$uuid] = $data;
 
-        return ["uuid" => $uuid];
+        return ['uuid' => $uuid];
     }
 
     public function setCallbackQuery()
@@ -80,17 +81,17 @@ class TelegramDb
         }
 
         $repository = $this->entityManager->getRepository(CallbackQuery::class);
-        $callbackQuery = $repository->findBy(["tg_user" => $this->getTgUser()]);
+        $callbackQuery = $repository->findBy(['tg_user' => $this->getTgUser()]);
 
         if ($callbackQuery) {
             $callbackQuery = $callbackQuery[0];
             $callbackQuery->setData(json_encode($this->dataCallbackQuery));
-            $callbackQuery->setCreated(new \DateTime);
+            $callbackQuery->setCreated(new \DateTime());
         } else {
-            $callbackQuery = new CallbackQuery;
+            $callbackQuery = new CallbackQuery();
             $callbackQuery->setTgUser($this->getTgUser());
             $callbackQuery->setData(json_encode($this->dataCallbackQuery));
-            $callbackQuery->setCreated(new \DateTime);
+            $callbackQuery->setCreated(new \DateTime());
         }
 
         $this->insert($callbackQuery);
@@ -107,7 +108,7 @@ class TelegramDb
     public function getCallbackQuery()
     {
         $repository = $this->entityManager->getRepository(CallbackQuery::class);
-        $callbackQuery = $repository->findBy(["tg_user" => $this->getTgUser()]);
+        $callbackQuery = $repository->findBy(['tg_user' => $this->getTgUser()]);
 
         if ($callbackQuery) {
             $callbackQuery = $callbackQuery[0];
@@ -121,7 +122,7 @@ class TelegramDb
     public function getTgUser()
     {
         $repository = $this->entityManager->getRepository(TgUsers::class);
-        $tgUser = $repository->findBy(["chat_id" => $this->tgRequest->getChatId()]);
+        $tgUser = $repository->findBy(['chat_id' => $this->tgRequest->getChatId()]);
 
         if ($tgUser) {
             return $tgUser[0];
@@ -132,11 +133,12 @@ class TelegramDb
 
     /**
      * @param array $params
+     *
      * @return TgUsers[]|\App\Entity\Verification[]|null|object[]
      */
     public function getTgUsers(array $params)
     {
-        $params += ["active" => true];
+        $params += ['active' => true];
         $repository = $this->entityManager->getRepository(TgUsers::class);
         $tgUsers = $repository->findBy($params);
 
@@ -149,8 +151,8 @@ class TelegramDb
 
     public function getByDate(\Datetime $date)
     {
-        $from = new \DateTime($date->format("Y-m-d")." 00:00:00");
-        $to   = new \DateTime($date->format("Y-m-d")." 23:59:59");
+        $from = new \DateTime($date->format('Y-m-d').' 00:00:00');
+        $to = new \DateTime($date->format('Y-m-d').' 23:59:59');
 
         $qb = $this->entityManager->createQueryBuilder();
         $qb
@@ -165,6 +167,7 @@ class TelegramDb
 
     /**
      * @param $params
+     *
      * @return Verification[]|null|object[]
      */
     public function getHash($params)
@@ -198,10 +201,10 @@ class TelegramDb
     {
         $this->autoRemoveHash();
 
-        $hash = new Verification;
+        $hash = new Verification();
         $hash->setHash($hashVal);
         $hash->setDate($salt);
-        $hash->setCreated(new \DateTime);
+        $hash->setCreated(new \DateTime());
         $this->insert($hash);
 
         if ($hash) {
@@ -214,16 +217,16 @@ class TelegramDb
     public function getMeetingRoomUser($refresh = false)
     {
         $repository = $this->entityManager->getRepository(MeetingRoom::class);
-        $meetingRoomUser = $repository->findBy(["tg_user" => $this->getTgUser()]);
+        $meetingRoomUser = $repository->findBy(['tg_user' => $this->getTgUser()]);
 
         if (!$meetingRoomUser || $refresh) {
             if ($refresh && $meetingRoomUser) {
                 $this->delete($meetingRoomUser);
             }
 
-            $meetingRoomUser = new MeetingRoom;
+            $meetingRoomUser = new MeetingRoom();
             $meetingRoomUser->setTgUser($this->getTgUser());
-            $meetingRoomUser->setCreated(new \DateTime);
+            $meetingRoomUser->setCreated(new \DateTime());
             $this->insert($meetingRoomUser);
         } elseif ($meetingRoomUser) {
             $meetingRoomUser = $meetingRoomUser[0];
@@ -235,12 +238,12 @@ class TelegramDb
     public function getAntiFlood()
     {
         $repository = $this->entityManager->getRepository(AntiFlood::class);
-        $antiFlood = $repository->findBy(["tg_user" => $this->getTgUser()]);
+        $antiFlood = $repository->findBy(['tg_user' => $this->getTgUser()]);
 
         if ($antiFlood) {
             $antiFlood = $antiFlood[0];
         } else {
-            $antiFlood = new AntiFlood;
+            $antiFlood = new AntiFlood();
             $antiFlood->setDate(new \DateTime());
             $antiFlood->setMessages(0);
             $antiFlood->setTgUser($this->getTgUser());

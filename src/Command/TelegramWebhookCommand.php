@@ -19,7 +19,6 @@ class TelegramWebhookCommand extends Command
     {
         parent::__construct();
         $this->tgBot = $tgBot;
-
     }
 
     protected function configure()
@@ -36,33 +35,31 @@ class TelegramWebhookCommand extends Command
     protected function getWebhookInfo()
     {
         $getWebhookInfo = $this->tgBot->getWebhookInfo();
-        $getWebhookInfo = (array)$getWebhookInfo;
+        $getWebhookInfo = (array) $getWebhookInfo;
 
-        if (!$getWebhookInfo["ok"]) {
+        if (!$getWebhookInfo['ok']) {
             return null;
         }
 
-        $getWebhookInfo["result"] = (array)$getWebhookInfo["result"];
+        $getWebhookInfo['result'] = (array) $getWebhookInfo['result'];
 
         return $getWebhookInfo;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-
         $io = new SymfonyStyle($input, $output);
         $args = $input->getArgument('args');
 
         if ($input->getOption('set')) {
             if ($args) {
                 $setWebhook = $this->tgBot->setWebHook($args);
-                $setWebhook = (array)$setWebhook;
+                $setWebhook = (array) $setWebhook;
 
                 foreach ($setWebhook as $key => $value) {
-
-                    if ($value === true) {
+                    if (true === $value) {
                         $value = 'true';
-                    } elseif ($value === false) {
+                    } elseif (false === $value) {
                         $value = 'false';
                     }
 
@@ -77,8 +74,8 @@ class TelegramWebhookCommand extends Command
                     return;
                 }
 
-                $io->success("Вебхук установлен! URL: " . $getWebhookInfo["result"]["url"]);
-                $io->note("В конце добавляется токен, чтобы наверняка определить, что ответ прислал именно бот.");
+                $io->success('Вебхук установлен! URL: '.$getWebhookInfo['result']['url']);
+                $io->note('В конце добавляется токен, чтобы наверняка определить, что ответ прислал именно бот.');
 
                 return;
             } else {
@@ -91,20 +88,20 @@ class TelegramWebhookCommand extends Command
         if ($input->getOption('get')) {
             $getWebhookInfo = $this->getWebhookInfo();
 
-            foreach ($getWebhookInfo["result"] as $key => $value) {
-                if ($value === true) {
+            foreach ($getWebhookInfo['result'] as $key => $value) {
+                if (true === $value) {
                     $value = 'true';
-                } elseif ($value === false) {
+                } elseif (false === $value) {
                     $value = 'false';
                 }
 
                 $io->text("{$key}: {$value}");
             }
 
-            if ($getWebhookInfo["result"]["url"]) {
-                $io->success("Вебхук существует! URL: " . $getWebhookInfo["result"]["url"]);
+            if ($getWebhookInfo['result']['url']) {
+                $io->success('Вебхук существует! URL: '.$getWebhookInfo['result']['url']);
             } else {
-                $io->success("Вебхук еще не установлен!");
+                $io->success('Вебхук еще не установлен!');
             }
 
             return;
@@ -120,23 +117,22 @@ class TelegramWebhookCommand extends Command
             }
 
             $deleteWebhook = $this->tgBot->deleteWebhook();
-            $deleteWebhook = (array)$deleteWebhook;
+            $deleteWebhook = (array) $deleteWebhook;
 
             foreach ($deleteWebhook as $key => $value) {
-
-                if ($value === true) {
+                if (true === $value) {
                     $value = 'true';
-                } elseif ($value === false) {
+                } elseif (false === $value) {
                     $value = 'false';
                 }
 
                 $io->text("{$key}: {$value}");
             }
 
-            if ($getWebhookInfo["result"]["url"]) {
-                $io->success("Вебхук удален! URL: " . $getWebhookInfo["result"]["url"]);
+            if ($getWebhookInfo['result']['url']) {
+                $io->success('Вебхук удален! URL: '.$getWebhookInfo['result']['url']);
             } else {
-                $io->success("Вебхук еще не установлен!");
+                $io->success('Вебхук еще не установлен!');
             }
 
             return;

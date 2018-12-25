@@ -23,6 +23,4 @@ class Validator
 
         return false;
     }
-
-
 }

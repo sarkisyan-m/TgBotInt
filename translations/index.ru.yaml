@@ -7,6 +7,7 @@ footer: 'Footer 2018'
 index:
     title: 'Главная'
     lorem: 'Добро пожаловать! Тут должен быть контент!'
+
 auth:
     is_not_auth: 'У вас недостаточно прав! Требуется %link_start%авторизация%link_end%!'
 

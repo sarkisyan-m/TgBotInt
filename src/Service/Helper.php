@@ -7,8 +7,8 @@ class Helper
     public static function curl($url, $args = null, $assoc = false)
     {
         if ($args) {
-            $args = "?" . http_build_query($args);
-            $url = $url . $args;
+            $args = '?'.http_build_query($args);
+            $url = $url.$args;
         }
 
         $ch = curl_init();
@@ -17,7 +17,7 @@ class Helper
             CURLOPT_HEADER => false,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_TIMEOUT => 10
+            CURLOPT_TIMEOUT => 10,
         ];
         curl_setopt_array($ch, $parameter);
         $data = curl_exec($ch);
@@ -31,7 +31,7 @@ class Helper
             return null;
         }
 
-        return date("d.m.Y", strtotime($dateStr));
+        return date('d.m.Y', strtotime($dateStr));
     }
 
     public static function getTimeStr($timeStr) {
@@ -39,17 +39,17 @@ class Helper
             return null;
         }
 
-        return date("H:i", strtotime($timeStr));
+        return date('H:i', strtotime($timeStr));
     }
 
     public static function getDateDiffDays($dateStart, $dateEnd)
     {
         $dateStart = new \DateTime($dateStart);
-        $dateEnd  = new \DateTime($dateEnd);
+        $dateEnd = new \DateTime($dateEnd);
         $dateDiff = $dateStart->diff($dateEnd);
         $sing = $dateDiff->format('%R');
 
-        return (int)"{$sing}{$dateDiff->days}";
+        return (int) "{$sing}{$dateDiff->days}";
     }
 
     public static function getDateDiffDaysDateTime(\DateTimeInterface $dateStart, \DateTimeInterface $dateEnd)
@@ -57,7 +57,7 @@ class Helper
         $dateDiff = $dateStart->diff($dateEnd);
         $sing = $dateDiff->format('%R');
 
-        return (int)"{$sing}{$dateDiff->d}";
+        return (int) "{$sing}{$dateDiff->d}";
 //        return $dateDiff;
     }
 }

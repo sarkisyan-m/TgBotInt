@@ -4,7 +4,6 @@ namespace App\Service;
 
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Routing\RouterInterface;
-
 use Google_Client;
 use Google_Service_Calendar;
 use Google_Service_Calendar_Event;
@@ -25,6 +24,9 @@ class GoogleCalendarAPI
 
     protected $dateRange;
 
+    const CALENDAR_SETTINGS =
+        'https://www.googleapis.com/auth/calendar.settings.readonly';
+
     function __construct($notificationTime, RouterInterface $router, CacheInterface $cache, $cacheTime, $cacheContainer, $dateRange)
     {
         $this->router = $router;
@@ -34,9 +36,9 @@ class GoogleCalendarAPI
         $this->cacheTime = $cacheTime;
         $this->cacheContainer = $cacheContainer;
 
-        $this->googleClient = new Google_Client;
+        $this->googleClient = new Google_Client();
         $this->googleClient->addScope(Google_Service_Calendar::CALENDAR);
-
+        $this->googleClient->addScope(self::CALENDAR_SETTINGS);
 
         $this->googleClient->useApplicationDefaultCredentials();
 
@@ -50,12 +52,12 @@ class GoogleCalendarAPI
     public function getFilters($filter)
     {
         $filtersKey = [
-            "calendarName",
-            "startDateTime",
-            "endDateTime",
-            "attendees",
-            "get",
-            "eventIdShort"
+            'calendarName',
+            'startDateTime',
+            'endDateTime',
+            'attendees',
+            'get',
+            'eventIdShort',
         ];
 
         $filterAvailableKeys = [];
@@ -96,7 +98,7 @@ class GoogleCalendarAPI
 
     public function loadData()
     {
-        /**
+        /*
          * @var $service Google_Service_Calendar
          * @var $calendarList Google_Service_Calendar_CalendarList
          * @var $calendarListItems Google_Service_Calendar_CalendarListEntry
@@ -115,20 +117,20 @@ class GoogleCalendarAPI
 
         $cacheItems = [];
 
-        $cacheItems["service"] = serialize(new Google_Service_Calendar($this->googleClient));
-        $service = unserialize($cacheItems["service"]);
+        $cacheItems['service'] = serialize(new Google_Service_Calendar($this->googleClient));
+        $service = unserialize($cacheItems['service']);
 
-        $cacheItems["calendar_list"] = serialize($service->calendarList->listCalendarList());
-        $calendarList = unserialize($cacheItems["calendar_list"]);
+        $cacheItems['calendar_list'] = serialize($service->calendarList->listCalendarList());
+        $calendarList = unserialize($cacheItems['calendar_list']);
 
-        $cacheItems["calendar_list_items"] = serialize($calendarList->getItems());
-        $calendarListItems = unserialize($cacheItems["calendar_list_items"]);
+        $cacheItems['calendar_list_items'] = serialize($calendarList->getItems());
+        $calendarListItems = unserialize($cacheItems['calendar_list_items']);
 
         foreach ($calendarListItems as $calendarListItem) {
             $startDateTime = (new \DateTime())->format(\DateTime::RFC3339);
             $endDateTime = (new \DateTime())->modify("+{$this->dateRange} day")->format(\DateTime::RFC3339);
 
-            $cacheItems["event_list_{$calendarListItem->getId()}"] = serialize($service->events->listEvents($calendarListItem->getId(), ["maxResults" => 2500, "timeMin" => $startDateTime, "timeMax" => $endDateTime, "orderBy" => "startTime", "singleEvents" => "true"]));
+            $cacheItems["event_list_{$calendarListItem->getId()}"] = serialize($service->events->listEvents($calendarListItem->getId(), ['maxResults' => 2500, 'timeMin' => $startDateTime, 'timeMax' => $endDateTime, 'orderBy' => 'startTime', 'singleEvents' => 'true']));
             $eventsList = unserialize($cacheItems["event_list_{$calendarListItem->getId()}"]);
 
             $cacheItems["event_list_{$calendarListItem->getId()}_items"] = serialize($eventsList->getItems());
@@ -148,12 +150,11 @@ class GoogleCalendarAPI
     public function getList(array $filter = null)
     {
         /**
-         * @var $service Google_Service_Calendar
-         * @var $calendarList Google_Service_Calendar_CalendarList
-         * @var $calendarListItems Google_Service_Calendar_CalendarListEntry
-         * @var $calendarListItem Google_Service_Calendar_CalendarListEntry
+         * @var Google_Service_Calendar
+         * @var $calendarList           Google_Service_Calendar_CalendarList
+         * @var $calendarListItems      Google_Service_Calendar_CalendarListEntry
+         * @var $calendarListItem       Google_Service_Calendar_CalendarListEntry
          */
-
         $data = $this->loadData();
 
         if (!$data) {
@@ -162,10 +163,10 @@ class GoogleCalendarAPI
 
         $filter = $this->getFilters($filter);
         $calendarListResult = [];
-        $calendarListItems = unserialize($data["calendar_list_items"]);
+        $calendarListItems = unserialize($data['calendar_list_items']);
         foreach ($calendarListItems as $calendarListItem) {
             // Если нет нужного календаря
-            if ($filter["calendarName"] && $filter["calendarName"] != $calendarListItem->getSummary()) {
+            if ($filter['calendarName'] && $filter['calendarName'] != $calendarListItem->getSummary()) {
                 continue;
             }
 
@@ -173,19 +174,18 @@ class GoogleCalendarAPI
             $startDateTime = null;
             $endDateTime = null;
 
-            if ($filter["get"] != "calendars") {
+            if ('calendars' != $filter['get']) {
                 /**
-                 * @var $event Google_Service_Calendar_Event
+                 * @var Google_Service_Calendar_Event
                  */
                 $eventsListItems = unserialize($data["event_list_{$calendarListItem->getId()}_items"]);
                 foreach ($eventsListItems as $event) {
-
                     $dateTimeStart = Helper::getDateStr($event->getStart()->getDateTime());
                     $dateTimeEnd = Helper::getDateStr($event->getEnd()->getDateTime());
 
-                    if ($filter["startDateTime"] && Helper::getDateDiffDays($filter["startDateTime"], $dateTimeStart) < 0) {
+                    if ($filter['startDateTime'] && Helper::getDateDiffDays($filter['startDateTime'], $dateTimeStart) < 0) {
                         continue;
-                    } elseif ($filter["endDateTime"] && Helper::getDateDiffDays($filter["endDateTime"], $dateTimeEnd) > 0) {
+                    } elseif ($filter['endDateTime'] && Helper::getDateDiffDays($filter['endDateTime'], $dateTimeEnd) > 0) {
                         break;
                     }
 
@@ -195,32 +195,31 @@ class GoogleCalendarAPI
 
                     $attendeesEmail = [];
                     foreach ($event->getAttendees() as $member) {
-                        $attendeesEmail[] = implode(" ", (array)$member["email"]);
+                        $attendeesEmail[] = implode(' ', (array) $member['email']);
                     }
 
-                    if ($filter["attendees"] && (!isset($attendeesEmail[0]) || $filter["attendees"] != $attendeesEmail[0])) {
+                    if ($filter['attendees'] && (!isset($attendeesEmail[0]) || $filter['attendees'] != $attendeesEmail[0])) {
                         continue;
                     }
 
                     $eventArray = [
-                        "eventId" => $event->getId(),
-                        "calendarEventName" => $event->getSummary(),
-                        "calendarId" => $calendarListItem->getId(),
-                        "calendarName" => $calendarListItem->getSummary(),
-                        "description" => $event->getDescription(),
-                        "organizerName" => $event->getCreator()->getDisplayName(),
-                        "organizerEmail" => $event->getCreator()->getEmail(),
-                        "dateCreated" => $event->getCreated(),
-                        "dateTimeStart" => $event->getStart()->getDateTime(),
-                        "dateTimeEnd" => $event->getEnd()->getDateTime(),
-                        "dateStart" => $event->getStart()->getDate(),
-                        "dateEnd" => $event->getEnd()->getDate(),
-                        "attendees" => $attendeesEmail,
+                        'eventId' => $event->getId(),
+                        'calendarEventName' => $event->getSummary(),
+                        'calendarId' => $calendarListItem->getId(),
+                        'calendarName' => $calendarListItem->getSummary(),
+                        'description' => $event->getDescription(),
+                        'organizerName' => $event->getCreator()->getDisplayName(),
+                        'organizerEmail' => $event->getCreator()->getEmail(),
+                        'dateCreated' => $event->getCreated(),
+                        'dateTimeStart' => $event->getStart()->getDateTime(),
+                        'dateTimeEnd' => $event->getEnd()->getDateTime(),
+                        'dateStart' => $event->getStart()->getDate(),
+                        'dateEnd' => $event->getEnd()->getDate(),
+                        'attendees' => $attendeesEmail,
                     ];
 
-                    if ($filter["eventIdShort"]) {
-                        if (substr($eventArray["eventId"], 0, strlen($filter["eventIdShort"])) == $filter["eventIdShort"]) {
-
+                    if ($filter['eventIdShort']) {
+                        if (substr($eventArray['eventId'], 0, strlen($filter['eventIdShort'])) == $filter['eventIdShort']) {
                             return $eventArray;
                         }
                     }
@@ -230,9 +229,9 @@ class GoogleCalendarAPI
             }
 
             $calendarListResult[] = [
-                "calendarName" => $calendarListItem->getSummary(),
-                "calendarId" => $calendarListItem->getId(),
-                "listEvents" => $calendarEventResult
+                'calendarName' => $calendarListItem->getSummary(),
+                'calendarId' => $calendarListItem->getId(),
+                'listEvents' => $calendarEventResult,
             ];
         }
 
@@ -241,10 +240,10 @@ class GoogleCalendarAPI
 
     public function getCalendars($calendarName = null)
     {
-        $filter = ["get" => "calendars"];
+        $filter = ['get' => 'calendars'];
 
         if ($calendarName) {
-            $filter += ["calendarName" => $calendarName];
+            $filter += ['calendarName' => $calendarName];
         }
 
         return $this->getList($filter);
@@ -254,8 +253,8 @@ class GoogleCalendarAPI
     {
         $data = $this->getCalendars($calendarName);
 
-        if (isset($data[0]["calendarId"])) {
-            return $data[0]["calendarId"];
+        if (isset($data[0]['calendarId'])) {
+            return $data[0]['calendarId'];
         }
 
         return null;
@@ -268,7 +267,7 @@ class GoogleCalendarAPI
 
         if ($calendars) {
             foreach ($calendars as $calendar) {
-                $calendarNameList[] = $calendar["calendarName"];
+                $calendarNameList[] = $calendar['calendarName'];
             }
         }
 
@@ -305,17 +304,17 @@ class GoogleCalendarAPI
         ];
 
         $params = [
-            'sendUpdates' => "all"
+            'sendUpdates' => 'all',
         ];
     }
 
     /**
-     * @param string $calendarId
+     * @param string      $calendarId
      * @param string|null $summary
      * @param string|null $description
      * @param string|null $startDateTime
      * @param string|null $endDateTime
-     * @param null $attendees
+     * @param null        $attendees
      */
     public function addEvent(string $calendarId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
     {
@@ -328,13 +327,13 @@ class GoogleCalendarAPI
     }
 
     /**
-     * @param string $calendarId
-     * @param string $eventId
+     * @param string      $calendarId
+     * @param string      $eventId
      * @param string|null $summary
      * @param string|null $description
      * @param string|null $startDateTime
      * @param string|null $endDateTime
-     * @param null $attendees
+     * @param null        $attendees
      */
     public function editEvent(string $calendarId, string $eventId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
     {

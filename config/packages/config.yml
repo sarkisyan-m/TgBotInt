@@ -1,8 +1,0 @@
-# app/config/config.yml
-fos_user:
-  db_driver: orm # other valid values are 'mongodb' and 'couchdb'
-  firewall_name: main
-  user_class: App\Entity\FOSUser
-  from_email:
-    address: sarkisyan@intaro.email
-    sender_name: Mihail
