@@ -187,15 +187,6 @@ class TelegramController extends Controller
             $this->tgDb->insert($antiFlood);
         } elseif ($timeDiff->i < 1) {
             if ($antiFlood->getMessages() >= $allowedMessagesNumber) {
-                $reverseDiff = 60 - $timeDiff->s;
-                $text = $this->translate('anti_flood.active', ["%reverseDiff%" => $reverseDiff]);
-
-                $this->tgBot->sendMessage(
-                    $this->tgRequest->getChatId(),
-                    $text,
-                    "Markdown"
-                );
-
                 return true;
             }
 
@@ -1437,6 +1428,7 @@ class TelegramController extends Controller
             } else {
                 $members = $this->tgRequest->getText();
                 $members = mb_convert_case(mb_strtolower($members), MB_CASE_TITLE, "UTF-8");
+                $members = substr($members, 0, (int)$this->container->getParameter('meeting_room_event_members_len'));
 
                 $limit = $this->container->getParameter('meeting_room_event_members_limit');
                 $members = explode(", ", $members, ++$limit);

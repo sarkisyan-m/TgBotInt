@@ -42,7 +42,8 @@ parameters:
 
     # meeting_room
     # У гугла максимальная длина заголовка 1024, а описания (где хранятся списки участников) 16384
-    meeting_room_event_name_len: 512;
+    meeting_room_event_name_len: 256;
+    meeting_room_event_members_len: 1024;
 
     # 1 участник ~200 байт (1 участинк - 1 элемент массива со свойствами)
     # организатор не входит в список, но учитывается вместе с остальными в базе
@@ -61,7 +62,7 @@ parameters:
     # анти-флуд
     # сообщений в минуту
     # это касается сообщений больше 512 байт
-    anti_flood_allowed_messages_number: 19
+    anti_flood_allowed_messages_number: 29
 
 services:
     # default configuration for services in *this* file
