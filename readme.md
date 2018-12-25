@@ -76,14 +76,28 @@ php7.1 bin/console doctrine:migrations:migrate
 
 Telegram Webhook
 ------
+Вебхук для телеграма можно установить несколькими способами.
 
+    Рекомендуется использовать url вместе с токеном для дополнителньой безопасности:
+    https://example.com/?<token>
+    
+    Стоит учитывать, что через опцию set или через контроллер токен сам пропишется.
+    В результате получим: https://example.com/?<token>
+    
+- Через консоль с помощью готовых команд
+```bash
+php7.1 bin/console telegram_webhook --set https://example.com
+php7.1 bin/console telegram_webhook --get
+php7.1 bin/console telegram_webhook --del
+```
+
+- Через контроллер
 Сайт обязательно должен иметь ssl-сертификат. Для самоподписанных сертификатов необходимо задать дополнительные
 параметры в методе setWebHook.
 ```php
 <?php
 // src/Controller/TelegramController.php
 ...
-
 public function tgWebhook(Request $request)
 {
     $this->tgBot->setWebHook("https://example.com");
@@ -92,6 +106,9 @@ public function tgWebhook(Request $request)
 }
 ...
 ```
+
+- Через адресную строку вручную сформировать запрос
+- Через curl в консоле
 
 Bitrix24 Webhook
 ------

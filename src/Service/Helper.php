@@ -6,7 +6,10 @@ class Helper
 {
     public static function curl($url, $args = null, $assoc = false)
     {
-        $args = "?" . http_build_query($args);
+        if ($args) {
+            $args = "?" . http_build_query($args);
+        }
+
         $url = $url . $args;
 
         $ch = curl_init();

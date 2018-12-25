@@ -28,7 +28,9 @@ class TelegramAPI
      */
     public function curlTgProxy($method, $args = null)
     {
-        $args = "?" . http_build_query($args);
+        if ($args) {
+            $args = "?" . http_build_query($args);
+        }
 
         $url = $this->tgUrl . $method . $args;
         $ch = curl_init();
