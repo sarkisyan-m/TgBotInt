@@ -127,13 +127,15 @@ meeting_room:
         data_failed: "*Провал!* К сожалению, кто-то опередил и занял раньше вас переговорку в это же время!"
 
 event_list:
-    room: "\n\U0001F510 *%calendarName%*\n"
+    room: "\n\n\U0001F510 *%calendarName%*\n"
     date: "\n\U0001F4C6 *%date%*\n"
+    event_text: "*%timeStart%-%timeEnd%* %textTime% \n"
     event_edit: "[[Изм. /e_%eventId%]] "
     event_remove: "[[Удал. /d_%eventId%]]\n"
-    event_empty: "Список событий пуст!\n"
+    event_empty: "- Список событий пуст!"
+    event_is_big: "- Список событий слишком большой!"
     event_over: "\n*Не отображено событий*: %eventOverCount%"
-    event_show_all: " [[Показать все /eventlist_%meetingRoomNumber%]]\n"
+    event_show_all: "\n[[Показать все /eventlist_%meetingRoomNumber%]]"
     remove:
         confirmation: "*Вы действительно хотите удалить событие?*\n\n"
         success: "\n*Событие успешно удалено!*"

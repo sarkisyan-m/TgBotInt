@@ -1732,9 +1732,11 @@ class TelegramController extends Controller
                 $textArr = [];
                 $limitOverEventCount = 0;
 
-                if ($calendar["listEvents"]) {
-                    $dateTemp = null;
+                $dateTemp = null;
+                $limitReached = false;
+                $limitReachedStart = 0;
 
+                if ($calendar["listEvents"]) {
                     foreach ($calendar["listEvents"] as $event) {
                         $text = null;
 
@@ -1753,7 +1755,7 @@ class TelegramController extends Controller
                         }
                         $verifyDescription["textOrganizer"] = $this->translate("event_info_string.event_organizer", ["%eventOrganizer%" => $verifyDescription["textOrganizer"]]);
                         $textTime = "_{$textName}{$verifyDescription["textMembers"]}_ {$verifyDescription["textOrganizer"]}";
-                        $text .= "*{$timeStart}-{$timeEnd}* {$textTime} \n";
+                        $text .= $this->translate("event_list.event_text", ["%timeStart%" => $timeStart, "%timeEnd%" => $timeEnd, "%textTime%" => $textTime]);
 
                         $eventId = substr($event["eventId"], 0, 4);
                         $text .= $this->translate("event_list.event_edit", ["%eventId%" => $eventId]);
@@ -1767,7 +1769,14 @@ class TelegramController extends Controller
                             foreach ($textArr as $key => $textVal) {
                                 $limitText += strlen($textVal);
 
-                                if ($limitText > $limitBytes) {
+                                if ($limitReached) {
+                                    if ($key >= $limitReachedStart) {
+                                        $limitOverEventCount++;
+                                        unset($textArr[$key]);
+                                    }
+                                } elseif ($limitText > $limitBytes) {
+                                    $limitReached = true;
+                                    $limitReachedStart = $key;
                                     $limitOverEventCount++;
                                     unset($textArr[$key]);
                                 }
@@ -1780,16 +1789,16 @@ class TelegramController extends Controller
 
                 $text = implode("", $textArr);
 
-                if (!$text) {
+                if (!$text && !$limitReached) {
                     $text = $this->translate("event_list.event_empty");
+                } elseif (!$text && $limitReached && !$isSpecificMeetingRoom) {
+                    $text .= $this->translate("event_list.event_is_big");
                 }
 
                 if ($limitOverEventCount > 0) {
                     $text .= $this->translate("event_list.event_over", ["%eventOverCount%" => $limitOverEventCount]);
                     if (!$isSpecificMeetingRoom) {
                         $text .= $this->translate("event_list.event_show_all", ["%meetingRoomNumber%" => $meetingRoomKey]);
-                    } else {
-                        $text .= "\n";
                     }
                 }
 

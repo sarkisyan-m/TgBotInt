@@ -305,7 +305,7 @@ class GoogleCalendarAPI
         ];
 
         $params = [
-//            'sendUpdates' => "all"
+            'sendUpdates' => "all"
         ];
     }
 
