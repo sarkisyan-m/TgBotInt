@@ -15,12 +15,6 @@ class DefaultController extends Controller
      */
     public function index(GoogleCalendarAPI $googleCalendar)
     {
-        $service = $googleCalendar->getServiceTest();
-
-        dump($service);
-        $service->settings->get('locale')->setValue('ru');
-        dump($service->settings->get('locale'));
-
         return $this->render('index.html.twig');
     }
 }

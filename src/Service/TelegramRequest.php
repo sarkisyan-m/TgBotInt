@@ -49,8 +49,9 @@ class TelegramRequest
 
     public function getChatId()
     {
-        if (isset($this->getRequestData()[$this->getRequestType()]['from']['id']))
+        if (isset($this->getRequestData()[$this->getRequestType()]['from']['id'])) {
             return $this->getRequestData()[$this->getRequestType()]['from']['id'];
+        }
 
         return null;
     }

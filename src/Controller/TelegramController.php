@@ -40,15 +40,14 @@ class TelegramController extends Controller
 
     protected $translator;
 
-    function __construct(
+    public function __construct(
         TelegramAPI $tgBot,
         TelegramDb $tgDb,
         Bitrix24API $bitrix24,
         Calendar $calendar,
         GoogleCalendarAPI $googleCalendar,
         TranslatorInterface $translator
-    )
-    {
+    ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->tgRequest = new TelegramRequest();
@@ -133,7 +132,7 @@ class TelegramController extends Controller
                             return new Response();
                         }
                     }
-                // Email обязателен для корректной работы гугл календаря
+                    // Email обязателен для корректной работы гугл календаря
                 } elseif (!$bitrixUser->getEmail()) {
                     $this->tgBot->sendMessage(
                         $this->tgRequest->getChatId(),
@@ -153,12 +152,12 @@ class TelegramController extends Controller
                     return new Response();
                 }
 
-            // Если пользователь не найден - регистрация
+                // Если пользователь не найден - регистрация
             } elseif ($this->tgRequest->getPhoneNumber()) {
                 if ($this->userRegistration('registration')) {
                     return new Response();
                 }
-            // Спамим, что ему надо зарегаться
+                // Спамим, что ему надо зарегаться
             } else {
                 if ($this->userRegistration('info')) {
                     return new Response();
@@ -351,8 +350,7 @@ class TelegramController extends Controller
                 if (1 == $key) {
                     ++$ln;
                 }
-            }
-            elseif (2 == $key || 3 == $key) {
+            } elseif (2 == $key || 3 == $key) {
                 if (3 == $key) {
                     ++$ln;
                 }
@@ -459,7 +457,7 @@ class TelegramController extends Controller
 
                     return true;
                 }
-            // Редактирование данных
+                // Редактирование данных
             } elseif ('edit' == $meetingRoomUser->getStatus()) {
                 if (!$meetingRoomUser->getMeetingRoom()) {
                     $this->eventEdit(null, 'meetingRoom');

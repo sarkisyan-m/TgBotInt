@@ -16,7 +16,6 @@ class CallbackQuery
      */
     private $id;
 
-//, cascade={"persist", "remove"}
     /**
      * @ORM\OneToOne(targetEntity="App\Entity\TgUsers")
      * @ORM\JoinColumn(nullable=false, onDelete="cascade")

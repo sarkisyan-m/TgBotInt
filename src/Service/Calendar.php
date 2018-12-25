@@ -12,7 +12,7 @@ class Calendar
     protected $tgRequest;
     protected $translator;
 
-    function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest, TranslatorInterface $translator)
+    public function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest, TranslatorInterface $translator)
     {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
@@ -82,8 +82,9 @@ class Calendar
 
         ++$ln;
         $dWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-        for ($i = 0; $i < count($dWeek); ++$i)
+        for ($i = 0; $i < count($dWeek); ++$i) {
             $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($dWeek[$i], $emptyCallback);
+        }
 
         ++$ln;
         $dWeekCount = 0;
@@ -158,7 +159,7 @@ class Calendar
         $hours ? $hoursTemp = $hours : $hoursTemp = 1;
         $minutes = $timeDiff % ($hoursTemp * 60);
 
-        if ($timeDiff > 0 ) {
+        if ($timeDiff > 0) {
             if (0 == intval($hours)) {
                 return "{$minutes} мин.";
             } elseif (0 == intval($minutes)) {

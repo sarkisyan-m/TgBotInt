@@ -26,7 +26,8 @@ class Helper
         return json_decode($data, $assoc);
     }
 
-    public static function getDateStr($dateStr) {
+    public static function getDateStr($dateStr)
+    {
         if (!$dateStr) {
             return null;
         }
@@ -34,7 +35,8 @@ class Helper
         return date('d.m.Y', strtotime($dateStr));
     }
 
-    public static function getTimeStr($timeStr) {
+    public static function getTimeStr($timeStr)
+    {
         if (!$timeStr) {
             return null;
         }

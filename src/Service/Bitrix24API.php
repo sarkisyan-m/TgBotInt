@@ -22,7 +22,7 @@ class Bitrix24API
 
     protected $serializer;
 
-    function __construct($bitrix24Url, $bitrix24UserId, $bitrix24Api, CacheInterface $cache, $cacheTime, $cacheContainer, SerializerInterface $serializer)
+    public function __construct($bitrix24Url, $bitrix24UserId, $bitrix24Api, CacheInterface $cache, $cacheTime, $cacheContainer, SerializerInterface $serializer)
     {
         $this->bitrix24Url = $bitrix24Url;
         $this->bitrix24Url .= $bitrix24UserId.'/';

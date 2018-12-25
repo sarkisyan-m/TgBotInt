@@ -65,8 +65,9 @@ class TelegramAPI
      */
     public function inlineKeyboardMarkup(array $inline_keyboard = null)
     {
-        if (!$inline_keyboard)
+        if (!$inline_keyboard) {
             return null;
+        }
 
         return json_encode([
             'inline_keyboard' => $inline_keyboard,
@@ -136,8 +137,9 @@ class TelegramAPI
      */
     public function inlineKeyboardButton(string $text, $callback_data = null, string $url = null, string $switch_inline_query = null, string $switch_inline_query_current_chat = null, $callback_game = null, bool $pay = false)
     {
-        if (is_string($callback_data))
+        if (is_string($callback_data)) {
             $callback_data = explode(' ', $callback_data);
+        }
 
         $callback_data = json_encode($callback_data);
         $url = urlencode($url);
@@ -200,7 +202,7 @@ class TelegramAPI
             'allowed_updates' => $allowed_updates,
         ];
 
-        return $this->curlTgProxy(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__, $args);
     }
 
     /**
@@ -220,7 +222,7 @@ class TelegramAPI
             'allowed_updates' => $allowed_updates,
         ];
 
-        return $this->curlTgProxy(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__, $args);
     }
 
     public function deleteWebhook()
@@ -267,7 +269,7 @@ class TelegramAPI
             'reply_markup' => $reply_markup,
         ];
 
-        return $this->curlTgProxy(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__, $args);
     }
 
     /**
@@ -297,7 +299,7 @@ class TelegramAPI
             'cache_time' => $cache_time,
         ];
 
-        return $this->curlTgProxy(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__, $args);
     }
 
     /**
@@ -323,7 +325,7 @@ class TelegramAPI
             'reply_markup' => $reply_markup,
         ];
 
-        return $this->curlTgProxy(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__, $args);
     }
 
     /**
@@ -339,6 +341,6 @@ class TelegramAPI
             'message_id' => $message_id,
         ];
 
-        return $this->curlTgProxy(__FUNCTION__ , $args);
+        return $this->curlTgProxy(__FUNCTION__, $args);
     }
 }

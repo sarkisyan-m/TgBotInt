@@ -27,7 +27,7 @@ class GoogleCalendarAPI
     const CALENDAR_SETTINGS =
         'https://www.googleapis.com/auth/calendar.settings.readonly';
 
-    function __construct($notificationTime, RouterInterface $router, CacheInterface $cache, $cacheTime, $cacheContainer, $dateRange)
+    public function __construct($notificationTime, RouterInterface $router, CacheInterface $cache, $cacheTime, $cacheContainer, $dateRange)
     {
         $this->router = $router;
         $this->notificationTime = $notificationTime;
@@ -83,7 +83,8 @@ class GoogleCalendarAPI
         return $filterAvailableKeys;
     }
 
-    public function deleteData() {
+    public function deleteData()
+    {
         try {
             $this->cache->delete($this->cacheContainer);
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {

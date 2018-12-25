@@ -16,7 +16,7 @@ class TelegramDb
     protected $tgRequest;
     protected $dataCallbackQuery;
 
-    function __construct(EntityManagerInterface $entityManager, TelegramRequest $tgRequest)
+    public function __construct(EntityManagerInterface $entityManager, TelegramRequest $tgRequest)
     {
         $this->entityManager = $entityManager;
         $this->tgRequest = $tgRequest;
@@ -157,7 +157,7 @@ class TelegramDb
         $qb = $this->entityManager->createQueryBuilder();
         $qb
             ->andWhere('date BETWEEN :from AND :to')
-            ->setParameter('from', $from )
+            ->setParameter('from', $from)
             ->setParameter('to', $to)
         ;
         $result = $qb->getQuery()->getResult();
