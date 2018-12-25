@@ -343,8 +343,23 @@ class TelegramController extends Controller
     {
         $buttons = array_values(array_filter($this->botCommands));
         $result = [];
-        foreach ($buttons as $button) {
-            $result[][] = $button;
+        $ln = 0;
+        foreach ($buttons as $key => $button) {
+            $result[$ln][] = $button;
+
+            // Объединияем кнопки
+            if ($key == 0 || $key == 1) {
+                if ($key == 1) {
+                    $ln++;
+                }
+            }
+            elseif ($key == 2 || $key == 3) {
+                if ($key == 3) {
+                    $ln++;
+                }
+            } else {
+                $ln++;
+            }
         }
 
         return $result;
@@ -1704,7 +1719,7 @@ class TelegramController extends Controller
         $tgUser = $this->tgDb->getTgUser();
         $bitrixUser = $this->bitrix24->getUsers(["id" => $tgUser->getBitrixId()]);
 
-        $limitBytesMax = 4096;
+        $limitBytesMax = 5500;
         $reserveByte = 100;
 
         if ($bitrixUser) {
