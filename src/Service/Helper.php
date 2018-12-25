@@ -8,9 +8,8 @@ class Helper
     {
         if ($args) {
             $args = "?" . http_build_query($args);
+            $url = $url . $args;
         }
-
-        $url = $url . $args;
 
         $ch = curl_init();
         $parameter = [

@@ -1428,11 +1428,18 @@ class TelegramController extends Controller
             } else {
                 $members = $this->tgRequest->getText();
                 $members = mb_convert_case(mb_strtolower($members), MB_CASE_TITLE, "UTF-8");
-                $members = substr($members, 0, (int)$this->container->getParameter('meeting_room_event_members_len'));
 
                 $limit = $this->container->getParameter('meeting_room_event_members_limit');
                 $members = explode(", ", $members, ++$limit);
                 $limit--;
+
+                $memberLen = (int)$this->container->getParameter('meeting_room_event_members_len');
+                foreach ($members as $memberKey => $memberValue) {
+                    if (strlen($memberValue) > $memberLen) {
+                        $memberValue = substr($memberValue, 0, $memberLen);
+                        $members[$memberKey] = $memberValue;
+                    }
+                }
 
                 if (isset($members[$limit])) {
                     unset($members[$limit]);
