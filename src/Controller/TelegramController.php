@@ -1748,8 +1748,6 @@ class TelegramController extends Controller
                 $limitOverEventCount = 0;
 
                 $dateTemp = null;
-                $limitReached = false;
-                $limitReachedStart = 0;
 
                 if ($calendar['listEvents']) {
                     foreach ($calendar['listEvents'] as $event) {
@@ -1777,25 +1775,12 @@ class TelegramController extends Controller
                         $text .= $this->translate('event_list.event_remove', ['%eventId%' => $eventId]);
 
                         $dateTemp = $date;
-                        $textArr[] = $text;
 
-                        if (strlen(implode('', $textArr)) > $limitBytes) {
-                            $limitText = 0;
-                            foreach ($textArr as $key => $textVal) {
-                                $limitText += strlen($textVal);
-
-                                if ($limitReached) {
-                                    if ($key >= $limitReachedStart) {
-                                        ++$limitOverEventCount;
-                                        unset($textArr[$key]);
-                                    }
-                                } elseif ($limitText > $limitBytes) {
-                                    $limitReached = true;
-                                    $limitReachedStart = $key;
-                                    ++$limitOverEventCount;
-                                    unset($textArr[$key]);
-                                }
-                            }
+                        $textFullLen = strlen(implode('', $textArr));
+                        if ($textFullLen < $limitBytes && $textFullLen + strlen($text) < $limitBytes) {
+                            $textArr[] = $text;
+                        } else {
+                            ++$limitOverEventCount;
                         }
                     }
                 }
@@ -1804,9 +1789,9 @@ class TelegramController extends Controller
 
                 $text = implode('', $textArr);
 
-                if (!$text && !$limitReached) {
+                if (!$text && 0 == $limitOverEventCount) {
                     $text = $this->translate('event_list.event_empty');
-                } elseif (!$text && $limitReached && !$isSpecificMeetingRoom) {
+                } elseif (!$text && !$isSpecificMeetingRoom && $limitOverEventCount > 0) {
                     $text .= $this->translate('event_list.event_is_big');
                 }
 

@@ -2,18 +2,18 @@
 
 namespace App\Controller;
 
-use App\Service\GoogleCalendarAPI;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\Response;
 
 class DefaultController extends Controller
 {
     /**
      * @Route("/", name="index")
      *
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @return Response
      */
-    public function index(GoogleCalendarAPI $googleCalendar)
+    public function index()
     {
         return $this->render('index.html.twig');
     }

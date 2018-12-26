@@ -42,7 +42,7 @@ parameters:
 
     # meeting_room
     # У гугла максимальная длина заголовка 1024, а описания (где хранятся списки участников) 16384
-    # пользовательский ввод
+    # длина заголовка
     meeting_room_event_name_len: 128;
 
     # 1 участник ~200 байт (1 участинк - 1 элемент массива со свойствами)
@@ -50,9 +50,12 @@ parameters:
     # (10 участников + 1 организатор) * ~200 байт = string 2200 байт необходимо для столбца в базе
     meeting_room_event_members_limit: 10
     # Длина имени и фамилии одного участника. Например $name = "Иван Иванов (НЛМК)"; strlen($name) == 18;
-    meeting_room_event_members_len: 50;
+    meeting_room_event_members_len: 50
 
+    # вклчюить / выключить оповещения (bool)
+    notification: false
     # Оповещение за хх мин. до начала события
+    # Не работает
     notification_time: 30
 
     # cache
@@ -63,7 +66,6 @@ parameters:
 
     # анти-флуд
     # сообщений в минуту
-    # это касается сообщений больше 512 байт
     anti_flood_allowed_messages_number: 29
 
 services:
@@ -112,3 +114,4 @@ services:
             $cacheTime: '%cache_time_google_calendar%'
             $cacheContainer: '%cache_google_calendar%'
             $dateRange: '%date_range%'
+            $notification: '%notification%'

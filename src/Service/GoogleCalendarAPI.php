@@ -13,6 +13,7 @@ use Google_Service_Calendar_CalendarList;
 class GoogleCalendarAPI
 {
     protected $router;
+    protected $notification;
     protected $notificationTime;
 
     protected $cache;
@@ -24,12 +25,17 @@ class GoogleCalendarAPI
 
     protected $dateRange;
 
-    const CALENDAR_SETTINGS =
-        'https://www.googleapis.com/auth/calendar.settings.readonly';
-
-    public function __construct($notificationTime, RouterInterface $router, CacheInterface $cache, $cacheTime, $cacheContainer, $dateRange)
-    {
+    public function __construct(
+        $notificationTime,
+        RouterInterface $router,
+        CacheInterface $cache,
+        $cacheTime,
+        $cacheContainer,
+        $dateRange,
+        bool $notification
+    ) {
         $this->router = $router;
+        $this->notification = $notification;
         $this->notificationTime = $notificationTime;
 
         $this->cache = $cache;
@@ -38,7 +44,6 @@ class GoogleCalendarAPI
 
         $this->googleClient = new Google_Client();
         $this->googleClient->addScope(Google_Service_Calendar::CALENDAR);
-        $this->googleClient->addScope(self::CALENDAR_SETTINGS);
 
         $this->googleClient->useApplicationDefaultCredentials();
 
@@ -99,13 +104,6 @@ class GoogleCalendarAPI
 
     public function loadData()
     {
-        /*
-         * @var $service Google_Service_Calendar
-         * @var $calendarList Google_Service_Calendar_CalendarList
-         * @var $calendarListItems Google_Service_Calendar_CalendarListEntry
-         * @var $calendarListItem Google_Service_Calendar_CalendarListEntry
-         */
-
         try {
             if ($this->cache->has($this->cacheContainer)) {
                 return $this->cache->get($this->cacheContainer);
@@ -116,6 +114,13 @@ class GoogleCalendarAPI
             return null;
         }
 
+        /**
+         * @var Google_Service_Calendar
+         * @var $service                Google_Service_Calendar
+         * @var $calendarList           Google_Service_Calendar_CalendarList
+         * @var $calendarListItems      Google_Service_Calendar_CalendarListEntry
+         * @var $calendarListItem       Google_Service_Calendar_CalendarListEntry
+         */
         $cacheItems = [];
 
         $cacheItems['service'] = serialize(new Google_Service_Calendar($this->googleClient));
@@ -155,6 +160,7 @@ class GoogleCalendarAPI
          * @var $calendarList           Google_Service_Calendar_CalendarList
          * @var $calendarListItems      Google_Service_Calendar_CalendarListEntry
          * @var $calendarListItem       Google_Service_Calendar_CalendarListEntry
+         * @var $eventsListItems        Google_Service_Calendar_Event[]
          */
         $data = $this->loadData();
 
@@ -176,9 +182,6 @@ class GoogleCalendarAPI
             $endDateTime = null;
 
             if ('calendars' != $filter['get']) {
-                /**
-                 * @var Google_Service_Calendar_Event
-                 */
                 $eventsListItems = unserialize($data["event_list_{$calendarListItem->getId()}_items"]);
                 foreach ($eventsListItems as $event) {
                     $dateTimeStart = Helper::getDateStr($event->getStart()->getDateTime());
@@ -304,9 +307,11 @@ class GoogleCalendarAPI
             ],
         ];
 
-        $params = [
-            'sendUpdates' => 'all',
-        ];
+        $params = [];
+
+        if ($this->notification) {
+            $params['sendUpdates'] = 'all';
+        }
     }
 
     /**
