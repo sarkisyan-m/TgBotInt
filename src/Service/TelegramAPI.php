@@ -2,24 +2,26 @@
 
 namespace App\Service;
 
+use Symfony\Component\Translation\TranslatorInterface;
+
 class TelegramAPI
 {
     protected $tgUrl;
     protected $tgToken;
     protected $proxy;
+    protected $translator;
 
-    /**
-     * TelegramAPI constructor.
-     *
-     * @param $tgUrl
-     * @param $tgToken
-     * @param array $proxy
-     */
-    public function __construct($tgUrl, $tgToken, array $proxy)
+    public function __construct($tgUrl, $tgToken, array $proxy, TranslatorInterface $translator)
     {
         $this->tgToken = $tgToken;
         $this->proxy = $proxy;
         $this->tgUrl = "{$tgUrl}{$this->tgToken}/";
+        $this->translator = $translator;
+    }
+
+    public function translate($key, array $params = [])
+    {
+        return $this->translator->trans($key, $params, 'telegram', 'ru');
     }
 
     /**
@@ -30,11 +32,13 @@ class TelegramAPI
      */
     public function curlTgProxy($method, $args = null)
     {
+        $get = $args;
+
         if ($args) {
-            $args = '?'.http_build_query($args);
+            $get = '?'.http_build_query($args);
         }
 
-        $url = $this->tgUrl.$method.$args;
+        $url = $this->tgUrl.$method.$get;
         $ch = curl_init();
         $parameter = [
             CURLOPT_PROXY => $this->proxy[0],
@@ -51,7 +55,26 @@ class TelegramAPI
         $data = curl_exec($ch);
         curl_close($ch);
 
-        return json_decode($data);
+        $data = json_decode($data, true);
+
+        if (!$data['ok']) {
+            if (429 === $data['error_code']) {
+                if (isset($args['chat_id']) && isset($args['text'])) {
+                    if (strlen($args['text']) >= 512) {
+                        $text = $this->translate('anti_flood.message_great', ['%reverseDiff%' => $data['parameters']['retry_after']]);
+                        $this->sendMessage(
+                            $args['chat_id'],
+                            $text,
+                            'Markdown'
+                        );
+
+                        exit();
+                    }
+                }
+            }
+        }
+
+        return $data;
     }
 
     /*

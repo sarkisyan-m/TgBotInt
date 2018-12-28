@@ -186,6 +186,14 @@ class TelegramController extends Controller
             $this->tgDb->insert($antiFlood);
         } elseif ($timeDiff->i < 1) {
             if ($antiFlood->getMessages() >= $allowedMessagesNumber) {
+                $reverseDiff = 60 - $timeDiff->s;
+                $text = $this->translate('anti_flood.message_small', ['%reverseDiff%' => $reverseDiff]);
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $text,
+                    'Markdown'
+                );
+
                 return true;
             }
 
@@ -691,16 +699,19 @@ class TelegramController extends Controller
             $timeDiff = $this->workTimeEnd;
         }
 
-        $timeStartM = rand(0, 58);
+        $timeStartM = [0, 10, 20];
+        $timeStartM = $timeStartM[array_rand($timeStartM)];
         $timeStart = sprintf('%02d:%02d', rand(
             date('H', strtotime($this->workTimeStart)),
             date('H', strtotime($this->workTimeEnd.'-1 hours'))
-        ), rand(0, $timeStartM));
+        ), $timeStartM);
 
+        $timeStartM = [30, 40, 50];
+        $timeStartM = $timeStartM[array_rand($timeStartM)];
         $timeEnd = sprintf('%02d:%02d', rand(
             date('H', strtotime($timeStart)),
             date('H', strtotime($timeDiff.'-1 hours'))
-        ), rand($timeStartM, 59));
+        ), $timeStartM);
 
         return "{$timeStart}-{$timeEnd}";
     }
@@ -892,6 +903,7 @@ class TelegramController extends Controller
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $date = $meetingRoomUser->getDate();
+
         $meetingRoomName = $meetingRoomUser->getMeetingRoom();
 
         $filter = ['startDateTime' => $date, 'endDateTime' => $date, 'calendarName' => $meetingRoomName];
@@ -948,8 +960,7 @@ class TelegramController extends Controller
             $text .= "{$this->translate('meeting_room.google_event.current_day.event_empty')}\n";
         }
 
-        $timesCount = count($this->calendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd));
-        $times = $this->calendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd, true);
+        $times = $this->calendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd, true, $timesCount);
         $example = null;
 
         if (!$timesCount) {
@@ -1049,7 +1060,8 @@ class TelegramController extends Controller
         } else {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('meeting_room.time.error')
+                $this->translate('meeting_room.time.error', ['%exampleRandomTime%' => $this->exampleRandomTime()]),
+                'Markdown'
             );
         }
     }

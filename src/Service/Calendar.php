@@ -201,7 +201,7 @@ class Calendar
         ];
     }
 
-    public function AvailableTimes(array $times, $workTimeStart, $workTimeEnd, $returnString = false)
+    public function AvailableTimes(array $times, $workTimeStart, $workTimeEnd, $returnString = false, &$count = 0)
     {
         $workTimeStart = strtotime($workTimeStart);
         $workTimeEnd = strtotime($workTimeEnd);
@@ -307,6 +307,8 @@ class Calendar
                 $result[] = $this->makeAvailableTime($workTimeStart, $workTimeEnd);
             }
         }
+
+        $count = count($result);
 
         if ($returnString) {
             $text = null;
