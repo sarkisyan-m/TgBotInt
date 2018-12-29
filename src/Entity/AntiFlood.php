@@ -25,7 +25,7 @@ class AntiFlood
     /**
      * @ORM\Column(type="integer", nullable=true)
      */
-    private $messages;
+    private $messages_count;
 
     /**
      * @ORM\Column(type="datetime", nullable=true)
@@ -49,14 +49,14 @@ class AntiFlood
         return $this;
     }
 
-    public function getMessages(): ?int
+    public function getMessagesCount(): ?int
     {
-        return $this->messages;
+        return $this->messages_count;
     }
 
-    public function setMessages(?int $messages): self
+    public function setMessagesCount(?int $messages_count): self
     {
-        $this->messages = $messages;
+        $this->messages_count = $messages_count;
 
         return $this;
     }

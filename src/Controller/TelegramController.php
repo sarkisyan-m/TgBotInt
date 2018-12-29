@@ -102,76 +102,81 @@ class TelegramController extends Controller
             '/start' => '',
         ];
 
-        // Если ответ от телеграма и распознан тип ответа
-        if ($this->isTg && $this->tgRequest->getRequestType()) {
-            // Удаление личных данных
-            // Это должно быть на первом месте, чтобы забаненные пользователи тоже смогли удалить свои личные данные
-            $tgUser = $this->tgDb->getTgUser();
-            if ($tgUser && '/stop' == $this->tgRequest->getText()) {
-                $this->tgDb->userDelete();
+        if (!$this->tgRequest->getType()) {
+            return $this->render('index.html.twig');
+        }
+
+        if (!$this->isTg) {
+            return new Response('', Response::HTTP_FORBIDDEN);
+        }
+        
+        // Удаление личных данных
+        // Это должно быть на первом месте, чтобы забаненные пользователи тоже смогли удалить свои личные данные
+        $tgUser = $this->tgDb->getTgUser();
+        if ($tgUser && '/stop' == $this->tgRequest->getText()) {
+            $this->tgDb->userDelete();
+
+            return new Response();
+        }
+
+        // Если пользователь найден, то не предлагаем ему регистрацию.
+        if ($tgUser && !is_null($bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]))) {
+            $bitrixUser = $bitrixUser[0];
+
+            // Если пользователь является действующим сотрудником
+            if ($bitrixUser->getActive() && $bitrixUser->getEmail()) {
+                if ($this->isFlood()) {
+                    return new Response();
+                }
+
+                if ($this->tgRequest->getType() == TelegramRequest::TYPE_MESSAGE) {
+                    if ($this->handlerRequestMessage()) {
+                        return new Response();
+                    }
+                } elseif ($this->tgRequest->getType() == TelegramRequest::TYPE_CALLBACK_QUERY) {
+                    if ($this->handlerRequestCallbackQuery()) {
+                        return new Response();
+                    }
+                }
+                // Email обязателен для корректной работы гугл календаря
+            } elseif (!$bitrixUser->getEmail()) {
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $this->translate('account.email_empty'),
+                    'Markdown'
+                );
+
+                return new Response();
+            // Иначе считаем, что пользователь имеет статус Уволен
+            } else {
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $this->translate('account.active_false'),
+                    'Markdown'
+                );
 
                 return new Response();
             }
 
-            // Если пользователь найден, то не предлагаем ему регистрацию.
-            if ($tgUser && !is_null($bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]))) {
-                $bitrixUser = $bitrixUser[0];
-
-                // Если пользователь является действующим сотрудником
-                if ($bitrixUser->getActive() && $bitrixUser->getEmail()) {
-                    if ($this->antiFlood()) {
-                        return new Response();
-                    }
-
-                    if ($this->tgRequest->getRequestType() == $this->tgRequest->getRequestTypeMessage()) {
-                        if ($this->handlerRequestMessage()) {
-                            return new Response();
-                        }
-                    } elseif ($this->tgRequest->getRequestType() == $this->tgRequest->getRequestTypeCallbackQuery()) {
-                        if ($this->handlerRequestCallbackQuery()) {
-                            return new Response();
-                        }
-                    }
-                    // Email обязателен для корректной работы гугл календаря
-                } elseif (!$bitrixUser->getEmail()) {
-                    $this->tgBot->sendMessage(
-                        $this->tgRequest->getChatId(),
-                        $this->translate('account.email_empty'),
-                        'Markdown'
-                    );
-
-                    return new Response();
-                // Иначе считаем, что пользователь имеет статус Уволен
-                } else {
-                    $this->tgBot->sendMessage(
-                        $this->tgRequest->getChatId(),
-                        $this->translate('account.active_false'),
-                        'Markdown'
-                    );
-
-                    return new Response();
-                }
-
-                // Если пользователь не найден - регистрация
-            } elseif ($this->tgRequest->getPhoneNumber()) {
-                if ($this->userRegistration('registration')) {
-                    return new Response();
-                }
-                // Спамим, что ему надо зарегаться
-            } else {
-                if ($this->userRegistration('info')) {
-                    return new Response();
-                }
+            // Если пользователь не найден - регистрация
+        } elseif ($this->tgRequest->getPhoneNumber()) {
+            if ($this->userRegistration('registration')) {
+                return new Response();
+            }
+            // Спамим, что ему надо зарегаться
+        } else {
+            if ($this->userRegistration('info')) {
+                return new Response();
             }
         }
 
         // В противном случае говорим, что ничего не удовлетворило пользовательскому запросу
         $this->errorRequest();
 
-        return $this->render('index.html.twig');
+        return new Response();
     }
 
-    public function antiFlood()
+    public function isFlood()
     {
         $antiFlood = $this->tgDb->getAntiFlood();
         $timeDiff = (new \DateTime())->diff($antiFlood->getDate());
@@ -181,13 +186,16 @@ class TelegramController extends Controller
         $allowedMessagesNumber = $this->allowedMessagesNumber;
 
         if ($timeDiff->i >= 1) {
-            $antiFlood->setMessages(1);
+            $antiFlood->setMessagesCount(1);
             $antiFlood->setDate(new \DateTime());
             $this->tgDb->insert($antiFlood);
         } elseif ($timeDiff->i < 1) {
-            if ($antiFlood->getMessages() >= $allowedMessagesNumber) {
+            if ($antiFlood->getMessagesCount() >= $allowedMessagesNumber) {
                 $reverseDiff = 60 - $timeDiff->s;
                 $text = $this->translate('anti_flood.message_small', ['%reverseDiff%' => $reverseDiff]);
+
+                sleep(1.2);
+
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
                     $text,
@@ -197,11 +205,28 @@ class TelegramController extends Controller
                 return true;
             }
 
-            $antiFlood->setMessages($antiFlood->getMessages() + 1);
+            $antiFlood->setMessagesCount($antiFlood->getMessagesCount() + 1);
             $this->tgDb->insert($antiFlood);
         }
 
         return false;
+    }
+
+    public function getArgs(&$command = null)
+    {
+        $delimiter = strpos($this->tgRequest->getText(), '_');
+
+        if (false !== $delimiter) {
+            $args = substr($this->tgRequest->getText(), $delimiter + 1);
+
+            if ($args) {
+                $command = substr($this->tgRequest->getText(), 0, $delimiter);
+
+                return $args;
+            }
+        }
+
+        return null;
     }
 
     public function commandHelp()
@@ -396,103 +421,105 @@ class TelegramController extends Controller
     // Если тип ответа message
     public function handlerRequestMessage()
     {
-        if ($this->tgRequest->getText()) {
-            if ($this->isBotCommand('/help') ||
-                $this->isBotCommand('/start')) {
-                $this->commandHelp();
-
-                return true;
-            }
-
-            if ($this->isBotCommand('/helpmore')) {
-                $this->commandHelpMore();
-
-                return true;
-            }
-
-            if ($this->isBotCommand('/meetingroomlist')) {
-                $this->meetingRoomSelect();
-
-                return true;
-            }
-
-            if ($this->isBotCommand('/eventlist')) {
-                $this->userMeetingRoomList();
-
-                return true;
-            }
-
-            if ($this->isBotCommand('/d')) {
-                $this->eventDelete();
-
-                return true;
-            }
-
-            if ($this->isBotCommand('/e')) {
-                $this->eventEdit();
-
-                return true;
-            }
-
-            if ($this->isBotCommand('/exit')) {
-                $this->commandExit();
-
-                return true;
-            }
-
-            /*
-             * Начало бронирования переговорки
-             */
-
-            $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-
-            // Отсюда пользователь начинает пошагово заполнять данные
-            if ($meetingRoomUser->getMeetingRoom() && !$meetingRoomUser->getStatus()) {
-                if (!$meetingRoomUser->getDate()) {
-                    $this->meetingRoomSelectedTime();
-
-                    return true;
-                } elseif (!$meetingRoomUser->getTime()) {
-                    $this->meetingRoomSelectedTime();
-
-                    return true;
-                } elseif (!$meetingRoomUser->getEventName()) {
-                    $this->meetingRoomSelectEventName();
-
-                    return true;
-                } elseif (!$meetingRoomUser->getEventMembers()) {
-                    $this->meetingRoomSelectEventMembers();
-
-                    return true;
-                }
-                // Редактирование данных
-            } elseif ('edit' == $meetingRoomUser->getStatus()) {
-                if (!$meetingRoomUser->getMeetingRoom()) {
-                    $this->eventEdit(null, 'meetingRoom');
-
-                    return true;
-                } elseif (!$meetingRoomUser->getDate()) {
-                    $this->meetingRoomSelectedTime();
-
-                    return true;
-                } elseif (!$meetingRoomUser->getTime()) {
-                    $this->meetingRoomSelectedTime();
-
-                    return true;
-                } elseif (!$meetingRoomUser->getEventName()) {
-                    $this->eventEdit(null, 'eventName');
-
-                    return true;
-                } elseif (!$meetingRoomUser->getEventMembers()) {
-                    $this->meetingRoomSelectEventMembers();
-
-                    return true;
-                }
-            }
-            /*
-             * Конец бронирования переговорки
-             */
+        if (!$this->tgRequest->getText()) {
+            return false;
         }
+
+        if ($this->isBotCommand('/help') ||
+            $this->isBotCommand('/start')) {
+            $this->commandHelp();
+
+            return true;
+        }
+
+        if ($this->isBotCommand('/helpmore')) {
+            $this->commandHelpMore();
+
+            return true;
+        }
+
+        if ($this->isBotCommand('/meetingroomlist')) {
+            $this->meetingRoomSelect();
+
+            return true;
+        }
+
+        if ($this->isBotCommand('/eventlist')) {
+            $this->userMeetingRoomList();
+
+            return true;
+        }
+
+        if ($this->isBotCommand('/d')) {
+            $this->eventDelete();
+
+            return true;
+        }
+
+        if ($this->isBotCommand('/e')) {
+            $this->eventEdit();
+
+            return true;
+        }
+
+        if ($this->isBotCommand('/exit')) {
+            $this->commandExit();
+
+            return true;
+        }
+
+        /*
+         * Начало бронирования переговорки
+         */
+
+        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+
+        // Отсюда пользователь начинает пошагово заполнять данные
+        if ($meetingRoomUser->getMeetingRoom() && !$meetingRoomUser->getStatus()) {
+            if (!$meetingRoomUser->getDate()) {
+                $this->meetingRoomSelectedTime();
+
+                return true;
+            } elseif (!$meetingRoomUser->getTime()) {
+                $this->meetingRoomSelectedTime();
+
+                return true;
+            } elseif (!$meetingRoomUser->getEventName()) {
+                $this->meetingRoomSelectEventName();
+
+                return true;
+            } elseif (!$meetingRoomUser->getEventMembers()) {
+                $this->meetingRoomSelectEventMembers();
+
+                return true;
+            }
+            // Редактирование данных
+        } elseif ('edit' == $meetingRoomUser->getStatus()) {
+            if (!$meetingRoomUser->getMeetingRoom()) {
+                $this->eventEdit(null, 'meetingRoom');
+
+                return true;
+            } elseif (!$meetingRoomUser->getDate()) {
+                $this->meetingRoomSelectedTime();
+
+                return true;
+            } elseif (!$meetingRoomUser->getTime()) {
+                $this->meetingRoomSelectedTime();
+
+                return true;
+            } elseif (!$meetingRoomUser->getEventName()) {
+                $this->eventEdit(null, 'eventName');
+
+                return true;
+            } elseif (!$meetingRoomUser->getEventMembers()) {
+                $this->meetingRoomSelectEventMembers();
+
+                return true;
+            }
+        }
+        /*
+         * Конец бронирования переговорки
+         */
 
         return false;
     }
@@ -1176,6 +1203,7 @@ class TelegramController extends Controller
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
+
         if (isset($meetingRoomUserData['users']['duplicate']) && $meetingRoomUserData['users']['duplicate']) {
             foreach ($meetingRoomUserData['users']['duplicate'] as $id => $memberDuplicate) {
                 $keyboard = [];
@@ -1706,20 +1734,6 @@ class TelegramController extends Controller
         );
     }
 
-    public function getEventArgs()
-    {
-        $delimiter = strpos($this->tgRequest->getText(), '_');
-
-        if (false !== $delimiter) {
-            $args = substr($this->tgRequest->getText(), $delimiter + 1);
-            if ($args) {
-                return $args;
-            }
-        }
-
-        return null;
-    }
-
     public function userMeetingRoomList()
     {
         $tgUser = $this->tgDb->getTgUser();
@@ -1734,7 +1748,7 @@ class TelegramController extends Controller
 
             $filter = ['startDateTime' => $dateToday, 'attendees' => $bitrixUser->getEmail()];
 
-            $args = (int) $this->getEventArgs() - 1;
+            $args = (int) $this->getArgs() - 1;
             $meetingRoomList = $this->googleCalendar->getCalendarNameList();
 
             $calendarCount = count($this->googleCalendar->getCalendarNameList());
@@ -1845,7 +1859,7 @@ class TelegramController extends Controller
 
     public function eventDelete($data = null)
     {
-        $args = $this->getEventArgs();
+        $args = $this->getArgs();
 
         if (isset($data['data']['args'])) {
             $args = $data['data']['args'];
@@ -1922,7 +1936,7 @@ class TelegramController extends Controller
         $meetingRoom = $this->tgDb->getMeetingRoomUser();
 
         if ($meetingRoom) {
-            $args = $this->getEventArgs();
+            $args = $this->getArgs();
 
             if (isset($data['data']['args'])) {
                 $args = $data['data']['args'];

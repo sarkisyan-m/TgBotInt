@@ -149,22 +149,6 @@ class TelegramDb
         return [];
     }
 
-    public function getByDate(\Datetime $date)
-    {
-        $from = new \DateTime($date->format('Y-m-d').' 00:00:00');
-        $to = new \DateTime($date->format('Y-m-d').' 23:59:59');
-
-        $qb = $this->entityManager->createQueryBuilder();
-        $qb
-            ->andWhere('date BETWEEN :from AND :to')
-            ->setParameter('from', $from)
-            ->setParameter('to', $to)
-        ;
-        $result = $qb->getQuery()->getResult();
-
-        return $result;
-    }
-
     /**
      * @param $params
      *
@@ -245,7 +229,7 @@ class TelegramDb
         } else {
             $antiFlood = new AntiFlood();
             $antiFlood->setDate(new \DateTime());
-            $antiFlood->setMessages(0);
+            $antiFlood->setMessagesCount(0);
             $antiFlood->setTgUser($this->getTgUser());
             $this->insert($antiFlood);
         }
