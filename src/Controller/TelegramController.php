@@ -409,7 +409,7 @@ class TelegramController extends Controller
         }
 
         if ($command) {
-            $command = mb_strtolower($command);
+            $command = (string)mb_strtolower($command);
             if (false !== array_search($command, $noCommandList)) {
                 return true;
             }
@@ -421,7 +421,7 @@ class TelegramController extends Controller
     // Если тип ответа message
     public function handlerRequestMessage()
     {
-        if (!$this->tgRequest->getText()) {
+        if ($this->tgRequest->getText() === null) {
             return false;
         }
 
@@ -1204,251 +1204,120 @@ class TelegramController extends Controller
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
 
-        if (isset($meetingRoomUserData['users']['duplicate']) && $meetingRoomUserData['users']['duplicate']) {
-            foreach ($meetingRoomUserData['users']['duplicate'] as $id => $memberDuplicate) {
-                $keyboard = [];
-                $bitrixUsers = $this->bitrix24->getUsers(['name' => $memberDuplicate['name'], 'active' => true]);
+        if (!isset($meetingRoomUserData['users']['duplicate'])) {
+            return false;
+        }
 
-                if ($bitrixUsers) {
-                    foreach ($bitrixUsers as $bitrixUser) {
-                        // попадаем сюда по коллбеку после выбора кнопки пользователем
-                        if (isset($data) && $data && 'duplicate' == $data['event']['members']) {
-                            if (isset($data['data']['ready']) && 'no' == $data['data']['ready']) {
-                                $meetingRoomUser->setEventMembers('');
-                                $this->tgDb->insert($meetingRoomUser);
+        foreach ($meetingRoomUserData['users']['duplicate'] as $id => $memberDuplicate) {
+            $keyboard = [];
+            $bitrixUsers = $this->bitrix24->getUsers(['name' => $memberDuplicate['name'], 'active' => true]);
 
-                                $text = $this->translate('meeting_room.event_members.cancel_info');
-                                $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
+            if (!$bitrixUsers) {
+                return false;
+            }
 
-                                $this->tgBot->editMessageText(
-                                    $text,
-                                    $this->tgRequest->getChatId(),
-                                    $messageId,
-                                    null,
-                                    'Markdown'
-                                );
+            foreach ($bitrixUsers as $bitrixUser) {
+                // попадаем сюда по коллбеку после выбора кнопки пользователем
+                if (isset($data) && $data && 'duplicate' == $data['event']['members']) {
+                    if (isset($data['data']['ready']) && 'no' == $data['data']['ready']) {
+                        $meetingRoomUser->setEventMembers('');
+                        $this->tgDb->insert($meetingRoomUser);
 
-                                return true;
-                            }
+                        $text = $this->translate('meeting_room.event_members.cancel_info');
+                        $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
 
-                            if ($data['data']['bitrix_id'] == $bitrixUser->getId()) {
-                                if (isset($meetingRoomUserData['users']['found'])) {
-                                    foreach ($meetingRoomUserData['users']['found'] as $data) {
-                                        if ($data['bitrix_id'] == $bitrixUser->getId()) {
-                                            unset($meetingRoomUserData['users']['duplicate'][$id]);
-                                            unset($data);
-                                            $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
-                                            $this->tgDb->insert($meetingRoomUser);
+                        $this->tgBot->editMessageText(
+                            $text,
+                            $this->tgRequest->getChatId(),
+                            $messageId,
+                            null,
+                            'Markdown'
+                        );
 
-                                            break 2;
-                                        }
-                                    }
-                                }
-
-                                $meetingRoomUserData['users']['found'][] = $this->membersFormat($bitrixUser);
-                            } elseif ('none' == $data['data']['bitrix_id']) {
-                                $meetingRoomUserData['users']['not_found'][] = [
-                                    'name' => $memberDuplicate['name'],
-                                ];
-                            } else {
-                                continue;
-                            }
-
-                            unset($meetingRoomUserData['users']['duplicate'][$id]);
-                            unset($data);
-                            $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
-                            $this->tgDb->insert($meetingRoomUser);
-
-                            break;
-                        }
-
-                        $contact = array_filter([$bitrixUser->getFirstPhone(), $bitrixUser->getEmail()]);
-                        if (!$contact) {
-                            $contact[] = 'id#'.$bitrixUser->getId();
-                        }
-
-                        $contact = implode(', ', $contact);
-                        $text = "{$bitrixUser->getName()} ({$contact})";
-                        $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => $bitrixUser->getId()]]);
-                        $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
+                        return true;
                     }
 
-                    $callback1 = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none']]);
-                    $callback2 = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none', 'ready' => 'no']]);
-                    $keyboard[] = [
-                        $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.not_on_list'), $callback1),
-                        $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback2),
-                    ];
-                }
+                    if ($data['data']['bitrix_id'] == $bitrixUser->getId()) {
+                        if (isset($meetingRoomUserData['users']['found'])) {
+                            foreach ($meetingRoomUserData['users']['found'] as $data) {
+                                if ($data['bitrix_id'] == $bitrixUser->getId()) {
+                                    unset($meetingRoomUserData['users']['duplicate'][$id]);
+                                    unset($data);
+                                    $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                                    $this->tgDb->insert($meetingRoomUser);
 
-                $this->tgDb->setCallbackQuery();
+                                    break 2;
+                                }
+                            }
+                        }
 
-                // Если успешно уточнили, то просто отправляем пользователю еще набор кнопок для дальнейшего уточнения,
-                // Иначе просто выходим из цикла и идем дальше искать другие типы - not_found, fount (сейчас duplicate)
-                // После опустошения идем вниз по ветке
-                if (!$meetingRoomUserData['users']['duplicate']) {
-                    unset($meetingRoomUserData['users']['duplicate']);
+                        $meetingRoomUserData['users']['found'][] = $this->membersFormat($bitrixUser);
+                    } elseif ('none' == $data['data']['bitrix_id']) {
+                        $meetingRoomUserData['users']['not_found'][] = [
+                            'name' => $memberDuplicate['name'],
+                        ];
+                    } else {
+                        continue;
+                    }
+
+                    unset($meetingRoomUserData['users']['duplicate'][$id]);
+                    unset($data);
                     $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
                     $this->tgDb->insert($meetingRoomUser);
 
                     break;
-                } elseif (!isset($meetingRoomUserData['users']['duplicate'][$id])) {
-                    continue;
-                }
-                $members = $this->membersList($meetingRoomUserData);
-                $text = $this->translate('meeting_room.event_members.form.head');
-                if ($members['found']) {
-                    $text .= $this->translate('meeting_room.event_members.form.found', ['%membersFound%' => $members['found']]);
-                }
-                if ($members['duplicate']) {
-                    $text .= $this->translate('meeting_room.event_members.form.duplicate', ['%membersDuplicate%' => $members['duplicate']]);
-                }
-                if ($members['not_found']) {
-                    $text .= $this->translate('meeting_room.event_members.form.not_found', ['%membersNotFound%' => $members['not_found']]);
                 }
 
-                $this->tgBot->editMessageText(
-                    "{$text}\n{$this->translate('meeting_room.event_members.form.specify_duplicate', ['%membersDuplicateName%' => $memberDuplicate['name']])}",
-                    $this->tgRequest->getChatId(),
-                    $messageId,
-                    null,
-                    'Markdown',
-                    false,
-                    $this->tgBot->inlineKeyboardMarkup($keyboard)
-                );
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public function eventMembersNotFound($messageId, $data = null)
-    {
-        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-        $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
-
-        if (isset($meetingRoomUserData['users']['not_found']) && $meetingRoomUserData['users']['not_found']) {
-            // Если ответ callback_query
-            // После клика на кнпоку Продолжить - идем по ветке вниз
-            if (isset($data) && $data && 'not_found' == $data['event']['members']) {
-                if ('yes' == $data['data']['ready']) {
-                    foreach ($meetingRoomUserData['users']['not_found'] as $id => $memberNotFound) {
-                        $meetingRoomUserData['users']['found'][] = [
-                            'name' => $memberNotFound['name'],
-                        ];
-                        unset($meetingRoomUserData['users']['not_found'][$id]);
-                    }
-                    unset($meetingRoomUserData['users']['not_found']);
-                    $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
-                    $this->tgDb->insert($meetingRoomUser);
-                } elseif ('no' == $data['data']['ready']) {
-                    $meetingRoomUser->setEventMembers('');
-                    $this->tgDb->insert($meetingRoomUser);
-
-                    $text = $this->translate('meeting_room.event_members.cancel_info');
-                    $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
-
-                    $this->tgBot->editMessageText(
-                        $text,
-                        $this->tgRequest->getChatId(),
-                        $messageId,
-                        null,
-                        'Markdown'
-                    );
-
-                    return true;
-                }
-            } else {
-                $members = $this->membersList($meetingRoomUserData);
-
-                $keyboard = [];
-                $ln = 0;
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'not_found'], 'data' => ['ready' => 'yes']]);
-                $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.continue'), $callback);
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'not_found'], 'data' => ['ready' => 'no']]);
-                $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
-                $this->tgDb->setCallbackQuery();
-
-                $text = $this->translate('meeting_room.event_members.form.head');
-                if ($members['found']) {
-                    $text .= $this->translate('meeting_room.event_members.form.found', ['%membersFound%' => $members['found']]);
-                }
-                if ($members['duplicate']) {
-                    $text .= $this->translate('meeting_room.event_members.form.duplicate', ['%membersDuplicate%' => $members['duplicate']]);
-                }
-                if ($members['not_found']) {
-                    $text .= $this->translate('meeting_room.event_members.form.not_found', ['%membersNotFound%' => $members['not_found']]);
+                $contact = array_filter([$bitrixUser->getFirstPhone(), $bitrixUser->getEmail()]);
+                if (!$contact) {
+                    $contact[] = 'id#'.$bitrixUser->getId();
                 }
 
-                $this->tgBot->editMessageText(
-                    "{$text}\n{$this->translate('meeting_room.event_members.form.specify_not_found')}",
-                    $this->tgRequest->getChatId(),
-                    $messageId,
-                    null,
-                    'Markdown',
-                    false,
-                    $this->tgBot->inlineKeyboardMarkup($keyboard)
-                );
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public function eventMembersFound($messageId, $data = null)
-    {
-        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-        $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
-        if (isset($meetingRoomUserData['users']['none']) ||
-            isset($meetingRoomUserData['users']['found']) && $meetingRoomUserData['users']['found']) {
-            if (isset($data) && $data && 'found' == $data['event']['members']) {
-                if ('yes' == $data['data']['ready']) {
-                    $this->meetingRoomConfirm(null, true);
-
-                    return true;
-                } elseif ('no' == $data['data']['ready']) {
-                    $meetingRoomUser->setEventMembers('');
-                    $this->tgDb->insert($meetingRoomUser);
-
-                    $text = $this->translate('meeting_room.event_members.cancel_info');
-                    $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
-                    $this->tgBot->editMessageText(
-                        $text,
-                        $this->tgRequest->getChatId(),
-                        $messageId,
-                        null,
-                        'Markdown'
-                    );
-
-                    return true;
-                }
+                $contact = implode(', ', $contact);
+                $text = "{$bitrixUser->getName()} ({$contact})";
+                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => $bitrixUser->getId()]]);
+                $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
             }
 
-            $text = $this->translate('meeting_room.event_members.list_formed');
+            $callback1 = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none']]);
+            $callback2 = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none', 'ready' => 'no']]);
+            $keyboard[] = [
+                $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.not_on_list'), $callback1),
+                $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback2),
+            ];
 
-            $members = $this->membersList($meetingRoomUserData);
-
-            if ($members['found']) {
-                $text .= "{$this->translate('event_info.event_members', ['%eventMembers%' => $members['found']])}\n";
-            }
-            if ($members['organizer']) {
-                $text .= $this->translate('event_info.event_organizer', ['%eventOrganizer%' => $members['organizer']]);
-            }
-
-            $keyboard = [];
-            $ln = 0;
-            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'found'], 'data' => ['ready' => 'yes']]);
-            $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.continue'), $callback);
-            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'found'], 'data' => ['ready' => 'no']]);
-            $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
             $this->tgDb->setCallbackQuery();
 
+            // Если успешно уточнили, то просто отправляем пользователю еще набор кнопок для дальнейшего уточнения,
+            // Иначе просто выходим из цикла и идем дальше искать другие типы - not_found, fount (сейчас duplicate)
+            // После опустошения идем вниз по ветке
+            if (!$meetingRoomUserData['users']['duplicate']) {
+                unset($meetingRoomUserData['users']['duplicate']);
+                $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                $this->tgDb->insert($meetingRoomUser);
+
+                break;
+            } elseif (!isset($meetingRoomUserData['users']['duplicate'][$id])) {
+                continue;
+            }
+
+            $members = $this->membersList($meetingRoomUserData);
+            $text = $this->translate('meeting_room.event_members.form.head');
+
+            if ($members['found']) {
+                $text .= $this->translate('meeting_room.event_members.form.found', ['%membersFound%' => $members['found']]);
+            }
+
+            if ($members['duplicate']) {
+                $text .= $this->translate('meeting_room.event_members.form.duplicate', ['%membersDuplicate%' => $members['duplicate']]);
+            }
+
+            if ($members['not_found']) {
+                $text .= $this->translate('meeting_room.event_members.form.not_found', ['%membersNotFound%' => $members['not_found']]);
+            }
+
             $this->tgBot->editMessageText(
-                $text,
+                "{$text}\n{$this->translate('meeting_room.event_members.form.specify_duplicate', ['%membersDuplicateName%' => $memberDuplicate['name']])}",
                 $this->tgRequest->getChatId(),
                 $messageId,
                 null,
@@ -1461,6 +1330,148 @@ class TelegramController extends Controller
         }
 
         return false;
+    }
+
+    public function eventMembersNotFound($messageId, $data = null)
+    {
+        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+        $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
+
+        if (!isset($meetingRoomUserData['users']['not_found'])) {
+            return false;
+        }
+
+        // Если ответ callback_query
+        // После клика на кнпоку Продолжить - идем по ветке вниз
+        if (isset($data) && $data && 'not_found' == $data['event']['members']) {
+            if ('yes' == $data['data']['ready']) {
+                foreach ($meetingRoomUserData['users']['not_found'] as $id => $memberNotFound) {
+                    $meetingRoomUserData['users']['found'][] = [
+                        'name' => $memberNotFound['name'],
+                    ];
+                    unset($meetingRoomUserData['users']['not_found'][$id]);
+                }
+                unset($meetingRoomUserData['users']['not_found']);
+                $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                $this->tgDb->insert($meetingRoomUser);
+            } elseif ('no' == $data['data']['ready']) {
+                $meetingRoomUser->setEventMembers('');
+                $this->tgDb->insert($meetingRoomUser);
+
+                $text = $this->translate('meeting_room.event_members.cancel_info');
+                $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
+
+                $this->tgBot->editMessageText(
+                    $text,
+                    $this->tgRequest->getChatId(),
+                    $messageId,
+                    null,
+                    'Markdown'
+                );
+
+                return true;
+            }
+        } else {
+            $members = $this->membersList($meetingRoomUserData);
+
+            $keyboard = [];
+            $ln = 0;
+            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'not_found'], 'data' => ['ready' => 'yes']]);
+            $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.continue'), $callback);
+            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'not_found'], 'data' => ['ready' => 'no']]);
+            $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
+            $this->tgDb->setCallbackQuery();
+
+            $text = $this->translate('meeting_room.event_members.form.head');
+            if ($members['found']) {
+                $text .= $this->translate('meeting_room.event_members.form.found', ['%membersFound%' => $members['found']]);
+            }
+            if ($members['duplicate']) {
+                $text .= $this->translate('meeting_room.event_members.form.duplicate', ['%membersDuplicate%' => $members['duplicate']]);
+            }
+            if ($members['not_found']) {
+                $text .= $this->translate('meeting_room.event_members.form.not_found', ['%membersNotFound%' => $members['not_found']]);
+            }
+
+            $this->tgBot->editMessageText(
+                "{$text}\n{$this->translate('meeting_room.event_members.form.specify_not_found')}",
+                $this->tgRequest->getChatId(),
+                $messageId,
+                null,
+                'Markdown',
+                false,
+                $this->tgBot->inlineKeyboardMarkup($keyboard)
+            );
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function eventMembersFound($messageId, $data = null)
+    {
+        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+        $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
+
+
+        if (!isset($meetingRoomUserData['users']['none']) && !isset($meetingRoomUserData['users']['found'])) {
+            return false;
+        }
+
+        if (isset($data) && $data && 'found' == $data['event']['members']) {
+            if ('yes' == $data['data']['ready']) {
+                $this->meetingRoomConfirm(null, true);
+
+                return true;
+            } elseif ('no' == $data['data']['ready']) {
+                $meetingRoomUser->setEventMembers('');
+                $this->tgDb->insert($meetingRoomUser);
+
+                $text = $this->translate('meeting_room.event_members.cancel_info');
+                $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
+                $this->tgBot->editMessageText(
+                    $text,
+                    $this->tgRequest->getChatId(),
+                    $messageId,
+                    null,
+                    'Markdown'
+                );
+
+                return true;
+            }
+        }
+
+        $text = $this->translate('meeting_room.event_members.list_formed');
+        $members = $this->membersList($meetingRoomUserData);
+
+        if ($members['found']) {
+            $text .= "{$this->translate('event_info.event_members', ['%eventMembers%' => $members['found']])}\n";
+        }
+
+        if ($members['organizer']) {
+            $text .= $this->translate('event_info.event_organizer', ['%eventOrganizer%' => $members['organizer']]);
+        }
+
+        $keyboard = [];
+        $ln = 0;
+        $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'found'], 'data' => ['ready' => 'yes']]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.continue'), $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'found'], 'data' => ['ready' => 'no']]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
+        $this->tgDb->setCallbackQuery();
+
+        $this->tgBot->editMessageText(
+            $text,
+            $this->tgRequest->getChatId(),
+            $messageId,
+            null,
+            'Markdown',
+            false,
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
+        );
+
+        return true;
     }
 
     public function meetingRoomSelectEventMembers($data = null)
@@ -1563,28 +1574,30 @@ class TelegramController extends Controller
         // Сразу же смотрим, добавились ли участники
         if ($meetingRoomUser->getEventMembers()) {
             $tgUser = $this->tgDb->getTgUser();
-            if ($tgUser) {
-                if ($meetingRoomUser->getEventMembers()) {
-                    // Если мы нашли какие-то совпадения в базе, то идем сюда.
-                    // foreach идет по одному хиту для каждого найденого участника
-                    // К примеру, если у нас есть Иван Иванов и Петр Петров с совпадениями,
-                    // то сначала идентифицируем Иван Иванова, делаем кнопки для пользователя,
-                    // чтобы он указал, какой именно Иван Иванов нужен и не продолжаем дальше,
-                    // пока не опустеет duplicate. Эту функцию посещает как ответ message, так и callback_query.
-                    if ($this->eventMembersDuplicate($messageId, $data)) {
-                        return;
-                    }
-                    // Если есть ненайденные пользователи
-                    if ($this->eventMembersNotFound($messageId, $data)) {
-                        return;
-                    }
+            if (!$tgUser) {
+                return;
+            }
 
-                    // По сути, в found записываются уже все участники, которые
-                    // найдены / были идентифицированы (если были совпадения) / не найдены
-                    // Однако, в found не записывается сам организатор - у него отдельный ключ organizer.
-                    if ($this->eventMembersFound($messageId, $data)) {
-                        return;
-                    }
+            if ($meetingRoomUser->getEventMembers()) {
+                // Если мы нашли какие-то совпадения в базе, то идем сюда.
+                // foreach идет по одному хиту для каждого найденого участника
+                // К примеру, если у нас есть Иван Иванов и Петр Петров с совпадениями,
+                // то сначала идентифицируем Иван Иванова, делаем кнопки для пользователя,
+                // чтобы он указал, какой именно Иван Иванов нужен и не продолжаем дальше,
+                // пока не опустеет duplicate. Эту функцию посещает как ответ message, так и callback_query.
+                if ($this->eventMembersDuplicate($messageId, $data)) {
+                    return;
+                }
+                // Если есть ненайденные пользователи
+                if ($this->eventMembersNotFound($messageId, $data)) {
+                    return;
+                }
+
+                // По сути, в found записываются уже все участники, которые
+                // найдены / были идентифицированы (если были совпадения) / не найдены
+                // Однако, в found не записывается сам организатор - у него отдельный ключ organizer.
+                if ($this->eventMembersFound($messageId, $data)) {
+                    return;
                 }
             }
         }
@@ -1678,33 +1691,38 @@ class TelegramController extends Controller
                     $tgUser = $this->tgDb->getTgUser();
                     $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
 
-                    if ($bitrixUser) {
-                        $bitrixUser = $bitrixUser[0];
-                        $filter = ['eventIdShort' => $meetingRoomUser->getEventId(), 'attendees' => $bitrixUser->getEmail()];
-                        $event = $this->googleCalendar->getList($filter);
-
-                        if ($event['calendarName'] == $meetingRoomName) {
-                            $this->googleCalendar->editEvent(
-                                $calendarId,
-                                $event['eventId'],
-                                $meetingRoomEventName,
-                                $textMembers,
-                                $meetingRoomDateTimeStart,
-                                $meetingRoomDateTimeEnd,
-                                $attendees
-                            );
-                        } else {
-                            $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
-                            $this->googleCalendar->addEvent(
-                                $calendarId,
-                                $meetingRoomEventName,
-                                $textMembers,
-                                $meetingRoomDateTimeStart,
-                                $meetingRoomDateTimeEnd,
-                                $attendees
-                            );
-                        }
+                    if (!$bitrixUser) {
+                        return;
                     }
+
+                    $bitrixUser = $bitrixUser[0];
+                    $filter = ['eventIdShort' => $meetingRoomUser->getEventId(), 'attendees' => $bitrixUser->getEmail()];
+                    $event = $this->googleCalendar->getList($filter);
+
+                    // Если в том же календаре хотим менять, то редактируем
+                    if ($event['calendarName'] == $meetingRoomName) {
+                        $this->googleCalendar->editEvent(
+                            $calendarId,
+                            $event['eventId'],
+                            $meetingRoomEventName,
+                            $textMembers,
+                            $meetingRoomDateTimeStart,
+                            $meetingRoomDateTimeEnd,
+                            $attendees
+                        );
+                    // Если хотим в другом календаре, то придется пересоздать событие (удалить и добавить заново)
+                    } else {
+                        $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
+                        $this->googleCalendar->addEvent(
+                            $calendarId,
+                            $meetingRoomEventName,
+                            $textMembers,
+                            $meetingRoomDateTimeStart,
+                            $meetingRoomDateTimeEnd,
+                            $attendees
+                        );
+                    }
+                // Если просто хотим добавить новое событие
                 } else {
                     $this->googleCalendar->addEvent(
                         $calendarId,
@@ -1716,6 +1734,7 @@ class TelegramController extends Controller
                     );
                 }
                 $this->tgDb->getMeetingRoomUser(true);
+            // Если пользователь нажал на отмену, то стираем все данные
             } elseif ('no' == $data['data']['ready']) {
                 $text .= "\n{$this->translate('meeting_room.confirm.data_cancel')}";
                 $keyboard = null;
@@ -1739,104 +1758,105 @@ class TelegramController extends Controller
         $tgUser = $this->tgDb->getTgUser();
         $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
 
+        if (!$bitrixUser) {
+            return;
+        }
+
+        $bitrixUser = $bitrixUser[0];
         $limitBytesMax = 5500;
         $reserveByte = 100;
+        $dateToday = date('d.m.Y', strtotime('today'));
+        $filter = ['startDateTime' => $dateToday, 'attendees' => $bitrixUser->getEmail()];
 
-        if ($bitrixUser) {
-            $bitrixUser = $bitrixUser[0];
-            $dateToday = date('d.m.Y', strtotime('today'));
+        $args = (int) $this->getArgs() - 1;
+        $meetingRoomList = $this->googleCalendar->getCalendarNameList();
 
-            $filter = ['startDateTime' => $dateToday, 'attendees' => $bitrixUser->getEmail()];
+        $calendarCount = count($this->googleCalendar->getCalendarNameList());
+        $limitBytes = ($limitBytesMax - ($calendarCount * $reserveByte)) / $calendarCount;
 
-            $args = (int) $this->getArgs() - 1;
-            $meetingRoomList = $this->googleCalendar->getCalendarNameList();
-
-            $calendarCount = count($this->googleCalendar->getCalendarNameList());
-            $limitBytes = ($limitBytesMax - ($calendarCount * $reserveByte)) / $calendarCount;
-
-            $isSpecificMeetingRoom = isset($meetingRoomList[$args]);
-            if ($isSpecificMeetingRoom) {
-                $filter['calendarName'] = $meetingRoomList[$args];
-                $limitBytes = $limitBytesMax - $reserveByte;
-            }
-
-            $eventListCurDay = $this->googleCalendar->getList($filter);
-
-            if (!$eventListCurDay) {
-                return;
-            }
-
-            $textPart = [];
-            foreach ($eventListCurDay as $calendar) {
-                $meetingRoomKey = array_search($calendar['calendarName'], $meetingRoomList) + 1;
-
-                $textArr = [];
-                $limitOverEventCount = 0;
-
-                $dateTemp = null;
-
-                if ($calendar['listEvents']) {
-                    foreach ($calendar['listEvents'] as $event) {
-                        $text = null;
-
-                        $date = (new \DateTime($event['dateTimeStart']))->format('d.m.Y');
-                        if ($date != $dateTemp) {
-                            $text .= $this->translate('event_list.date', ['%date%' => $date]);
-                        }
-
-                        $timeStart = (new \DateTime($event['dateTimeStart']))->format('H:i');
-                        $timeEnd = (new \DateTime($event['dateTimeEnd']))->format('H:i');
-
-                        $textName = $this->translate('event_info_string.event_name', ['%eventName%' => $event['calendarEventName']]);
-                        $verifyDescription = $this->googleVerifyDescription($event);
-                        if ($verifyDescription['textMembers']) {
-                            $verifyDescription['textMembers'] = $this->translate('event_info_string.event_members', ['%eventMembers%' => $verifyDescription['textMembers']]);
-                        }
-                        $verifyDescription['textOrganizer'] = $this->translate('event_info_string.event_organizer', ['%eventOrganizer%' => $verifyDescription['textOrganizer']]);
-                        $textTime = "_{$textName}{$verifyDescription['textMembers']}_ {$verifyDescription['textOrganizer']}";
-                        $text .= $this->translate('event_list.event_text', ['%timeStart%' => $timeStart, '%timeEnd%' => $timeEnd, '%textTime%' => $textTime]);
-
-                        $eventId = substr($event['eventId'], 0, 4);
-                        $text .= $this->translate('event_list.event_edit', ['%eventId%' => $eventId]);
-                        $text .= $this->translate('event_list.event_remove', ['%eventId%' => $eventId]);
-
-                        $dateTemp = $date;
-
-                        $textFullLen = strlen(implode('', $textArr));
-                        if ($textFullLen < $limitBytes && $textFullLen + strlen($text) < $limitBytes) {
-                            $textArr[] = $text;
-                        } else {
-                            ++$limitOverEventCount;
-                        }
-                    }
-                }
-
-                $textCalendarName = $this->translate('event_list.room', ['%calendarName%' => $calendar['calendarName']]);
-
-                $text = implode('', $textArr);
-
-                if (!$text && 0 == $limitOverEventCount) {
-                    $text = $this->translate('event_list.event_empty');
-                } elseif (!$text && !$isSpecificMeetingRoom && $limitOverEventCount > 0) {
-                    $text .= $this->translate('event_list.event_is_big');
-                }
-
-                if ($limitOverEventCount > 0) {
-                    $text .= $this->translate('event_list.event_over', ['%eventOverCount%' => $limitOverEventCount]);
-                    if (!$isSpecificMeetingRoom) {
-                        $text .= $this->translate('event_list.event_show_all', ['%meetingRoomNumber%' => $meetingRoomKey]);
-                    }
-                }
-
-                $textPart[] = "{$textCalendarName} {$text}";
-            }
-
-            $this->tgBot->sendMessage(
-                $this->tgRequest->getChatId(),
-                implode('', $textPart),
-                'Markdown'
-            );
+        $isSpecificMeetingRoom = isset($meetingRoomList[$args]);
+        if ($isSpecificMeetingRoom) {
+            $filter['calendarName'] = $meetingRoomList[$args];
+            $limitBytes = $limitBytesMax - $reserveByte;
         }
+
+        $eventListCurDay = $this->googleCalendar->getList($filter);
+
+        if (!$eventListCurDay) {
+            return;
+        }
+
+        $textPart = [];
+        foreach ($eventListCurDay as $calendar) {
+            $meetingRoomKey = array_search($calendar['calendarName'], $meetingRoomList) + 1;
+
+            $textArr = [];
+            $limitOverEventCount = 0;
+
+            $dateTemp = null;
+
+            if ($calendar['listEvents']) {
+                foreach ($calendar['listEvents'] as $event) {
+                    $text = null;
+
+                    $date = (new \DateTime($event['dateTimeStart']))->format('d.m.Y');
+                    if ($date != $dateTemp) {
+                        $text .= $this->translate('event_list.date', ['%date%' => $date]);
+                    }
+
+                    $timeStart = (new \DateTime($event['dateTimeStart']))->format('H:i');
+                    $timeEnd = (new \DateTime($event['dateTimeEnd']))->format('H:i');
+
+                    $textName = $this->translate('event_info_string.event_name', ['%eventName%' => $event['calendarEventName']]);
+                    $verifyDescription = $this->googleVerifyDescription($event);
+                    if ($verifyDescription['textMembers']) {
+                        $verifyDescription['textMembers'] = $this->translate('event_info_string.event_members', ['%eventMembers%' => $verifyDescription['textMembers']]);
+                    }
+                    $verifyDescription['textOrganizer'] = $this->translate('event_info_string.event_organizer', ['%eventOrganizer%' => $verifyDescription['textOrganizer']]);
+                    $textTime = "_{$textName}{$verifyDescription['textMembers']}_ {$verifyDescription['textOrganizer']}";
+                    $text .= $this->translate('event_list.event_text', ['%timeStart%' => $timeStart, '%timeEnd%' => $timeEnd, '%textTime%' => $textTime]);
+
+                    $eventId = substr($event['eventId'], 0, 4);
+                    $text .= $this->translate('event_list.event_edit', ['%eventId%' => $eventId]);
+                    $text .= $this->translate('event_list.event_remove', ['%eventId%' => $eventId]);
+
+                    $dateTemp = $date;
+
+                    $textFullLen = strlen(implode('', $textArr));
+                    if ($textFullLen < $limitBytes && $textFullLen + strlen($text) < $limitBytes) {
+                        $textArr[] = $text;
+                    } else {
+                        ++$limitOverEventCount;
+                    }
+                }
+            }
+
+            $textCalendarName = $this->translate('event_list.room', ['%calendarName%' => $calendar['calendarName']]);
+
+            $text = implode('', $textArr);
+
+            if (!$text && 0 == $limitOverEventCount) {
+                $text = $this->translate('event_list.event_empty');
+            } elseif (!$text && !$isSpecificMeetingRoom && $limitOverEventCount > 0) {
+                $text .= $this->translate('event_list.event_is_big');
+            }
+
+            if ($limitOverEventCount > 0) {
+                $text .= $this->translate('event_list.event_over', ['%eventOverCount%' => $limitOverEventCount]);
+                if (!$isSpecificMeetingRoom) {
+                    $text .= $this->translate('event_list.event_show_all', ['%meetingRoomNumber%' => $meetingRoomKey]);
+                }
+            }
+
+            $textPart[] = "{$textCalendarName} {$text}";
+        }
+
+        $this->tgBot->sendMessage(
+            $this->tgRequest->getChatId(),
+            implode('', $textPart),
+            'Markdown'
+        );
+
     }
 
     public function googleEventFormat($event)
@@ -1868,66 +1888,67 @@ class TelegramController extends Controller
         $tgUser = $this->tgDb->getTgUser();
         $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
 
-        if ($bitrixUser) {
-            $bitrixUser = $bitrixUser[0];
+        if (!$bitrixUser) {
+            return;
+        }
 
-            $filter = ['eventIdShort' => $args, 'attendees' => $bitrixUser->getEmail()];
-            $event = $this->googleCalendar->getList($filter);
+        $bitrixUser = $bitrixUser[0];
+        $filter = ['eventIdShort' => $args, 'attendees' => $bitrixUser->getEmail()];
+        $event = $this->googleCalendar->getList($filter);
 
-            if (isset($event['eventId'])) {
-                $text = null;
+        if (isset($event['eventId'])) {
+            $text = null;
 
-                if (!isset($data['event']['event'])) {
-                    $text .= $this->translate('event_list.remove.confirmation');
-                }
+            if (!isset($data['event']['event'])) {
+                $text .= $this->translate('event_list.remove.confirmation');
+            }
 
-                $text .= $this->googleEventFormat($event);
+            $text .= $this->googleEventFormat($event);
 
-                if (isset($data['event']['event']) && 'delete' == $data['event']['event'] && 'yes' == $data['data']['ready']) {
-                    $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
-                    $text .= $this->translate('event_list.remove.success');
-                    $this->tgBot->editMessageText(
-                        $text,
-                        $this->tgRequest->getChatId(),
-                        $this->tgRequest->getMessageId(),
-                        null,
-                        'Markdown'
-                    );
-                } elseif (isset($data['event']['event']) && 'delete' == $data['event']['event'] && 'no' == $data['data']['ready']) {
-                    $text .= $this->translate('event_list.remove.cancel');
-                    $this->tgBot->editMessageText(
-                        $text,
-                        $this->tgRequest->getChatId(),
-                        $this->tgRequest->getMessageId(),
-                        null,
-                        'Markdown'
-                    );
-                } else {
-                    $keyboard = [];
-                    $ln = 0;
-                    $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'delete'], 'data' => ['ready' => 'yes', 'args' => $args]]);
-                    $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.remove'), $callback);
-                    $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'delete'], 'data' => ['ready' => 'no', 'args' => $args]]);
-                    $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.cancel'), $callback);
-                    $this->tgDb->setCallbackQuery();
-
-                    $this->tgBot->sendMessage(
-                        $this->tgRequest->getChatId(),
-                        $text,
-                        'Markdown',
-                        false,
-                        false,
-                        null,
-                        $this->tgBot->inlineKeyboardMarkup($keyboard)
-                    );
-                }
-            } else {
-                $this->tgBot->sendMessage(
+            if (isset($data['event']['event']) && 'delete' == $data['event']['event'] && 'yes' == $data['data']['ready']) {
+                $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
+                $text .= $this->translate('event_list.remove.success');
+                $this->tgBot->editMessageText(
+                    $text,
                     $this->tgRequest->getChatId(),
-                    $this->translate('event_list.event_not_found'),
+                    $this->tgRequest->getMessageId(),
+                    null,
                     'Markdown'
                 );
+            } elseif (isset($data['event']['event']) && 'delete' == $data['event']['event'] && 'no' == $data['data']['ready']) {
+                $text .= $this->translate('event_list.remove.cancel');
+                $this->tgBot->editMessageText(
+                    $text,
+                    $this->tgRequest->getChatId(),
+                    $this->tgRequest->getMessageId(),
+                    null,
+                    'Markdown'
+                );
+            } else {
+                $keyboard = [];
+                $ln = 0;
+                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'delete'], 'data' => ['ready' => 'yes', 'args' => $args]]);
+                $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.remove'), $callback);
+                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'delete'], 'data' => ['ready' => 'no', 'args' => $args]]);
+                $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.cancel'), $callback);
+                $this->tgDb->setCallbackQuery();
+
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $text,
+                    'Markdown',
+                    false,
+                    false,
+                    null,
+                    $this->tgBot->inlineKeyboardMarkup($keyboard)
+                );
             }
+        } else {
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('event_list.event_not_found'),
+                'Markdown'
+            );
         }
     }
 
@@ -1947,115 +1968,117 @@ class TelegramController extends Controller
             $tgUser = $this->tgDb->getTgUser();
             $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
 
-            if ($bitrixUser) {
-                $bitrixUser = $bitrixUser[0];
+            if (!$bitrixUser) {
+                return;
+            }
 
-                $filter = ['eventIdShort' => $args, 'attendees' => $bitrixUser->getEmail()];
-                $event = $this->googleCalendar->getList($filter);
+            $bitrixUser = $bitrixUser[0];
+            $filter = ['eventIdShort' => $args, 'attendees' => $bitrixUser->getEmail()];
+            $event = $this->googleCalendar->getList($filter);
 
-                if (isset($event['eventId'])) {
-                    $text = null;
+            if (isset($event['eventId'])) {
+                $text = null;
 
-                    $date = date('d.m.Y', strtotime($event['dateTimeStart']));
-                    $timeStart = date('H:i', strtotime($event['dateTimeStart']));
-                    $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
+                $date = date('d.m.Y', strtotime($event['dateTimeStart']));
+                $timeStart = date('H:i', strtotime($event['dateTimeStart']));
+                $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
 
-                    if (isset($data['event']['event']) && 'edit' == $data['event']['event']) {
-                        if ('meetingRoom' == $data['data']['obj']) {
-                            $meetingRoom->setMeetingRoom('');
-                            $meetingRoom->setDate('');
-                            $meetingRoom->setTime('');
-                            $meetingRoom->setEventId($args);
-                            $this->tgDb->insert($meetingRoom);
-                            $this->meetingRoomSelect();
+                if (isset($data['event']['event']) && 'edit' == $data['event']['event']) {
+                    if ('meetingRoom' == $data['data']['obj']) {
+                        $meetingRoom->setMeetingRoom('');
+                        $meetingRoom->setDate('');
+                        $meetingRoom->setTime('');
+                        $meetingRoom->setEventId($args);
+                        $this->tgDb->insert($meetingRoom);
+                        $this->meetingRoomSelect();
 
-                            return;
-                        } elseif ('dateTime' == $data['data']['obj']) {
-                            $this->meetingRoomConfirm();
+                        return;
+                    } elseif ('dateTime' == $data['data']['obj']) {
+                        $this->meetingRoomConfirm();
 
-                            return;
-                        } elseif ('eventName' == $data['data']['obj']) {
-                            $meetingRoom->setEventName('');
-                            $meetingRoom->setEventId($args);
-                            $this->tgDb->insert($meetingRoom);
+                        return;
+                    } elseif ('eventName' == $data['data']['obj']) {
+                        $meetingRoom->setEventName('');
+                        $meetingRoom->setEventId($args);
+                        $this->tgDb->insert($meetingRoom);
 
-                            $this->tgBot->editMessageText(
-                                $this->translate('event_list.edit.new_event_name'),
-                                $this->tgRequest->getChatId(),
-                                $this->tgRequest->getMessageId(),
-                                null,
-                                'Markdown'
-                            );
+                        $this->tgBot->editMessageText(
+                            $this->translate('event_list.edit.new_event_name'),
+                            $this->tgRequest->getChatId(),
+                            $this->tgRequest->getMessageId(),
+                            null,
+                            'Markdown'
+                        );
 
-                            return;
-                        } elseif ('eventMembers' == $data['data']['obj']) {
-                            $meetingRoom->setEventMembers('');
-                            $meetingRoom->setEventId($args);
-                            $this->tgDb->insert($meetingRoom);
-                            $this->tgBot->editMessageText(
-                                $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]),
-                                $this->tgRequest->getChatId(),
-                                $this->tgRequest->getMessageId(),
-                                null,
-                                'Markdown'
-                            );
-
-                            return;
-                        }
-                    } elseif ($dataMessage) {
-                        if ('meetingRoom' == $dataMessage) {
-                            $this->tgBot->sendMessage(
-                                $this->tgRequest->getChatId(),
-                                $this->translate('event_list.edit.new_members_list.error'),
-                                'Markdown'
-                            );
-                        } elseif ('eventName' == $dataMessage) {
-                            $text = substr($this->tgRequest->getText(), 0, (int) $this->container->getParameter('meeting_room_event_name_len'));
-                            $meetingRoom->setEventName($text);
-                            $this->tgDb->insert($meetingRoom);
-                            $this->meetingRoomConfirm();
-                        }
+                        return;
+                    } elseif ('eventMembers' == $data['data']['obj']) {
+                        $meetingRoom->setEventMembers('');
+                        $meetingRoom->setEventId($args);
+                        $this->tgDb->insert($meetingRoom);
+                        $this->tgBot->editMessageText(
+                            $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]),
+                            $this->tgRequest->getChatId(),
+                            $this->tgRequest->getMessageId(),
+                            null,
+                            'Markdown'
+                        );
 
                         return;
                     }
+                } elseif ($dataMessage) {
+                    if ('meetingRoom' == $dataMessage) {
+                        $this->tgBot->sendMessage(
+                            $this->tgRequest->getChatId(),
+                            $this->translate('event_list.edit.new_members_list.error'),
+                            'Markdown'
+                        );
+                    } elseif ('eventName' == $dataMessage) {
+                        $text = substr($this->tgRequest->getText(), 0, (int) $this->container->getParameter('meeting_room_event_name_len'));
+                        $meetingRoom->setEventName($text);
+                        $this->tgDb->insert($meetingRoom);
+                        $this->meetingRoomConfirm();
+                    }
 
-                    $meetingRoom->setDate($date);
-                    $meetingRoom->setTime("{$timeStart}-{$timeEnd}");
-                    $meetingRoom->setEventName(substr($event['calendarEventName'], 0, (int) $this->container->getParameter('meeting_room_event_name_len')));
-                    $meetingRoom->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
-                    $meetingRoom->setMeetingRoom($event['calendarName']);
-                    $meetingRoom->setStatus('edit');
-                    $meetingRoom->setCreated(new \DateTime());
-                    $this->tgDb->insert($meetingRoom);
-
-                    $ln = 0;
-                    $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'meetingRoom', 'args' => $args]]);
-                    $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_room_time'), $callback);
-                    $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'eventName', 'args' => $args]]);
-                    $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_name'), $callback);
-                    $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'eventMembers', 'args' => $args]]);
-                    $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_members'), $callback);
-                    $this->tgDb->setCallbackQuery();
-
-                    $text .= $this->googleEventFormat($event);
-
-                    $this->tgBot->sendMessage(
-                        $this->tgRequest->getChatId(),
-                        $text,
-                        'Markdown',
-                        false,
-                        false,
-                        null,
-                        $this->tgBot->inlineKeyboardMarkup($keyboard)
-                    );
-                } else {
-                    $this->tgBot->sendMessage(
-                        $this->tgRequest->getChatId(),
-                        $this->translate('event_list.event_not_found'),
-                        'Markdown'
-                    );
+                    return;
                 }
+
+                $meetingRoom->setDate($date);
+                $meetingRoom->setTime("{$timeStart}-{$timeEnd}");
+                $meetingRoom->setEventName(substr($event['calendarEventName'], 0, (int) $this->container->getParameter('meeting_room_event_name_len')));
+                $meetingRoom->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
+                $meetingRoom->setMeetingRoom($event['calendarName']);
+                $meetingRoom->setStatus('edit');
+                $meetingRoom->setCreated(new \DateTime());
+                $this->tgDb->insert($meetingRoom);
+
+                $ln = 0;
+                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'meetingRoom', 'args' => $args]]);
+                $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_room_time'), $callback);
+                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'eventName', 'args' => $args]]);
+                $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_name'), $callback);
+                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'eventMembers', 'args' => $args]]);
+                $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_members'), $callback);
+                $this->tgDb->setCallbackQuery();
+
+                $text .= $this->googleEventFormat($event);
+
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $text,
+                    'Markdown',
+                    false,
+                    false,
+                    null,
+                    $this->tgBot->inlineKeyboardMarkup($keyboard)
+                );
+            } else {
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $this->translate('event_list.event_not_found'),
+                    'Markdown'
+                );
             }
+
         }
     }
 }
