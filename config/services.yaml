@@ -91,6 +91,10 @@ services:
 
     # add more service definitions when explicit configuration is needed
 
+    App\API\Telegram\Modules\MeetingRoom:
+        arguments:
+            $dateRange: '%date_range%'
+
     App\API\Telegram\TelegramAPI:
         arguments:
             $tgUrl: '%tg_url%'

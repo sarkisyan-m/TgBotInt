@@ -8,7 +8,7 @@ use App\Service\Helper;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramRequest;
-use App\API\Telegram\Plugins\Calendar;
+use App\API\Telegram\Plugins\Calendar as TelegramPluginCalendar;
 use App\API\Bitrix24\Bitrix24API;
 use App\API\Bitrix24\Model\BitrixUser;
 use App\API\GoogleCalendar\GoogleCalendarAPI;
@@ -29,7 +29,7 @@ class TelegramController extends Controller
     private $tgModuleMeetingRoom;
     private $botCommands;
 
-    private $calendar;
+    private $tgPluginCalendar;
     private $googleCalendar;
     private $bitrix24;
 
@@ -47,7 +47,7 @@ class TelegramController extends Controller
         TelegramRequest $tgRequest,
         TelegramModuleMeetingRoom $tgModuleMeetingRoom,
         Bitrix24API $bitrix24,
-        Calendar $calendar,
+        TelegramPluginCalendar $tgPluginCalendar,
         GoogleCalendarAPI $googleCalendar,
         TranslatorInterface $translator
     ) {
@@ -58,7 +58,7 @@ class TelegramController extends Controller
 
         $this->bitrix24 = $bitrix24;
 
-        $this->calendar = $calendar;
+        $this->tgPluginCalendar = $tgPluginCalendar;
         $this->googleCalendar = $googleCalendar;
 
         $this->translator = $translator;
@@ -446,7 +446,7 @@ class TelegramController extends Controller
         }
 
         if ($this->isBotCommand('/meetingroomlist')) {
-            $this->tgModuleMeetingRoom->MeetingRoomList();
+            $this->tgModuleMeetingRoom->meetingRoomList();
 
             return true;
         }
@@ -564,11 +564,11 @@ class TelegramController extends Controller
             $meetingRoomUser->setMeetingRoom($data['data']['value']);
             $this->tgDb->insert($meetingRoomUser);
 
-            $keyboard = $this->calendar->keyboard();
-            $this->tgModuleMeetingRoom->MeetingRoomDate($keyboard);
+            $keyboard = $this->tgPluginCalendar->keyboard();
+            $this->tgModuleMeetingRoom->meetingRoomDate($keyboard);
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('meeting_room.date.info', ['%getDate%' => $this->calendar->getDate(), '%dateRange%' => $this->calendar->getDate('-'.$this->dateRange)]),
+                $this->translate('meeting_room.date.info', ['%getDate%' => $this->tgPluginCalendar->getDate(), '%dateRange%' => $this->tgPluginCalendar->getDate('-'.$this->dateRange)]),
                 'Markdown'
             );
 
@@ -589,16 +589,16 @@ class TelegramController extends Controller
                 $keyboard = [];
                 switch ($data['event']['calendar']) {
                     case 'previous':
-                        $keyboard = $this->calendar->keyboard(0, ++$data['data']['month'], 0);
+                        $keyboard = $this->tgPluginCalendar->keyboard(0, ++$data['data']['month'], 0);
                         break;
                     case 'following':
-                        $keyboard = $this->calendar->keyboard(0, --$data['data']['month'], 0);
+                        $keyboard = $this->tgPluginCalendar->keyboard(0, --$data['data']['month'], 0);
                         break;
                     case 'current':
-                        $keyboard = $this->calendar->keyboard();
+                        $keyboard = $this->tgPluginCalendar->keyboard();
                         break;
                 }
-                $this->tgModuleMeetingRoom->MeetingRoomDate($keyboard);
+                $this->tgModuleMeetingRoom->meetingRoomDate($keyboard);
 
                 return true;
             }
@@ -638,74 +638,21 @@ class TelegramController extends Controller
 
         return false;
     }
-
-    public function meetingRoomSelect()
-    {
-        $keyboard = [];
-        $meetingRoom = $this->googleCalendar->getCalendarNameList();
-
-        foreach ($meetingRoom as $item) {
-            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['meetingRoom' => 'list'], 'data' => ['value' => $item, 'firstMessage']]);
-            $keyboard[] = [$this->tgBot->inlineKeyboardButton($item, $callback)];
-        }
-
-        $this->tgDb->setCallbackQuery();
-
-        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-
-        $text = $this->translate('meeting_room.meeting_room.info');
-        if ('edit' == $meetingRoomUser->getStatus()) {
-            $this->tgBot->editMessageText(
-                $text,
-                $this->tgRequest->getChatId(),
-                $this->tgRequest->getMessageId(),
-                null,
-                'Markdown',
-                false,
-                $this->tgBot->inlineKeyboardMarkup($keyboard)
-            );
-        } else {
-            $this->tgBot->sendMessage(
-                $this->tgRequest->getChatId(),
-                $text,
-                'Markdown',
-                false,
-                false,
-                null,
-                $this->tgBot->inlineKeyboardMarkup($keyboard)
-            );
-        }
-    }
-
-    public function meetingRoomSelectDate($keyboard)
-    {
-        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-
-        $this->tgBot->editMessageText(
-            $this->translate('meeting_room.meeting_room.selected', ['%meetingRoom%' => $meetingRoomUser->getMeetingRoom()]),
-            $this->tgRequest->getChatId(),
-            $this->tgRequest->getMessageId(),
-            null,
-            'Markdown',
-            false,
-            $this->tgBot->inlineKeyboardMarkup($keyboard)
-        );
-    }
-
+    
     public function meetingRoomSelectTime($data)
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         // получаем даты уже в нормальном виде
         $date = sprintf('%02d.%s.%s', $data['data']['day'], $data['data']['month'], $data['data']['year']);
 
-        if ($this->calendar->validateDate($date, $this->dateRange)) {
+        if ($this->tgPluginCalendar->validateDate($date, $this->dateRange)) {
             $meetingRoomUser->setDate($date);
             $meetingRoomUser->setTime(null);
             $this->tgDb->insert($meetingRoomUser);
             $this->googleEventCurDay();
         } else {
             $this->tgBot->editMessageText(
-                $this->translate('meeting_room.date.validate_failed', ['%date%' => $date, '%getDate%' => $this->calendar->getDate(), '%dateRange%' => $this->calendar->getDate('-'.$this->dateRange)]),
+                $this->translate('meeting_room.date.validate_failed', ['%date%' => $date, '%getDate%' => $this->tgPluginCalendar->getDate(), '%dateRange%' => $this->tgPluginCalendar->getDate('-'.$this->dateRange)]),
                 $this->tgRequest->getChatId(),
                 $this->tgRequest->getMessageId() + 1,
                 null,
@@ -994,7 +941,7 @@ class TelegramController extends Controller
             $text .= "{$this->translate('meeting_room.google_event.current_day.event_empty')}\n";
         }
 
-        $times = $this->calendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd, true, $timesCount);
+        $times = $this->tgPluginCalendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd, true, $timesCount);
         $example = null;
 
         if (!$timesCount) {
@@ -1044,7 +991,7 @@ class TelegramController extends Controller
             }
         }
 
-        return $this->calendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd);
+        return $this->tgPluginCalendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd);
     }
 
     public function meetingRoomSelectedTime()
@@ -1062,11 +1009,11 @@ class TelegramController extends Controller
 
         $time = explode('-', $this->tgRequest->getText());
         if (isset($time[0]) && isset($time[1]) &&
-            $this->calendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
+            $this->tgPluginCalendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
             $times = $this->googleEventCurDayTimes();
-            if ($this->calendar->validateAvailableTimes($times, $time[0], $time[1])) {
+            if ($this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1])) {
                 $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-                $timeDiff = $this->calendar->timeDiff(strtotime($time[0]), strtotime($time[1]));
+                $timeDiff = $this->tgPluginCalendar->timeDiff(strtotime($time[0]), strtotime($time[1]));
                 $meetingRoomUser->setTime("{$time[0]}-{$time[1]}");
                 $this->tgDb->insert($meetingRoomUser);
 
@@ -1664,7 +1611,7 @@ class TelegramController extends Controller
         if (isset($data['event']['confirm']) && 'end' == $data['event']['confirm']) {
             $times = $this->googleEventCurDayTimes();
             $time = explode('-', $meetingRoomUser->getTime());
-            $validateTime = isset($time[0]) && isset($time[1]) && $this->calendar->validateAvailableTimes($times, $time[0], $time[1]);
+            $validateTime = isset($time[0]) && isset($time[1]) && $this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1]);
 
             if ('yes' == $data['data']['ready'] && !$validateTime) {
                 $text .= "\n{$this->translate('meeting_room.confirm.data_failed')}";
@@ -1997,7 +1944,7 @@ class TelegramController extends Controller
                         $meetingRoom->setTime('');
                         $meetingRoom->setEventId($args);
                         $this->tgDb->insert($meetingRoom);
-                        $this->tgModuleMeetingRoom->MeetingRoomList();
+                        $this->tgModuleMeetingRoom->meetingRoomList();
 
                         return;
                     } elseif ('dateTime' == $data['data']['obj']) {

@@ -76,8 +76,8 @@ class Calendar
     {
         $keyboard = [];
         $curDay = null;
-        $emptyCallback = ['empty' => true];
         $eventName = 'calendar';
+        $emptyCallback = $this->tgDb->prepareCallbackQuery(['empty' => true]);
 
         $ln = 0;
         $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'current'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
@@ -103,7 +103,7 @@ class Calendar
             if (1 == $curDay) {
                 $emptyCell = $this->getWeekText($this->getDay($day, $month, $year), $month, $year, true);
                 for ($k = 0; $k < $emptyCell; ++$k) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', $emptyCallback);
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(' ', $emptyCallback);
                 }
                 $dWeekCount += $emptyCell;
             }
@@ -117,7 +117,7 @@ class Calendar
             if ($curDay == $this->getDays($day, $month, $year)) {
                 $emptyCell = count($keyboard[$ln]);
                 for ($k = 0; $k < 7 - $emptyCell; ++$k) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton('.', $emptyCallback);
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(' ', $emptyCallback);
                 }
             }
 

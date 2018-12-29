@@ -6,6 +6,7 @@ use App\API\GoogleCalendar\GoogleCalendarAPI;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
+use App\API\Telegram\Plugins\Calendar as TelegramCalendar;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class MeetingRoom extends Module
@@ -20,17 +21,23 @@ class MeetingRoom extends Module
 
     private $googleCalendar;
     private $translator;
+    private $dateRange;
+    private $telegramCalendar;
 
     public function __construct(
         TelegramAPI $tgBot,
         TelegramDb $tgDb,
+        TelegramCalendar $telegramCalendar,
         GoogleCalendarAPI $googleCalendar,
-        TranslatorInterface $translator
+        TranslatorInterface $translator,
+        $dateRange
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->googleCalendar = $googleCalendar;
         $this->translator = $translator;
+        $this->dateRange = $dateRange;
+        $this->telegramCalendar = $telegramCalendar;
     }
 
     public function request(TelegramRequest $request)
@@ -45,7 +52,7 @@ class MeetingRoom extends Module
         return $this->translator->trans($key, $params, 'telegram', 'ru');
     }
 
-    public function MeetingRoomList()
+    public function meetingRoomList()
     {
         $keyboard = [];
         $meetingRoom = $this->googleCalendar->getCalendarNameList();
@@ -83,7 +90,7 @@ class MeetingRoom extends Module
         }
     }
 
-    public function MeetingRoomDate($keyboard)
+    public function meetingRoomDate($keyboard)
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
 
@@ -98,7 +105,27 @@ class MeetingRoom extends Module
         );
     }
 
-
+//    public function meetingRoomSelectTime($data)
+//    {
+//        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+//        // получаем даты уже в нормальном виде
+//        $date = sprintf('%02d.%s.%s', $data['data']['day'], $data['data']['month'], $data['data']['year']);
+//
+//        if ($this->telegramCalendar->validateDate($date, $this->dateRange)) {
+//            $meetingRoomUser->setDate($date);
+//            $meetingRoomUser->setTime(null);
+//            $this->tgDb->insert($meetingRoomUser);
+//            $this->googleEventCurDay();
+//        } else {
+//            $this->tgBot->editMessageText(
+//                $this->translate('meeting_room.date.validate_failed', ['%date%' => $date, '%getDate%' => $this->telegramCalendar->getDate(), '%dateRange%' => $this->telegramCalendar->getDate('-'.$this->dateRange)]),
+//                $this->tgRequest->getChatId(),
+//                $this->tgRequest->getMessageId() + 1,
+//                null,
+//                'Markdown'
+//            );
+//        }
+//    }
 
 
 
