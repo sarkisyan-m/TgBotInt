@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Model;
+namespace App\API\Bitrix24\Model;
 
 class BitrixUser
 {

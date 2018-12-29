@@ -1,7 +1,10 @@
 <?php
 
-namespace App\Service;
+namespace App\API\Telegram\Plugins;
 
+use App\API\Telegram\TelegramAPI;
+use App\API\Telegram\TelegramDb;
+use App\API\Telegram\TelegramRequest;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class Calendar

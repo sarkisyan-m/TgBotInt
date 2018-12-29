@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Service;
+namespace App\API\Telegram;
 
 use Symfony\Component\Translation\TranslatorInterface;
 

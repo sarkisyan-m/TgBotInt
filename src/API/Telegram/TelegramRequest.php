@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Service;
+namespace App\API\Telegram;
+
+use Symfony\Component\HttpFoundation\Request;
 
 class TelegramRequest
 {
@@ -14,14 +16,15 @@ class TelegramRequest
         $this->requestData = null;
     }
 
-    public function setRequestData($requestData)
+    public function request(Request $requestData)
     {
+        $requestData = json_decode($requestData->getContent(), true);
         $this->requestData = $requestData;
 
-        return true;
+        return $this->requestData;
     }
 
-    public function getRequestData()
+    public function getRequestContent()
     {
         return $this->requestData;
     }
@@ -49,8 +52,8 @@ class TelegramRequest
 
     public function getChatId()
     {
-        if (isset($this->getRequestData()[$this->getType()]['from']['id'])) {
-            return $this->getRequestData()[$this->getType()]['from']['id'];
+        if (isset($this->requestData[$this->getType()]['from']['id'])) {
+            return $this->requestData[$this->getType()]['from']['id'];
         }
 
         return null;
@@ -59,14 +62,14 @@ class TelegramRequest
     public function getMessageId()
     {
         if (self::TYPE_CALLBACK_QUERY == $this->getType()) {
-            if (isset($this->getRequestData()[$this->getType()]['message']['message_id'])) {
-                return $this->getRequestData()[$this->getType()]['message']['message_id'];
+            if (isset($this->requestData[$this->getType()]['message']['message_id'])) {
+                return $this->requestData[$this->getType()]['message']['message_id'];
             }
 
             return null;
         } elseif (self::TYPE_MESSAGE == $this->getType()) {
-            if (isset($this->getRequestData()[$this->getType()]['message_id'])) {
-                return $this->getRequestData()[$this->getType()]['message_id'];
+            if (isset($this->requestData[$this->getType()]['message_id'])) {
+                return $this->requestData[$this->getType()]['message_id'];
             }
 
             return null;
@@ -77,8 +80,8 @@ class TelegramRequest
 
     public function getPhoneNumber()
     {
-        if (isset($this->getRequestData()[$this->getType()]['contact']['phone_number'])) {
-            return $this->getRequestData()[$this->getType()]['contact']['phone_number'];
+        if (isset($this->requestData[$this->getType()]['contact']['phone_number'])) {
+            return $this->requestData[$this->getType()]['contact']['phone_number'];
         }
 
         return null;
@@ -86,8 +89,8 @@ class TelegramRequest
 
     public function getText()
     {
-        if (isset($this->getRequestData()[$this->getType()]['text'])) {
-            return $this->getRequestData()[$this->getType()]['text'];
+        if (isset($this->requestData[$this->getType()]['text'])) {
+            return $this->requestData[$this->getType()]['text'];
         }
 
         return null;
@@ -95,8 +98,8 @@ class TelegramRequest
 
     public function getData()
     {
-        if (isset($this->getRequestData()[$this->getType()]['data'])) {
-            return json_decode($this->getRequestData()[$this->getType()]['data'], true);
+        if (isset($this->requestData[$this->getType()]['data'])) {
+            return json_decode($this->requestData[$this->getType()]['data'], true);
         }
 
         return null;
@@ -104,8 +107,8 @@ class TelegramRequest
 
     public function isBotCommand()
     {
-        if (isset($this->getRequestData()[$this->getType()]['entities'])) {
-            foreach ($this->getRequestData()[$this->getType()]['entities'] as $entity) {
+        if (isset($this->requestData[$this->getType()]['entities'])) {
+            foreach ($this->requestData[$this->getType()]['entities'] as $entity) {
                 if (isset($entity['type']) && 'bot_command' == $entity['type']) {
                     return true;
                 }

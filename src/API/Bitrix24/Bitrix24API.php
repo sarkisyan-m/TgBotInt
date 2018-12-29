@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Service;
+namespace App\API\Bitrix24;
 
-use App\Model\BitrixUser;
+use App\API\Bitrix24\Model\BitrixUser;
+use App\Service\Helper;
+use App\Service\Validator;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 

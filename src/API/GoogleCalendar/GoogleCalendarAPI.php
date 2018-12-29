@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Service;
+namespace App\API\GoogleCalendar;
 
+use App\Service\Helper;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Google_Client;

@@ -91,7 +91,7 @@ services:
 
     # add more service definitions when explicit configuration is needed
 
-    App\Service\TelegramAPI:
+    App\API\Telegram\TelegramAPI:
         arguments:
             $tgUrl: '%tg_url%'
             $tgToken: '%env(TG_TOKEN)%'
@@ -100,7 +100,7 @@ services:
             - '%env(PROXY_PORT)%'
             - '%env(PROXY_LOGPASS)%'
 
-    App\Service\Bitrix24API:
+    App\API\Bitrix24\Bitrix24API:
         arguments:
             $bitrix24Url: '%bitrix24_url%'
             $bitrix24UserId: '%env(BITRIX24_USER_ID)%'
@@ -108,7 +108,7 @@ services:
             $cacheTime: '%cache_time_bitrix24%'
             $cacheContainer: '%cache_bitrix24%'
 
-    App\Service\GoogleCalendarAPI:
+    App\API\GoogleCalendar\GoogleCalendarAPI:
         arguments:
             $notificationTime: '%notification_time%'
             $cacheTime: '%cache_time_google_calendar%'

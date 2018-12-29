@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Service;
+namespace App\API\Telegram;
 
 use App\Entity\AntiFlood;
 use App\Entity\CallbackQuery;
 use App\Entity\MeetingRoom;
 use App\Entity\TgUsers;
 use App\Entity\Verification;
+use App\Service\Helper;
 use Doctrine\ORM\EntityManagerInterface;
 use Rhumsaa\Uuid\Uuid;
 
@@ -22,7 +23,7 @@ class TelegramDb
         $this->tgRequest = $tgRequest;
     }
 
-    public function setTelegramRequest(TelegramRequest $tgRequest)
+    public function request(TelegramRequest $tgRequest)
     {
         $this->tgRequest = $tgRequest;
     }

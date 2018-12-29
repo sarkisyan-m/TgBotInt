@@ -2,15 +2,16 @@
 
 namespace App\Controller;
 
-use App\Model\BitrixUser;
-use App\Service\Bitrix24API;
-use App\Service\Calendar;
-use App\Service\GoogleCalendarAPI;
+use App\API\Telegram\Modules\MeetingRoom as TelegramModuleMeetingRoom;
 use App\Service\Hash;
 use App\Service\Helper;
-use App\Service\TelegramDb;
-use App\Service\TelegramAPI;
-use App\Service\TelegramRequest;
+use App\API\Telegram\TelegramDb;
+use App\API\Telegram\TelegramAPI;
+use App\API\Telegram\TelegramRequest;
+use App\API\Telegram\Plugins\Calendar;
+use App\API\Bitrix24\Bitrix24API;
+use App\API\Bitrix24\Model\BitrixUser;
+use App\API\GoogleCalendar\GoogleCalendarAPI;
 use Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,29 +21,31 @@ use Symfony\Component\Translation\TranslatorInterface;
 
 class TelegramController extends Controller
 {
-    protected $tgBot;
-    protected $tgDb;
-    protected $tgToken;
-    protected $tgRequest;
-    protected $isTg;
-    protected $tgUser;
-    protected $botCommands;
+    private $tgBot;
+    private $tgDb;
+    private $tgToken;
+    private $tgRequest;
+    private $isTg;
+    private $tgModuleMeetingRoom;
+    private $botCommands;
 
-    protected $calendar;
-    protected $googleCalendar;
-    protected $bitrix24;
+    private $calendar;
+    private $googleCalendar;
+    private $bitrix24;
 
-    protected $workTimeStart;
-    protected $workTimeEnd;
-    protected $dateRange;
+    private $workTimeStart;
+    private $workTimeEnd;
+    private $dateRange;
 
-    protected $allowedMessagesNumber;
+    private $allowedMessagesNumber;
 
-    protected $translator;
+    private $translator;
 
     public function __construct(
         TelegramAPI $tgBot,
         TelegramDb $tgDb,
+        TelegramRequest $tgRequest,
+        TelegramModuleMeetingRoom $tgModuleMeetingRoom,
         Bitrix24API $bitrix24,
         Calendar $calendar,
         GoogleCalendarAPI $googleCalendar,
@@ -50,7 +53,8 @@ class TelegramController extends Controller
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
-        $this->tgRequest = new TelegramRequest();
+        $this->tgRequest = $tgRequest;
+        $this->tgModuleMeetingRoom = $tgModuleMeetingRoom;
 
         $this->bitrix24 = $bitrix24;
 
@@ -73,23 +77,26 @@ class TelegramController extends Controller
     }
 
     /**
-     * @Route("/tgWebhook", name="tg_webhook")
+     * @Route("/telegram", name="telegram")
      *
      * @param Request $request
      *
      * @return Response
      */
-    public function tgWebhook(Request $request)
+    public function telegram(Request $request)
     {
         $this->workTimeStart = $this->container->getParameter('work_time_start');
         $this->workTimeEnd = $this->container->getParameter('work_time_end');
         $this->dateRange = $this->container->getParameter('date_range');
         $this->tgToken = $this->container->getParameter('tg_token');
         $this->allowedMessagesNumber = $this->container->getParameter('anti_flood_allowed_messages_number');
-        $this->tgRequest->setRequestData(json_decode($request->getContent(), true));
-        $this->tgDb->setTelegramRequest($this->tgRequest);
+
         $this->isTg = $request->query->has($this->tgToken);
-        $this->tgLogger($this->tgRequest->getRequestData(), $this->get('monolog.logger.telegram_request_channel'));
+        $this->tgRequest->request($request);
+        $this->tgDb->request($this->tgRequest);
+        $this->tgModuleMeetingRoom->request($this->tgRequest);
+
+        $this->tgLogger($this->tgRequest->getRequestContent(), $this->get('monolog.logger.telegram_request_channel'));
 
         $this->botCommands = [
             '/meetingroomlist' => $this->translate('bot_command.meeting_room_list'),
@@ -439,7 +446,7 @@ class TelegramController extends Controller
         }
 
         if ($this->isBotCommand('/meetingroomlist')) {
-            $this->meetingRoomSelect();
+            $this->tgModuleMeetingRoom->MeetingRoomList();
 
             return true;
         }
@@ -558,7 +565,7 @@ class TelegramController extends Controller
             $this->tgDb->insert($meetingRoomUser);
 
             $keyboard = $this->calendar->keyboard();
-            $this->meetingRoomSelectDate($keyboard);
+            $this->tgModuleMeetingRoom->MeetingRoomDate($keyboard);
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.date.info', ['%getDate%' => $this->calendar->getDate(), '%dateRange%' => $this->calendar->getDate('-'.$this->dateRange)]),
@@ -591,7 +598,7 @@ class TelegramController extends Controller
                         $keyboard = $this->calendar->keyboard();
                         break;
                 }
-                $this->meetingRoomSelectDate($keyboard);
+                $this->tgModuleMeetingRoom->MeetingRoomDate($keyboard);
 
                 return true;
             }
@@ -1990,7 +1997,7 @@ class TelegramController extends Controller
                         $meetingRoom->setTime('');
                         $meetingRoom->setEventId($args);
                         $this->tgDb->insert($meetingRoom);
-                        $this->meetingRoomSelect();
+                        $this->tgModuleMeetingRoom->MeetingRoomList();
 
                         return;
                     } elseif ('dateTime' == $data['data']['obj']) {
