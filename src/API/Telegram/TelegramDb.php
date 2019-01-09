@@ -227,6 +227,11 @@ class TelegramDb
 
         if ($antiFlood) {
             $antiFlood = $antiFlood[0];
+            if (!$antiFlood->getDate()) {
+                $antiFlood->setDate(new \DateTime());
+                $antiFlood->setMessagesCount(0);
+                $this->insert($antiFlood);
+            }
         } else {
             $antiFlood = new AntiFlood();
             $antiFlood->setDate(new \DateTime());

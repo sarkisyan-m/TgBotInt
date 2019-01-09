@@ -1633,8 +1633,12 @@ class TelegramController extends Controller
                 $textMembers = $this->googleCalendarDescriptionConvertTextToLtext($meetingRoomMembers, $emailList);
 
                 $attendees = [];
-                foreach ($emailList as $email) {
-                    $attendees[] = ['email' => $email];
+                foreach ($emailList as $key => $email) {
+                    if ($key == 0) {
+                        $attendees[] = ['comment' => 'Организатор', 'email' => $email];
+                    } else {
+                        $attendees[] = ['email' => $email];
+                    }
                 }
 
                 $hashService = new Hash();

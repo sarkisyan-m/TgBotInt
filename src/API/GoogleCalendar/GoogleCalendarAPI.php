@@ -103,6 +103,9 @@ class GoogleCalendarAPI
         return new Google_Service_Calendar($this->googleClient);
     }
 
+    /**
+     * @todo ETAG сортировка
+     */
     public function loadData()
     {
         try {
@@ -154,6 +157,20 @@ class GoogleCalendarAPI
         }
     }
 
+    public function removeAllEvents()
+    {
+        $calendarList = $this->getList();
+        $service = new Google_Service_Calendar($this->googleClient);
+
+        foreach ($calendarList as $calendar) {
+            foreach ($calendar['listEvents'] as $event) {
+                $service->events->delete($event['calendarId'], $event['eventId']);
+            }
+        }
+
+        return $calendarList;
+    }
+
     public function getList(array $filter = null)
     {
         /**
@@ -199,8 +216,18 @@ class GoogleCalendarAPI
                     }
 
                     $attendeesEmail = [];
+                    /**
+                     * @var $member \Google_Service_Calendar_EventAttendee
+                     */
+
                     foreach ($event->getAttendees() as $member) {
-                        $attendeesEmail[] = implode(' ', (array) $member['email']);
+                        $organizerText = 'Организатор';
+                        if (substr($member->comment, 0, strlen($organizerText)) == $organizerText) {
+                            array_unshift($attendeesEmail, $member->getEmail());
+
+                            continue;
+                        }
+                        $attendeesEmail[] = $member->getEmail();
                     }
 
                     if ($filter['attendees'] && (!isset($attendeesEmail[0]) || $filter['attendees'] != $attendeesEmail[0])) {
