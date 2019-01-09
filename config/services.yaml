@@ -91,9 +91,14 @@ services:
 
     # add more service definitions when explicit configuration is needed
 
-    App\API\Telegram\Modules\MeetingRoom:
+    App\API\Telegram\Module\MeetingRoom:
         arguments:
             $dateRange: '%date_range%'
+            $workTimeStart: '%work_time_start%'
+            $workTimeEnd: '%work_time_end%'
+            $eventNameLen: '%meeting_room_event_name_len%'
+            $eventMembersLimit: '%meeting_room_event_members_limit%'
+            $eventMembersLen: '%meeting_room_event_members_len%'
 
     App\API\Telegram\TelegramAPI:
         arguments:

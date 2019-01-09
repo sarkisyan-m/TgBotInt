@@ -1,6 +1,6 @@
 <?php
 
-namespace App\API\Telegram\Modules;
+namespace App\API\Telegram\Module;
 
 use App\API\Telegram\TelegramRequest;
 
