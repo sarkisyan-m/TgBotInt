@@ -31,8 +31,7 @@ class Command extends Module
         Bitrix24API $bitrix24,
         TranslatorInterface $translator,
         TelegramModuleAdmin $tgModuleAdmin
-    )
-    {
+    ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->bitrix24 = $bitrix24;
@@ -55,7 +54,7 @@ class Command extends Module
         $this->adminArgs = [
             'list',
             'cacheclear',
-            ''
+            '',
         ];
     }
 
@@ -190,7 +189,6 @@ class Command extends Module
 
         return false;
     }
-
 
     // Если мы нашли команду в списке команд
     // У каждой команды может быть второе имя

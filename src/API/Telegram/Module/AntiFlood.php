@@ -27,8 +27,7 @@ class AntiFlood extends Module
         Bitrix24API $bitrix24,
         TranslatorInterface $translator,
         $allowedMessagesNumber
-    )
-    {
+    ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->bitrix24 = $bitrix24;

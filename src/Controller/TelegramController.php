@@ -126,11 +126,11 @@ class TelegramController extends Controller
                     return new Response();
                 }
 
-                if ($this->tgRequest->getType() == TelegramRequest::TYPE_MESSAGE) {
+                if (TelegramRequest::TYPE_MESSAGE == $this->tgRequest->getType()) {
                     if ($this->handlerRequestMessage()) {
                         return new Response();
                     }
-                } elseif ($this->tgRequest->getType() == TelegramRequest::TYPE_CALLBACK_QUERY) {
+                } elseif (TelegramRequest::TYPE_CALLBACK_QUERY == $this->tgRequest->getType()) {
                     if ($this->handlerRequestCallbackQuery()) {
                         return new Response();
                     }
@@ -178,7 +178,7 @@ class TelegramController extends Controller
     // Если тип ответа message
     public function handlerRequestMessage()
     {
-        if ($this->tgRequest->getText() === null) {
+        if (null === $this->tgRequest->getText()) {
             return false;
         }
 

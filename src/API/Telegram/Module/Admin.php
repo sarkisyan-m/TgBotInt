@@ -55,7 +55,7 @@ class Admin extends Module
     public function isAdmin()
     {
         $tgUser = $this->tgDb->getTgUser();
-        if (array_search($tgUser->getBitrixId(), $this->tgAdminList) !== false) {
+        if (false !== array_search($tgUser->getBitrixId(), $this->tgAdminList)) {
             return true;
         }
 
@@ -73,7 +73,7 @@ class Admin extends Module
                 $tgUser = $this->tgDb->getTgUsers(['bitrix_id' => $bitrixUser->getId()]);
                 if ($tgUser) {
                     $tgUser = $tgUser[0];
-                    $name = "[#name#](tg://user?id=#id#)";
+                    $name = '[#name#](tg://user?id=#id#)';
                     $name = str_replace('#name#', $bitrixUser->getName(), $name);
                     $name = str_replace('#id#', $tgUser->getChatId(), $name);
                 }
@@ -92,7 +92,7 @@ class Admin extends Module
 
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
-            $this->translate('command.admin_list') . $text,
+            $this->translate('command.admin_list').$text,
             'Markdown'
         );
     }

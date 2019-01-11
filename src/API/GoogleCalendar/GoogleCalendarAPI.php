@@ -244,7 +244,6 @@ class GoogleCalendarAPI
                     /**
                      * @var $member \Google_Service_Calendar_EventAttendee
                      */
-
                     foreach ($event->getAttendees() as $member) {
                         $organizerText = 'Организатор';
                         if (substr($member->comment, 0, strlen($organizerText)) == $organizerText) {

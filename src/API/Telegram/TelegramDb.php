@@ -135,7 +135,7 @@ class TelegramDb
     /**
      * @param array $params
      *
-     * @return TgUsers[]|\App\Entity\Verification[]|null|object[]
+     * @return TgUsers[]|\App\Entity\Verification[]|object[]|null
      */
     public function getTgUsers(array $params)
     {
@@ -152,7 +152,7 @@ class TelegramDb
     /**
      * @param $params
      *
-     * @return Verification[]|null|object[]
+     * @return Verification[]|object[]|null
      */
     public function getHash($params)
     {

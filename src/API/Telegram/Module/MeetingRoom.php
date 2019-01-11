@@ -446,7 +446,6 @@ class MeetingRoom extends Module
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
 
-
         if (!isset($meetingRoomUserData['users']['none']) && !isset($meetingRoomUserData['users']['found'])) {
             return false;
         }
@@ -698,7 +697,7 @@ class MeetingRoom extends Module
 
                 $attendees = [];
                 foreach ($emailList as $key => $email) {
-                    if ($key == 0) {
+                    if (0 == $key) {
                         $attendees[] = ['comment' => 'Организатор', 'email' => $email];
                     } else {
                         $attendees[] = ['email' => $email];
@@ -732,7 +731,7 @@ class MeetingRoom extends Module
                             $meetingRoomDateTimeEnd,
                             $attendees
                         );
-                        // Если хотим в другом календаре, то придется пересоздать событие (удалить и добавить заново)
+                    // Если хотим в другом календаре, то придется пересоздать событие (удалить и добавить заново)
                     } else {
                         $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
                         $this->googleCalendar->addEvent(
@@ -756,7 +755,7 @@ class MeetingRoom extends Module
                     );
                 }
                 $this->tgDb->getMeetingRoomUser(true);
-                // Если пользователь нажал на отмену, то стираем все данные
+            // Если пользователь нажал на отмену, то стираем все данные
             } elseif ('no' == $data['data']['ready']) {
                 $text .= "\n{$this->translate('meeting_room.confirm.data_cancel')}";
                 $keyboard = null;
@@ -1159,7 +1158,7 @@ class MeetingRoom extends Module
 
                     if ($user['name'] && $contact) {
                         $result[$status] .= "{$user['name']} ({$italic}{$contact}{$italic})";
-                    } elseif ($user['name'] !== null) {
+                    } elseif (null !== $user['name']) {
                         $result[$status] .= "{$user['name']}";
                     } else {
                         $result[$status] .= $this->translate('members.email.unknown');
@@ -1213,7 +1212,7 @@ class MeetingRoom extends Module
         }
 
         if ($command) {
-            $command = (string)mb_strtolower($command);
+            $command = (string) mb_strtolower($command);
             if (false !== array_search($command, $noCommandList)) {
                 return true;
             }
@@ -1251,7 +1250,7 @@ class MeetingRoom extends Module
         $dateToday = date('d.m.Y', strtotime('today'));
         $filter = ['startDateTime' => $dateToday, 'attendees' => $bitrixUser->getEmail()];
 
-        $args = (int)Helper::getArgs($this->tgRequest->getText()) - 1;
+        $args = (int) Helper::getArgs($this->tgRequest->getText()) - 1;
         $meetingRoomList = $this->googleCalendar->getCalendarNameList();
 
         $calendarCount = count($this->googleCalendar->getCalendarNameList());
@@ -1339,7 +1338,6 @@ class MeetingRoom extends Module
             implode('', $textPart),
             'Markdown'
         );
-
     }
 
     public function googleEventFormat($event)
@@ -1562,7 +1560,6 @@ class MeetingRoom extends Module
                     'Markdown'
                 );
             }
-
         }
     }
 }
