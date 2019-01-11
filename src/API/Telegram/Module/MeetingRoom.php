@@ -8,7 +8,6 @@ use App\API\GoogleCalendar\GoogleCalendarAPI;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
-use App\API\Telegram\Plugins\Calendar as TelegramCalendar;
 use App\API\Telegram\Plugins\Calendar as TelegramPluginCalendar;
 use App\Service\Hash;
 use App\Service\Helper;
@@ -26,7 +25,6 @@ class MeetingRoom extends Module
     private $googleCalendar;
     private $translator;
     private $dateRange;
-    private $telegramCalendar;
     private $workTimeStart;
     private $workTimeEnd;
     private $tgPluginCalendar;
@@ -38,7 +36,6 @@ class MeetingRoom extends Module
     public function __construct(
         TelegramAPI $tgBot,
         TelegramDb $tgDb,
-        TelegramCalendar $telegramCalendar,
         GoogleCalendarAPI $googleCalendar,
         TranslatorInterface $translator,
         $dateRange,
@@ -55,7 +52,6 @@ class MeetingRoom extends Module
         $this->googleCalendar = $googleCalendar;
         $this->translator = $translator;
         $this->dateRange = $dateRange;
-        $this->telegramCalendar = $telegramCalendar;
         $this->workTimeStart = $workTimeStart;
         $this->workTimeEnd = $workTimeEnd;
         $this->tgPluginCalendar = $tgPluginCalendar;
@@ -152,14 +148,14 @@ class MeetingRoom extends Module
         // получаем даты уже в нормальном виде
         $date = sprintf('%02d.%s.%s', $data['data']['day'], $data['data']['month'], $data['data']['year']);
 
-        if ($this->telegramCalendar->validateDate($date, $this->dateRange)) {
+        if ($this->tgPluginCalendar->validateDate($date, $this->dateRange)) {
             $meetingRoomUser->setDate($date);
             $meetingRoomUser->setTime(null);
             $this->tgDb->insert($meetingRoomUser);
             $this->googleEventCurDay();
         } else {
             $this->tgBot->editMessageText(
-                $this->translate('meeting_room.date.validate_failed', ['%date%' => $date, '%getDate%' => $this->telegramCalendar->getDate(), '%dateRange%' => $this->telegramCalendar->getDate('-'.$this->dateRange)]),
+                $this->translate('meeting_room.date.validate_failed', ['%date%' => $date, '%getDate%' => $this->tgPluginCalendar->getDate(), '%dateRange%' => $this->tgPluginCalendar->getDate('-'.$this->dateRange)]),
                 $this->tgRequest->getChatId(),
                 $this->tgRequest->getMessageId() + 1,
                 null,
@@ -1164,7 +1160,7 @@ class MeetingRoom extends Module
 
                     if ($user['name'] && $contact) {
                         $result[$status] .= "{$user['name']} ({$italic}{$contact}{$italic})";
-                    } elseif ($user['name']) {
+                    } elseif ($user['name'] !== null) {
                         $result[$status] .= "{$user['name']}";
                     } else {
                         $result[$status] .= $this->translate('members.email.unknown');

@@ -131,13 +131,13 @@ class Calendar
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.forward'), $callback);
 
         ++$ln;
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay('0'), 'month' => $this->getMonth(), 'year' => $this->getYear()]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(0), 'month' => $this->getMonth(0), 'year' => $this->getYear(0)]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.today'), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay('-1'), 'month' => $this->getMonth(), 'year' => $this->getYear()]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(-1), 'month' => $this->getMonth(-1), 'year' => $this->getYear(-1)]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.tomorrow'), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay('-2'), 'month' => $this->getMonth(), 'year' => $this->getYear()]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(-2), 'month' => $this->getMonth(-2), 'year' => $this->getYear(-2)]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_after_tomorrow'), $callback);
 
         $this->tgDb->setCallbackQuery();

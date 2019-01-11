@@ -101,14 +101,10 @@ class TelegramController extends Controller
             '/start' => '',
         ];
 
-        if (!$this->tgRequest->getType()) {
-            return $this->render('index.html.twig');
-        }
-
         if (!$this->isTg) {
             return new Response('', Response::HTTP_FORBIDDEN);
         }
-        
+
         // Удаление личных данных
         // Это должно быть на первом месте, чтобы забаненные пользователи тоже смогли удалить свои личные данные
         $tgUser = $this->tgDb->getTgUser();

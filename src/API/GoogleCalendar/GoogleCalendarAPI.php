@@ -13,18 +13,20 @@ use Google_Service_Calendar_CalendarList;
 
 class GoogleCalendarAPI
 {
-    protected $router;
-    protected $notification;
-    protected $notificationTime;
+    private $router;
+    private $notification;
+    private $notificationTime;
 
-    protected $cache;
-    protected $cacheTime;
-    protected $cacheContainer;
+    private $cache;
+    private $cacheTime;
+    private $cacheContainer;
 
-    protected $googleClient;
-    protected $rootPath;
+    private $googleClient;
 
-    protected $dateRange;
+    private $dateRange;
+
+    private $meetingRoom;
+    private $meetingRoomAutoAdd;
 
     public function __construct(
         $notificationTime,
@@ -33,7 +35,9 @@ class GoogleCalendarAPI
         $cacheTime,
         $cacheContainer,
         $dateRange,
-        bool $notification
+        bool $notification,
+        $meetingRoom,
+        bool $meetingRoomAutoAdd
     ) {
         $this->router = $router;
         $this->notification = $notification;
@@ -53,6 +57,9 @@ class GoogleCalendarAPI
         }
 
         $this->dateRange = $dateRange;
+
+        $this->meetingRoom = $meetingRoom;
+        $this->meetingRoomAutoAdd = $meetingRoomAutoAdd;
     }
 
     public function getFilters($filter)
@@ -189,6 +196,24 @@ class GoogleCalendarAPI
         $filter = $this->getFilters($filter);
         $calendarListResult = [];
         $calendarListItems = unserialize($data['calendar_list_items']);
+
+        // Сортировка
+        $googleCalendarTemp = [];
+        foreach ($this->meetingRoom as $meetingRoom) {
+            foreach ($calendarListItems as $calendarListId => $calendarListItem) {
+                if ($calendarListItem->getSummary() == $meetingRoom) {
+                    $googleCalendarTemp[] = $calendarListItem;
+                    unset($calendarListItems[$calendarListId]);
+                }
+            }
+        }
+
+        if ($this->meetingRoomAutoAdd) {
+            $calendarListItems = array_merge($googleCalendarTemp, $calendarListItems);
+        } else {
+            $calendarListItems = $googleCalendarTemp;
+        }
+
         foreach ($calendarListItems as $calendarListItem) {
             // Если нет нужного календаря
             if ($filter['calendarName'] && $filter['calendarName'] != $calendarListItem->getSummary()) {
