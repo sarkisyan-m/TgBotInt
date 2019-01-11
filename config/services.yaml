@@ -14,12 +14,13 @@ parameters:
 
     # telegram
     tg_token: '%env(TG_TOKEN)%'
+    tg_admin_list: '%env(TG_ADMIN_LIST)%'
     tg_url: 'https://api.telegram.org/bot'
 
     # bitrix24
+    bitrix24_url: '%env(BITRIX24_URL)%'
     bitrix24_api: '%env(BITRIX24_API)%'
     bitrix24_user_id: '%env(BITRIX24_USER_ID)%'
-    bitrix24_url: 'https://intaro.bitrix24.ru/rest/'
 
     # google сервис-аккаунт
     # intarobot@intarocalendar-1542704954867.iam.gserviceaccount.com

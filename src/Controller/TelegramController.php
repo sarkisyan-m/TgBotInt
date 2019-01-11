@@ -95,6 +95,7 @@ class TelegramController extends Controller
             '/eventlist' => $this->translate('bot_command.event_list'),
             '/help' => $this->translate('bot_command.help'),
             '/helpmore' => '',
+            '/adminlist' => '',
             '/exit' => $this->translate('bot_command.exit'),
             '/e' => '',
             '/d' => '',
@@ -239,13 +240,42 @@ class TelegramController extends Controller
         );
     }
 
-    // Любые необработанные запросы идут сюда. Эта функция вызывается всегда в конце функции-ответов
-    public function errorRequest()
+    public function commandAdminList()
     {
+        $adminList = $this->container->getParameter('tg_admin_list');
+        $adminList = explode(', ', $adminList);
+
+
+        $text = null;
+        foreach ($adminList as $adminBitrixId) {
+            $bitrixUser = $this->bitrix24->getUsers(['id' => $adminBitrixId, 'active' => true]);
+            if ($bitrixUser) {
+                $bitrixUser = $bitrixUser[0];
+                $name = $bitrixUser->getName();
+                $tgUser = $this->tgDb->getTgUsers(['bitrix_id' => $bitrixUser->getId()]);
+                if ($tgUser) {
+                    $tgUser = $tgUser[0];
+                    $name = "[#name#](tg://user?id=#id#)";
+                    $name = str_replace('#name#', $bitrixUser->getName(), $name);
+                    $name = str_replace('#id#', $tgUser->getChatId(), $name);
+                }
+
+                $adminContact = array_filter([$bitrixUser->getFirstPhone(), $bitrixUser->getEmail()]);
+                if ($adminContact) {
+                    $adminContact = implode(', ', $adminContact);
+                    $adminContact = "({$adminContact})";
+                } else {
+                    $adminContact = null;
+                }
+
+                $text .= $this->translate('admin_list.admin', ['%adminName%' => $name, '%adminContact%' => $adminContact]);
+            }
+        }
+
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
-            $this->translate('request.error'),
-            null,
+            $this->translate('command.adminlist') . $text,
+            'Markdown',
             false,
             false,
             null,
@@ -265,6 +295,21 @@ class TelegramController extends Controller
             $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
         );
     }
+
+    // Любые необработанные запросы идут сюда. Эта функция вызывается всегда в конце функции-ответов
+    public function errorRequest()
+    {
+        $this->tgBot->sendMessage(
+            $this->tgRequest->getChatId(),
+            $this->translate('request.error'),
+            null,
+            false,
+            false,
+            null,
+            $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
+        );
+    }
+
 
     // Здесь должны содержаться функции, которые очищают пользовательские вводы
     public function deleteSession()
@@ -344,6 +389,12 @@ class TelegramController extends Controller
 
         if ($this->isBotCommand('/helpmore')) {
             $this->commandHelpMore();
+
+            return true;
+        }
+
+        if ($this->isBotCommand('/adminlist')) {
+            $this->commandAdminList();
 
             return true;
         }

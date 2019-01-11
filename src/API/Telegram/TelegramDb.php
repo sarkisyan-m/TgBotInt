@@ -139,7 +139,6 @@ class TelegramDb
      */
     public function getTgUsers(array $params)
     {
-        $params += ['active' => true];
         $repository = $this->entityManager->getRepository(TgUsers::class);
         $tgUsers = $repository->findBy($params);
 
