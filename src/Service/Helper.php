@@ -62,4 +62,21 @@ class Helper
         return (int) "{$sing}{$dateDiff->d}";
 //        return $dateDiff;
     }
+
+    public static function getArgs($text, &$command = null)
+    {
+        $delimiter = strpos($text, '_');
+
+        if (false !== $delimiter) {
+            $args = substr($text, $delimiter + 1);
+
+            if ($args) {
+                $command = substr($text, 0, $delimiter);
+
+                return $args;
+            }
+        }
+
+        return null;
+    }
 }

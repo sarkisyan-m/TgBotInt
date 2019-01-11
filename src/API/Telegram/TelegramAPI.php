@@ -2,6 +2,7 @@
 
 namespace App\API\Telegram;
 
+use Monolog\Logger;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class TelegramAPI
@@ -10,18 +11,27 @@ class TelegramAPI
     protected $tgToken;
     protected $proxy;
     protected $translator;
+    protected $tgLogger;
 
-    public function __construct($tgUrl, $tgToken, array $proxy, TranslatorInterface $translator)
+    public function __construct($tgUrl, $tgToken, array $proxy, TranslatorInterface $translator, $tgLogger)
     {
         $this->tgToken = $tgToken;
         $this->proxy = $proxy;
         $this->tgUrl = "{$tgUrl}{$this->tgToken}/";
         $this->translator = $translator;
+        $this->tgLogger = $tgLogger;
     }
 
     public function translate($key, array $params = [])
     {
         return $this->translator->trans($key, $params, 'telegram', 'ru');
+    }
+
+    public function tgLogger($request, Logger $tgLogger)
+    {
+        if ($request) {
+            $tgLogger->notice(json_encode($request, JSON_UNESCAPED_UNICODE));
+        }
     }
 
     /**
@@ -56,6 +66,7 @@ class TelegramAPI
         curl_close($ch);
 
         $data = json_decode($data, true);
+        $this->tgLogger($data, $this->tgLogger);
 
         if (!$data['ok']) {
             if (429 === $data['error_code']) {

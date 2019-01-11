@@ -47,10 +47,10 @@ parameters:
         - 'Тестовая переговорка'
         - 'Тестовая переговорка 2'
         - 'Тестовая переговорка 3'
+    # Отображает все переговорки, к которому имеет доступ (сортировка работает)
     meeting_room_auto_add: true
     # У гугла максимальная длина заголовка 1024, а описания (где хранятся списки участников) 16384
     # длина заголовка
-    # Отображает все переговорки, к которому имеет доступ (сортировка работает)
     meeting_room_event_name_len: 128
 
     # 1 участник ~200 байт (1 участинк - 1 элемент массива со свойствами)
@@ -90,6 +90,14 @@ services:
         resource: '../src/Controller'
         tags: ['controller.service_arguments']
 
+    App\API\Telegram\Module\Admin:
+        arguments:
+            $tgAdminList: '%tg_admin_list%'
+
+    App\API\Telegram\Module\AntiFlood:
+        arguments:
+            $allowedMessagesNumber: '%anti_flood_allowed_messages_number%'
+
     App\API\Telegram\Module\MeetingRoom:
         arguments:
             $dateRange: '%date_range%'
@@ -107,6 +115,7 @@ services:
             - '%env(PROXY_NAME)%'
             - '%env(PROXY_PORT)%'
             - '%env(PROXY_LOGPASS)%'
+            $tgLogger: '@monolog.logger.telegram_request_out'
 
     App\API\Bitrix24\Bitrix24API:
         arguments:

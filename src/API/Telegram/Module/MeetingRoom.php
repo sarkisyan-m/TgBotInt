@@ -36,13 +36,13 @@ class MeetingRoom extends Module
     public function __construct(
         TelegramAPI $tgBot,
         TelegramDb $tgDb,
+        TelegramPluginCalendar $tgPluginCalendar,
+        Bitrix24API $bitrix24,
         GoogleCalendarAPI $googleCalendar,
         TranslatorInterface $translator,
         $dateRange,
         $workTimeStart,
         $workTimeEnd,
-        TelegramPluginCalendar $tgPluginCalendar,
-        Bitrix24API $bitrix24,
         $eventNameLen,
         $eventMembersLimit,
         $eventMembersLen
@@ -59,7 +59,6 @@ class MeetingRoom extends Module
         $this->eventNameLen = $eventNameLen;
         $this->eventMembersLimit = $eventMembersLimit;
         $this->eventMembersLen = $eventMembersLen;
-
     }
 
     public function request(TelegramRequest $request)
@@ -1252,7 +1251,7 @@ class MeetingRoom extends Module
         $dateToday = date('d.m.Y', strtotime('today'));
         $filter = ['startDateTime' => $dateToday, 'attendees' => $bitrixUser->getEmail()];
 
-        $args = (int) $this->getArgs() - 1;
+        $args = (int)Helper::getArgs($this->tgRequest->getText()) - 1;
         $meetingRoomList = $this->googleCalendar->getCalendarNameList();
 
         $calendarCount = count($this->googleCalendar->getCalendarNameList());
@@ -1363,7 +1362,8 @@ class MeetingRoom extends Module
 
     public function eventDelete($data = null)
     {
-        $args = $this->getArgs();
+//        $args = $this->getArgs();
+        $args = Helper::getArgs($this->tgRequest->getText());
 
         if (isset($data['data']['args'])) {
             $args = $data['data']['args'];
@@ -1441,7 +1441,7 @@ class MeetingRoom extends Module
         $meetingRoom = $this->tgDb->getMeetingRoomUser();
 
         if ($meetingRoom) {
-            $args = $this->getArgs();
+            $args = Helper::getArgs($this->tgRequest->getText());
 
             if (isset($data['data']['args'])) {
                 $args = $data['data']['args'];
@@ -1564,22 +1564,5 @@ class MeetingRoom extends Module
             }
 
         }
-    }
-
-    public function getArgs(&$command = null)
-    {
-        $delimiter = strpos($this->tgRequest->getText(), '_');
-
-        if (false !== $delimiter) {
-            $args = substr($this->tgRequest->getText(), $delimiter + 1);
-
-            if ($args) {
-                $command = substr($this->tgRequest->getText(), 0, $delimiter);
-
-                return $args;
-            }
-        }
-
-        return null;
     }
 }

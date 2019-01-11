@@ -30,7 +30,6 @@ class Bitrix24Users extends Module
         $this->tgDb = $tgDb;
         $this->bitrix24 = $bitrix24;
         $this->translator = $translator;
-
     }
 
     public function request(TelegramRequest $request)
