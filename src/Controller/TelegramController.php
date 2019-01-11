@@ -112,6 +112,15 @@ class TelegramController extends Controller
         $tgUser = $this->tgDb->getTgUser();
         if ($tgUser && '/stop' == $this->tgRequest->getText()) {
             $this->tgDb->userDelete();
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('user.delete_account'),
+                'Markdown',
+                false,
+                false,
+                null,
+                $this->tgBot->hideKeyboard()
+            );
 
             return new Response();
         }

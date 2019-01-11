@@ -1201,11 +1201,7 @@ class MeetingRoom extends Module
     // Список стоп-слов
     public function noCommandList($command = null, $commandList = false)
     {
-        $noCommandList = [];
-
-        for ($i = 0; $i < (int) $this->translate('no_command_word.count'); ++$i) {
-            $noCommandList[] = $this->translate("no_command_word.{$i}");
-        }
+        $noCommandList = explode(', ', $this->translate('no_command_word'));
 
         if ($commandList) {
             return implode(', ', $noCommandList);

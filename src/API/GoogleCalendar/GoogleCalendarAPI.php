@@ -7,9 +7,10 @@ use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Google_Client;
 use Google_Service_Calendar;
+use Google_Service_Calendar_CalendarList;
 use Google_Service_Calendar_Event;
 use Google_Service_Calendar_CalendarListEntry;
-use Google_Service_Calendar_CalendarList;
+use Google_Service_Calendar_EventAttendee;
 
 class GoogleCalendarAPI
 {
@@ -53,7 +54,7 @@ class GoogleCalendarAPI
         $this->googleClient->useApplicationDefaultCredentials();
 
         if ($this->googleClient->isAccessTokenExpired()) {
-            $this->googleClient->refreshTokenWithAssertion();
+            $this->googleClient->fetchAccessTokenWithAssertion();
         }
 
         $this->dateRange = $dateRange;
@@ -110,9 +111,6 @@ class GoogleCalendarAPI
         return new Google_Service_Calendar($this->googleClient);
     }
 
-    /**
-     * @todo ETAG сортировка
-     */
     public function loadData()
     {
         try {
@@ -186,6 +184,7 @@ class GoogleCalendarAPI
          * @var $calendarListItems      Google_Service_Calendar_CalendarListEntry
          * @var $calendarListItem       Google_Service_Calendar_CalendarListEntry
          * @var $eventsListItems        Google_Service_Calendar_Event[]
+         * @var $member                 Google_Service_Calendar_EventAttendee
          */
         $data = $this->loadData();
 
@@ -241,11 +240,10 @@ class GoogleCalendarAPI
                     }
 
                     $attendeesEmail = [];
-                    /**
-                     * @var $member \Google_Service_Calendar_EventAttendee
-                     */
+
                     foreach ($event->getAttendees() as $member) {
                         $organizerText = 'Организатор';
+
                         if (substr($member->comment, 0, strlen($organizerText)) == $organizerText) {
                             array_unshift($attendeesEmail, $member->getEmail());
 
