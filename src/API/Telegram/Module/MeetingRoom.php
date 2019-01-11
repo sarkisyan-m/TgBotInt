@@ -79,7 +79,7 @@ class MeetingRoom extends Module
         $meetingRoom = $this->googleCalendar->getCalendarNameList();
 
         foreach ($meetingRoom as $item) {
-            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['meetingRoom' => 'list'], 'data' => ['value' => $item, 'firstMessage']]);
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['meetingRoom' => 'list'], 'data' => ['value' => $item, 'firstMessage']]);
             $keyboard[] = [$this->tgBot->inlineKeyboardButton($item, $callback)];
         }
 
@@ -250,7 +250,7 @@ class MeetingRoom extends Module
 
             foreach ($bitrixUsers as $bitrixUser) {
                 // попадаем сюда по коллбеку после выбора кнопки пользователем
-                if (isset($data) && $data && 'duplicate' == $data['event']['members']) {
+                if (isset($data) && $data && 'duplicate' == $data['callback_event']['members']) {
                     if (isset($data['data']['ready']) && 'no' == $data['data']['ready']) {
                         $meetingRoomUser->setEventMembers('');
                         $this->tgDb->insert($meetingRoomUser);
@@ -307,12 +307,12 @@ class MeetingRoom extends Module
 
                 $contact = implode(', ', $contact);
                 $text = "{$bitrixUser->getName()} ({$contact})";
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => $bitrixUser->getId()]]);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => $bitrixUser->getId()]]);
                 $keyboard[][] = $this->tgBot->inlineKeyboardButton($text, $callback);
             }
 
-            $callback1 = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none']]);
-            $callback2 = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none', 'ready' => 'no']]);
+            $callback1 = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none']]);
+            $callback2 = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'duplicate'], 'data' => ['bitrix_id' => 'none', 'ready' => 'no']]);
             $keyboard[] = [
                 $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.not_on_list'), $callback1),
                 $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback2),
@@ -375,7 +375,7 @@ class MeetingRoom extends Module
 
         // Если ответ callback_query
         // После клика на кнпоку Продолжить - идем по ветке вниз
-        if (isset($data) && $data && 'not_found' == $data['event']['members']) {
+        if (isset($data) && $data && 'not_found' == $data['callback_event']['members']) {
             if ('yes' == $data['data']['ready']) {
                 foreach ($meetingRoomUserData['users']['not_found'] as $id => $memberNotFound) {
                     $meetingRoomUserData['users']['found'][] = [
@@ -408,9 +408,9 @@ class MeetingRoom extends Module
 
             $keyboard = [];
             $ln = 0;
-            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'not_found'], 'data' => ['ready' => 'yes']]);
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'not_found'], 'data' => ['ready' => 'yes']]);
             $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.continue'), $callback);
-            $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'not_found'], 'data' => ['ready' => 'no']]);
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'not_found'], 'data' => ['ready' => 'no']]);
             $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
             $this->tgDb->setCallbackQuery();
 
@@ -450,7 +450,7 @@ class MeetingRoom extends Module
             return false;
         }
 
-        if (isset($data) && $data && 'found' == $data['event']['members']) {
+        if (isset($data) && $data && 'found' == $data['callback_event']['members']) {
             if ('yes' == $data['data']['ready']) {
                 $this->meetingRoomConfirm(null, true);
 
@@ -486,9 +486,9 @@ class MeetingRoom extends Module
 
         $keyboard = [];
         $ln = 0;
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'found'], 'data' => ['ready' => 'yes']]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'found'], 'data' => ['ready' => 'yes']]);
         $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.continue'), $callback);
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => ['members' => 'found'], 'data' => ['ready' => 'no']]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'found'], 'data' => ['ready' => 'no']]);
         $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
         $this->tgDb->setCallbackQuery();
 
@@ -650,7 +650,7 @@ class MeetingRoom extends Module
             );
         }
 
-        if (!isset($data['event']['confirm'])) {
+        if (!isset($data['callback_event']['confirm'])) {
             $text .= "{$this->translate('meeting_room.confirm.data_info')}\n\n";
         }
 
@@ -665,13 +665,13 @@ class MeetingRoom extends Module
 
         $keyboard = [];
         $ln = 0;
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => ['confirm' => 'end'], 'data' => ['ready' => 'yes']]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['confirm' => 'end'], 'data' => ['ready' => 'yes']]);
         $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.send'), $callback);
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => ['confirm' => 'end'], 'data' => ['ready' => 'no']]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['confirm' => 'end'], 'data' => ['ready' => 'no']]);
         $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.cancel'), $callback);
         $this->tgDb->setCallbackQuery();
 
-        if (isset($data['event']['confirm']) && 'end' == $data['event']['confirm']) {
+        if (isset($data['callback_event']['confirm']) && 'end' == $data['callback_event']['confirm']) {
             $times = $this->googleEventCurDayTimes();
             $time = explode('-', $meetingRoomUser->getTime());
             $validateTime = isset($time[0]) && isset($time[1]) && $this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1]);
@@ -1211,8 +1211,9 @@ class MeetingRoom extends Module
             return implode(', ', $noCommandList);
         }
 
-        if ($command) {
+        if (null !== $command) {
             $command = (string) mb_strtolower($command);
+
             if (false !== array_search($command, $noCommandList)) {
                 return true;
             }
@@ -1381,13 +1382,13 @@ class MeetingRoom extends Module
         if (isset($event['eventId'])) {
             $text = null;
 
-            if (!isset($data['event']['event'])) {
+            if (!isset($data['callback_event']['event'])) {
                 $text .= $this->translate('event_list.remove.confirmation');
             }
 
             $text .= $this->googleEventFormat($event);
 
-            if (isset($data['event']['event']) && 'delete' == $data['event']['event'] && 'yes' == $data['data']['ready']) {
+            if (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'yes' == $data['data']['ready']) {
                 $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
                 $text .= $this->translate('event_list.remove.success');
                 $this->tgBot->editMessageText(
@@ -1397,7 +1398,7 @@ class MeetingRoom extends Module
                     null,
                     'Markdown'
                 );
-            } elseif (isset($data['event']['event']) && 'delete' == $data['event']['event'] && 'no' == $data['data']['ready']) {
+            } elseif (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.remove.cancel');
                 $this->tgBot->editMessageText(
                     $text,
@@ -1409,9 +1410,9 @@ class MeetingRoom extends Module
             } else {
                 $keyboard = [];
                 $ln = 0;
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'delete'], 'data' => ['ready' => 'yes', 'args' => $args]]);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'delete'], 'data' => ['ready' => 'yes', 'args' => $args]]);
                 $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.remove'), $callback);
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'delete'], 'data' => ['ready' => 'no', 'args' => $args]]);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'delete'], 'data' => ['ready' => 'no', 'args' => $args]]);
                 $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.cancel'), $callback);
                 $this->tgDb->setCallbackQuery();
 
@@ -1465,7 +1466,7 @@ class MeetingRoom extends Module
                 $timeStart = date('H:i', strtotime($event['dateTimeStart']));
                 $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
 
-                if (isset($data['event']['event']) && 'edit' == $data['event']['event']) {
+                if (isset($data['callback_event']['event']) && 'edit' == $data['callback_event']['event']) {
                     if ('meetingRoom' == $data['data']['obj']) {
                         $meetingRoom->setMeetingRoom('');
                         $meetingRoom->setDate('');
@@ -1534,11 +1535,11 @@ class MeetingRoom extends Module
                 $this->tgDb->insert($meetingRoom);
 
                 $ln = 0;
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'meetingRoom', 'args' => $args]]);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'meetingRoom', 'args' => $args]]);
                 $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_room_time'), $callback);
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'eventName', 'args' => $args]]);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventName', 'args' => $args]]);
                 $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_name'), $callback);
-                $callback = $this->tgDb->prepareCallbackQuery(['event' => ['event' => 'edit'], 'data' => ['obj' => 'eventMembers', 'args' => $args]]);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventMembers', 'args' => $args]]);
                 $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_members'), $callback);
                 $this->tgDb->setCallbackQuery();
 

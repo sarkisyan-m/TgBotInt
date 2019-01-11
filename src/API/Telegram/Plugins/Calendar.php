@@ -80,7 +80,7 @@ class Calendar
         $emptyCallback = $this->tgDb->prepareCallbackQuery(['empty' => true]);
 
         $ln = 0;
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'current'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'current'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("{$this->getMonthText($day, $month, $year)}, {$this->getYear($day, $month, $year)}", $callback);
 
         ++$ln;
@@ -110,7 +110,7 @@ class Calendar
 
             // создаем ячейки из чисел
 
-            $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $curDay, 'month' => $this->getMonth($day, $month, $year), 'year' => $this->getYear($day, $month, $year)]]);
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'selectDay'], 'data' => ['day' => $curDay, 'month' => $this->getMonth($day, $month, $year), 'year' => $this->getYear($day, $month, $year)]]);
             $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDay, $callback);
 
             // создаем пустые ячейки в конце
@@ -124,20 +124,20 @@ class Calendar
             ++$dWeekCount;
         }
         ++$ln;
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'previous'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'previous'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.back'), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'following'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'following'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.forward'), $callback);
 
         ++$ln;
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(0), 'month' => $this->getMonth(0), 'year' => $this->getYear(0)]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(0), 'month' => $this->getMonth(0), 'year' => $this->getYear(0)]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.today'), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(-1), 'month' => $this->getMonth(-1), 'year' => $this->getYear(-1)]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(-1), 'month' => $this->getMonth(-1), 'year' => $this->getYear(-1)]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.tomorrow'), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(['event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(-2), 'month' => $this->getMonth(-2), 'year' => $this->getYear(-2)]]);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'selectDay'], 'data' => ['day' => $this->getDay(-2), 'month' => $this->getMonth(-2), 'year' => $this->getYear(-2)]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_after_tomorrow'), $callback);
 
         $this->tgDb->setCallbackQuery();

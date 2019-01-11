@@ -295,11 +295,11 @@ class TelegramController extends Controller
         // Если коллбек без UUID, то отклоняем
         $data = $this->tgRequest->getData();
         if (isset($data['uuid'])) {
-            $callBackUuid = $data['uuid'];
+            $callbackUuid = $data['uuid'];
             $uuidList = $this->tgDb->getCallbackQuery();
 
-            if (isset($uuidList[$callBackUuid])) {
-                $data = $uuidList[$callBackUuid];
+            if (isset($uuidList[$callbackUuid])) {
+                $data = $uuidList[$callbackUuid];
             }
         } else {
             return false;
@@ -310,32 +310,31 @@ class TelegramController extends Controller
             return true;
         }
 
-        // Если коллбек с UUID, но нет $data["event"], который говорит нам о том,
-        // чтобы обработать конкретное событие, то отклоняем
-        if (!isset($data['event'])) {
+        // Отсутствие ключа callback_event говорит о том, что не найден UUID
+        if (!isset($data['callback_event'])) {
             return false;
         }
 
         // Вывод кнопок для списка переговорок
-        if (isset($data['event']['meetingRoom']) && 'list' == $data['event']['meetingRoom']) {
+        if (isset($data['callback_event']['meetingRoom']) && 'list' == $data['callback_event']['meetingRoom']) {
             $this->tgModuleMeetingRoom->meetingRoomListCallback($data);
 
             return true;
         }
 
         // Вывод календаря
-        if (isset($data['event']['calendar'])) {
-            if ('selectDay' == $data['event']['calendar']) {
+        if (isset($data['callback_event']['calendar'])) {
+            if ('selectDay' == $data['callback_event']['calendar']) {
                 $this->tgModuleMeetingRoom->meetingRoomTimeCallback($data);
 
                 return true;
             }
 
-            if ('previous' == $data['event']['calendar'] ||
-                'following' == $data['event']['calendar'] ||
-                'current' == $data['event']['calendar']) {
+            if ('previous' == $data['callback_event']['calendar'] ||
+                'following' == $data['callback_event']['calendar'] ||
+                'current' == $data['callback_event']['calendar']) {
                 $keyboard = [];
-                switch ($data['event']['calendar']) {
+                switch ($data['callback_event']['calendar']) {
                     case 'previous':
                         $keyboard = $this->tgPluginCalendar->keyboard(0, ++$data['data']['month'], 0);
                         break;
@@ -353,8 +352,8 @@ class TelegramController extends Controller
         }
 
         // Вывод списка участников
-        if (isset($data['event']['members'])) {
-            if ($data['event']['members']) {
+        if (isset($data['callback_event']['members'])) {
+            if ($data['callback_event']['members']) {
                 $this->tgModuleMeetingRoom->meetingRoomEventMembers($data);
             }
 
@@ -362,7 +361,7 @@ class TelegramController extends Controller
         }
 
         // Окончательное подтверждение перед отправкой
-        if (isset($data['event']['confirm'])) {
+        if (isset($data['callback_event']['confirm'])) {
             $this->tgModuleMeetingRoom->meetingRoomConfirm($data);
 
             return true;
@@ -370,14 +369,14 @@ class TelegramController extends Controller
 
         // Действия с событиями
         // Если хотим удалить или изменить событие
-        if (isset($data['event']['event'])) {
-            if ('delete' == $data['event']['event']) {
+        if (isset($data['callback_event']['event'])) {
+            if ('delete' == $data['callback_event']['event']) {
                 $this->tgModuleMeetingRoom->eventDelete($data);
 
                 return true;
             }
 
-            if ('edit' == $data['event']['event']) {
+            if ('edit' == $data['callback_event']['event']) {
                 $this->tgModuleMeetingRoom->eventEdit($data);
 
                 return true;
