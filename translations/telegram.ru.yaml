@@ -66,11 +66,24 @@ admin:
         success: "*Кеш успешно очищен!*"
     event_management: "Управление событиями"
     event:
-        head: "\U0000274C Вы уверены, что хотите удалить *все события со всех календарей*?
-        \n\n\U000026A0 *Данны нельзя будет восстановить!*\n\n"
-        body: "- %calendarName% (%eventCount%)\n"
-        clear: "Удалить все события"
-        success: "*Все события успешно удалены!*"
+        clear:
+            head: "\U0000274C Вы уверены, что хотите удалить *все события во всех кадендарях*?
+            \n\n\U000026A0 *Данны нельзя будет восстановить!*\n\n"
+            button: "Удалить все события"
+            success: "*Все события успешно удалены!*"
+        info:
+            button: "Общая информация"
+            head: "*Общая информация*\n\n"
+            google_calendar_head: "*Google Calendar*\n"
+            google_calendar_body: "%calendarName% (%eventCount%)\n"
+            google_calendar_total_count: "*Всего событий: %totalCount%*\n\n"
+            bitrix24_head: "*Bitrix24*\n"
+            bitrix24_body: "Активных сотрудников: %userActiveTrue%
+            \nНе указан телефон: %userPhoneNotFound%
+            \nНе указан email: %userEmailNotFound%
+            \nЗарегистрировано у бота: %tgUsersCount%
+            \nНеактивных сотрудников: %userActiveFalse%
+            \n*Всего сотрудников: %userTotalCount%*\n\n"
 
 
 # каждое слово через запятую

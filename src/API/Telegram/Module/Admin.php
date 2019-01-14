@@ -100,6 +100,75 @@ class Admin extends Module
             'Markdown'
         );
     }
+    
+    public function eventInfo()
+    {
+        $keyboard = [];
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_info' => 'confirm'], 'data' => ['ready' => 'back']]]);
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
+        $this->tgDb->setCallbackQuery();
+
+        $text = $this->translate('admin.event.info.head');
+
+        $calendars = $this->googleCalendar->getList();
+        $totalCount = 0;
+        $text .= $this->translate('admin.event.info.google_calendar_head');
+        foreach ($calendars as $calendar) {
+            $eventCount = count($calendar['listEvents']);
+            $totalCount += $eventCount;
+            $text .= $this->translate('admin.event.info.google_calendar_body', ['%calendarName%' => $calendar['calendarName'], '%eventCount%' => $eventCount]);
+        }
+        $text .= $this->translate('admin.event.info.google_calendar_total_count', ['%totalCount%' => $totalCount]);
+
+        $bitrix24Users = $this->bitrix24->getUsers();
+
+        $bitrix24UsersActiveTrue = 0;
+        $bitrix24UsersActiveFalse = 0;
+        $bitrix24UsersTotal = 0;
+        $bitrix24UsersNotPhone = 0;
+        $bitrix24UsersNotEmail = 0;
+        foreach ($bitrix24Users as $bitrix24User) {
+            if ($bitrix24User->getActive()) {
+                $bitrix24UsersActiveTrue++;
+            } else {
+                $bitrix24UsersActiveFalse++;
+            }
+
+            if ($bitrix24User->getActive()) {
+                if (!$bitrix24User->getFirstPhone()) {
+                    $bitrix24UsersNotPhone++;
+                }
+
+                if (!$bitrix24User->getEmail()) {
+                    $bitrix24UsersNotEmail++;
+                }
+
+            }
+
+            $bitrix24UsersTotal++;
+        }
+
+        $tgUsers = $this->tgDb->getTgUsers([]);
+        $text .= $this->translate('admin.event.info.bitrix24_head');
+        $text .= $this->translate('admin.event.info.bitrix24_body', [
+            '%userActiveTrue%' => $bitrix24UsersActiveTrue,
+            '%userActiveFalse%' => $bitrix24UsersActiveFalse,
+            '%userPhoneNotFound%' => $bitrix24UsersNotPhone,
+            '%userEmailNotFound%' => $bitrix24UsersNotEmail,
+            '%tgUsersCount%' => count($tgUsers),
+            '%userTotalCount%' => $bitrix24UsersTotal,
+        ]);
+
+        $this->tgBot->editMessageText(
+            $text,
+            $this->tgRequest->getChatId(),
+            $this->tgRequest->getMessageId(),
+            null,
+            'Markdown',
+            false,
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
+        );
+    }
 
     public function cacheClear()
     {
@@ -163,15 +232,19 @@ class Admin extends Module
         $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
         $this->tgDb->setCallbackQuery();
 
-        $text = null;
-        $calendars = $this->googleCalendar->getList();
-        foreach ($calendars as $calendar) {
-            $eventCount = count($calendar['listEvents']);
-            $text .= $this->translate('admin.event.body', ['%calendarName%' => $calendar['calendarName'], '%eventCount%' => $eventCount]);
-        }
+//        $calendars = $this->googleCalendar->getList();
+//        $totalCount = 0;
+//        $text = $this->translate('admin.event.clear.head');
+//        foreach ($calendars as $calendar) {
+//            $eventCount = count($calendar['listEvents']);
+//            $totalCount += $eventCount;
+//            $text .= $this->translate('admin.event.clear.body', ['%calendarName%' => $calendar['calendarName'], '%eventCount%' => $eventCount]);
+//        }
+//
+//        $text .= $this->translate('admin.event.total_count', ['%totalCount%' => $totalCount]);
 
         $this->tgBot->editMessageText(
-            $this->translate('admin.event.head') . $text,
+            $this->translate('admin.event.clear.head'),
             $this->tgRequest->getChatId(),
             $this->tgRequest->getMessageId(),
             null,
@@ -193,7 +266,7 @@ class Admin extends Module
         $this->googleCalendar->removeAllEvents();
 
         $this->tgBot->editMessageText(
-            $this->translate('admin.event.success'),
+            $this->translate('admin.event.clear.success'),
             $this->tgRequest->getChatId(),
             $this->tgRequest->getMessageId(),
             null,
@@ -212,11 +285,13 @@ class Admin extends Module
         }
 
         $keyboard = [];
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_info' => 'event_info']]]);
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event.info.button'), $callback);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event_management'), null, "calendar.google.com");
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['cache_clear' => 'cache_clear']]]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.cache.clear'), $callback);
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_clear' => 'event_clear']]]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event.clear'), $callback);
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event.clear.button'), $callback);
         $this->tgDb->setCallbackQuery();
 
         if ($messageType == 'send') {

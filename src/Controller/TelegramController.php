@@ -112,6 +112,7 @@ class TelegramController extends Controller
         $tgUser = $this->tgDb->getTgUser();
         if ($tgUser && '/stop' == $this->tgRequest->getText()) {
             $this->tgDb->userDelete();
+            $keyboard[][] = $this->tgBot->keyboardButton($this->translate('keyboard.send_phone'), true);
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('user.delete_account'),
@@ -119,7 +120,7 @@ class TelegramController extends Controller
                 false,
                 false,
                 null,
-                $this->tgBot->hideKeyboard()
+                $this->tgBot->replyKeyboardMarkup($keyboard, true, false)
             );
 
             return new Response();
@@ -400,6 +401,22 @@ class TelegramController extends Controller
 
         // админка
         if (isset($data['callback_event']['admin'])) {
+
+            if (isset($data['callback_event']['admin']['event_info'])) {
+                if ($data['callback_event']['admin']['event_info'] == 'event_info') {
+                    $this->tgModuleAdmin->eventInfo();
+
+                    return true;
+                }
+
+                if ($data['callback_event']['admin']['event_info'] == 'confirm') {
+                    if ($data['callback_event']['data']['ready'] == 'back') {
+                        $this->tgModuleAdmin->commandList('edit');
+                    }
+
+                    return true;
+                }
+            }
 
             if (isset($data['callback_event']['admin']['cache_clear'])) {
                 if ($data['callback_event']['admin']['cache_clear'] == 'cache_clear') {

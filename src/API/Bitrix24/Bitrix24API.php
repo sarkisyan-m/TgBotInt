@@ -269,11 +269,15 @@ class Bitrix24API
             }
         }
 
-        if ($resultFilter) {
-            return array_merge($filterAvailableKeys, $resultFilter);
+        $result = array_merge($filterAvailableKeys, $resultFilter);
+
+        foreach ($result as $filterKey => $filterValue) {
+            if ($filterValue === null) {
+                unset($result[$filterKey]);
+            }
         }
 
-        return $filterAvailableKeys;
+        return $result;
     }
 
     /**
@@ -284,14 +288,20 @@ class Bitrix24API
     public function getUsers($filter = [])
     {
         $filter = $this->getFilters($filter);
-        $filter = array_filter($filter);
+
         $users = [];
         if ($filter) {
             foreach ($this->users as $user) {
                 foreach ($filter as $filterKey => $filterValue) {
                     if ('active' == $filterKey) {
-                        if ($user->getActive() != $filterValue) {
-                            break;
+                        if (count($filter) == 1) {
+                            if ($user->getActive() == $filterValue) {
+                                $users[] = $user;
+                            }
+                        } else {
+                            if ($user->getActive() != $filterValue) {
+                                break;
+                            }
                         }
                     }
 
