@@ -6,8 +6,6 @@ use App\API\Bitrix24\Bitrix24API;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
-use App\API\Telegram\Module\Admin as TelegramModuleAdmin;
-use App\Service\Helper;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class Command extends Module
@@ -22,22 +20,17 @@ class Command extends Module
     private $translator;
     private $bitrix24;
     private $botCommands;
-    private $adminArgs;
-    private $tgModuleAdmin;
 
     public function __construct(
         TelegramAPI $tgBot,
         TelegramDb $tgDb,
         Bitrix24API $bitrix24,
-        TranslatorInterface $translator,
-        TelegramModuleAdmin $tgModuleAdmin
+        TranslatorInterface $translator
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->bitrix24 = $bitrix24;
         $this->translator = $translator;
-
-        $this->tgModuleAdmin = $tgModuleAdmin;
 
         $this->botCommands = [
             '/meetingroomlist' => $this->translate('bot_command.meeting_room_list'),
@@ -45,16 +38,11 @@ class Command extends Module
             '/help' => $this->translate('bot_command.help'),
             '/exit' => $this->translate('bot_command.exit'),
             '/helpmore' => '',
+            '/contacts' => '',
             '/admin' => '',
             '/e' => '',
             '/d' => '',
             '/start' => '',
-        ];
-
-        $this->adminArgs = [
-            'list',
-            'cacheclear',
-            '',
         ];
     }
 
@@ -102,29 +90,6 @@ class Command extends Module
             null,
             $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
         );
-    }
-
-    public function commandAdmin()
-    {
-        if ($this->isAdminArgs('list')) {
-            $this->tgModuleAdmin->adminList();
-
-            return true;
-        }
-
-        if ($this->isAdminArgs('')) {
-            if ($this->tgModuleAdmin->commandList()) {
-                return true;
-            }
-        }
-
-        if ($this->isAdminArgs('cacheclear')) {
-            if ($this->tgModuleAdmin->cacheClear()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public function commandExit()
@@ -177,17 +142,6 @@ class Command extends Module
         }
 
         return $result;
-    }
-
-    public function isAdminArgs(string $command)
-    {
-        $args = Helper::getArgs($this->tgRequest->getText());
-
-        if (false !== array_search($command, $this->adminArgs) && $command == $args) {
-            return true;
-        }
-
-        return false;
     }
 
     // Если мы нашли команду в списке команд

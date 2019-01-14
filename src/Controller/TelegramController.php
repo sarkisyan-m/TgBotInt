@@ -204,12 +204,18 @@ class TelegramController extends Controller
             return true;
         }
 
-        if ($this->tgModuleCommand->isBotCommand('/admin')) {
-            if (!$this->tgModuleCommand->commandAdmin()) {
-                return false;
-            }
+        if ($this->tgModuleCommand->isBotCommand('/contacts')) {
+            $this->tgModuleAdmin->adminList();
 
             return true;
+        }
+
+        if ($this->tgModuleCommand->isBotCommand('/admin')) {
+            if ($this->tgModuleAdmin->isAdmin()) {
+                $this->tgModuleAdmin->commandList();
+
+                return true;
+            }
         }
 
         if ($this->tgModuleCommand->isBotCommand('/meetingroomlist')) {
@@ -389,6 +395,50 @@ class TelegramController extends Controller
                 $this->tgModuleMeetingRoom->eventEdit($data);
 
                 return true;
+            }
+        }
+
+        // админка
+        if (isset($data['callback_event']['admin'])) {
+
+            if (isset($data['callback_event']['admin']['cache_clear'])) {
+                if ($data['callback_event']['admin']['cache_clear'] == 'cache_clear') {
+                    $this->tgModuleAdmin->cacheClear();
+
+                    return true;
+                }
+
+                if ($data['callback_event']['admin']['cache_clear'] == 'confirm') {
+                    if ($data['callback_event']['data']['ready'] == 'yes') {
+                        $this->tgModuleAdmin->cacheClearCallback();
+                    }
+
+                    if ($data['callback_event']['data']['ready'] == 'no') {
+                        $this->tgModuleAdmin->commandList('edit');
+                    }
+
+                    return true;
+                }
+            }
+
+            if (isset($data['callback_event']['admin']['event_clear'])) {
+                if ($data['callback_event']['admin']['event_clear'] == 'event_clear') {
+                    $this->tgModuleAdmin->eventClear();
+
+                    return true;
+                }
+
+                if ($data['callback_event']['admin']['event_clear'] == 'confirm') {
+                    if ($data['callback_event']['data']['ready'] == 'yes') {
+                        $this->tgModuleAdmin->eventClearCallback();
+                    }
+
+                    if ($data['callback_event']['data']['ready'] == 'no') {
+                        $this->tgModuleAdmin->commandList('edit');
+                    }
+
+                    return true;
+                }
             }
         }
 

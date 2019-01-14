@@ -3,6 +3,7 @@
 namespace App\API\Telegram\Module;
 
 use App\API\Bitrix24\Bitrix24API;
+use App\API\GoogleCalendar\GoogleCalendarAPI;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
@@ -22,6 +23,7 @@ class Admin extends Module
     private $bitrix24;
     private $tgAdminList;
     private $cache;
+    private $googleCalendar;
 
     public function __construct(
         TelegramAPI $tgBot,
@@ -29,7 +31,8 @@ class Admin extends Module
         Bitrix24API $bitrix24,
         TranslatorInterface $translator,
         $tgAdminList,
-        CacheInterface $cache
+        CacheInterface $cache,
+        GoogleCalendarAPI $googleCalendar
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
@@ -38,6 +41,7 @@ class Admin extends Module
         $tgAdminList = explode(', ', $tgAdminList);
         $this->tgAdminList = $tgAdminList;
         $this->cache = $cache;
+        $this->googleCalendar = $googleCalendar;
     }
 
     public function request(TelegramRequest $request)
@@ -86,7 +90,7 @@ class Admin extends Module
                     $adminContact = null;
                 }
 
-                $text .= $this->translate('admin.admin_list_user', ['%adminName%' => $name, '%adminContact%' => $adminContact]);
+                $text .= $this->translate('admin.command_list.user_info', ['%adminName%' => $name, '%adminContact%' => $adminContact]);
             }
         }
 
@@ -103,28 +107,139 @@ class Admin extends Module
             return false;
         }
 
-        $this->cache->clear();
+        $keyboard = [];
+        $ln = 0;
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['cache_clear' => 'confirm'], 'data' => ['ready' => 'yes']]]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.clear'), $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['cache_clear' => 'confirm'], 'data' => ['ready' => 'no']]]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
+        $this->tgDb->setCallbackQuery();
 
-        $this->tgBot->sendMessage(
+        $this->tgBot->editMessageText(
+            $this->translate('admin.cache.head'),
             $this->tgRequest->getChatId(),
-            $this->translate('admin.cache_clear_success'),
-            'Markdown'
+            $this->tgRequest->getMessageId(),
+            null,
+            'Markdown',
+            false,
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
 
         return true;
     }
 
-    public function commandList()
+    public function cacheClearCallback()
     {
         if (!$this->isAdmin()) {
             return false;
         }
 
-        $this->tgBot->sendMessage(
+        $this->cache->clear();
+
+        $this->tgBot->editMessageText(
+            $this->translate('admin.cache.success'),
             $this->tgRequest->getChatId(),
-            $this->translate('admin.commands'),
+            $this->tgRequest->getMessageId(),
+            null,
             'Markdown'
         );
+
+        $this->commandList();
+
+        return true;
+    }
+
+    public function eventClear()
+    {
+        if (!$this->isAdmin()) {
+            return false;
+        }
+
+        $keyboard = [];
+        $ln = 0;
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_clear' => 'confirm'], 'data' => ['ready' => 'yes']]]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.remove'), $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_clear' => 'confirm'], 'data' => ['ready' => 'no']]]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
+        $this->tgDb->setCallbackQuery();
+
+        $text = null;
+        $calendars = $this->googleCalendar->getList();
+        foreach ($calendars as $calendar) {
+            $eventCount = count($calendar['listEvents']);
+            $text .= $this->translate('admin.event.body', ['%calendarName%' => $calendar['calendarName'], '%eventCount%' => $eventCount]);
+        }
+
+        $this->tgBot->editMessageText(
+            $this->translate('admin.event.head') . $text,
+            $this->tgRequest->getChatId(),
+            $this->tgRequest->getMessageId(),
+            null,
+            'Markdown',
+            false,
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
+        );
+
+        return true;
+    }
+
+    public function eventClearCallback()
+    {
+        if (!$this->isAdmin()) {
+            return false;
+        }
+
+        $this->cache->clear();
+        $this->googleCalendar->removeAllEvents();
+
+        $this->tgBot->editMessageText(
+            $this->translate('admin.event.success'),
+            $this->tgRequest->getChatId(),
+            $this->tgRequest->getMessageId(),
+            null,
+            'Markdown'
+        );
+
+        $this->commandList();
+
+        return true;
+    }
+
+    public function commandList($messageType = 'send')
+    {
+        if (!$this->isAdmin()) {
+            return false;
+        }
+
+        $keyboard = [];
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event_management'), null, "calendar.google.com");
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['cache_clear' => 'cache_clear']]]);
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.cache.clear'), $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_clear' => 'event_clear']]]);
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event.clear'), $callback);
+        $this->tgDb->setCallbackQuery();
+
+        if ($messageType == 'send') {
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('admin.command_list.head'),
+                'Markdown',
+                false,
+                false,
+                null,
+                $this->tgBot->inlineKeyboardMarkup($keyboard)
+            );
+        } elseif ($messageType == 'edit') {
+            $this->tgBot->editMessageText(
+                $this->translate('admin.command_list.head'),
+                $this->tgRequest->getChatId(),
+                $this->tgRequest->getMessageId(),
+                null,
+                'Markdown',
+                false,
+                $this->tgBot->inlineKeyboardMarkup($keyboard)
+            );
+        }
 
         return true;
     }
