@@ -74,10 +74,12 @@ admin:
         info:
             button: "Общая информация"
             head: "*Общая информация*\n\n"
-            google_calendar_head: "*Google Calendar*\n"
+            google_service_account_head: "*Google Service Account* ([управление](https://console.developers.google.com/projectselector/iam-admin/serviceaccounts))\n"
+            google_service_account_body: "%googleServiceAccountEmail%\n\n"
+            google_calendar_head: "*Google Calendar* ([управление](https://www.google.com/calendar))\n"
             google_calendar_body: "%calendarName% (%eventCount%)\n"
             google_calendar_total_count: "*Всего событий: %totalCount%*\n\n"
-            bitrix24_head: "*Bitrix24*\n"
+            bitrix24_head: "*Bitrix24* ([управление](%bitrix24BaseUrl%))\n"
             bitrix24_body: "Активных сотрудников: %userActiveTrue%
             \nНе указан телефон: %userPhoneNotFound%
             \nНе указан email: %userEmailNotFound%

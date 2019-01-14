@@ -24,6 +24,8 @@ class Admin extends Module
     private $tgAdminList;
     private $cache;
     private $googleCalendar;
+    private $googleServiceAccountEmail;
+    private $bitrix24BaseUrl;
 
     public function __construct(
         TelegramAPI $tgBot,
@@ -32,7 +34,9 @@ class Admin extends Module
         TranslatorInterface $translator,
         $tgAdminList,
         CacheInterface $cache,
-        GoogleCalendarAPI $googleCalendar
+        GoogleCalendarAPI $googleCalendar,
+        $googleServiceAccountEmail,
+        $bitrix24BaseUrl
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
@@ -42,6 +46,8 @@ class Admin extends Module
         $this->tgAdminList = $tgAdminList;
         $this->cache = $cache;
         $this->googleCalendar = $googleCalendar;
+        $this->googleServiceAccountEmail = $googleServiceAccountEmail;
+        $this->bitrix24BaseUrl = $bitrix24BaseUrl;
     }
 
     public function request(TelegramRequest $request)
@@ -110,6 +116,9 @@ class Admin extends Module
 
         $text = $this->translate('admin.event.info.head');
 
+        $text .= $this->translate('admin.event.info.google_service_account_head');
+        $text .= $this->translate('admin.event.info.google_service_account_body', ['%googleServiceAccountEmail%' => $this->googleServiceAccountEmail]);
+
         $calendars = $this->googleCalendar->getList();
         $totalCount = 0;
         $text .= $this->translate('admin.event.info.google_calendar_head');
@@ -142,14 +151,13 @@ class Admin extends Module
                 if (!$bitrix24User->getEmail()) {
                     $bitrix24UsersNotEmail++;
                 }
-
             }
 
             $bitrix24UsersTotal++;
         }
 
         $tgUsers = $this->tgDb->getTgUsers([]);
-        $text .= $this->translate('admin.event.info.bitrix24_head');
+        $text .= $this->translate('admin.event.info.bitrix24_head', ['%bitrix24BaseUrl%' => $this->bitrix24BaseUrl]);
         $text .= $this->translate('admin.event.info.bitrix24_body', [
             '%userActiveTrue%' => $bitrix24UsersActiveTrue,
             '%userActiveFalse%' => $bitrix24UsersActiveFalse,
@@ -165,7 +173,7 @@ class Admin extends Module
             $this->tgRequest->getMessageId(),
             null,
             'Markdown',
-            false,
+            true,
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
     }

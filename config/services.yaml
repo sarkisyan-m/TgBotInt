@@ -18,6 +18,7 @@ parameters:
     tg_url: 'https://api.telegram.org/bot'
 
     # bitrix24
+    bitrix24_base_url: '%env(BITRIX24_BASE_URL)%'
     bitrix24_url: '%env(BITRIX24_URL)%'
     bitrix24_api: '%env(BITRIX24_API)%'
     bitrix24_user_id: '%env(BITRIX24_USER_ID)%'
@@ -76,6 +77,8 @@ parameters:
     # сообщений в минуту
     anti_flood_allowed_messages_number: 29
 
+    google_service_account_email: '%env(GOOGLE_SERVICE_ACCOUNT_EMAIL)%'
+
 services:
     _defaults:
         autowire: true
@@ -93,6 +96,8 @@ services:
     App\API\Telegram\Module\Admin:
         arguments:
             $tgAdminList: '%tg_admin_list%'
+            $googleServiceAccountEmail: '%google_service_account_email%'
+            $bitrix24BaseUrl: '%bitrix24_base_url%'
 
     App\API\Telegram\Module\AntiFlood:
         arguments:
