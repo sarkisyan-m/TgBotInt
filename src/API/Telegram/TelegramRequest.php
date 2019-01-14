@@ -40,16 +40,6 @@ class TelegramRequest
         return null;
     }
 
-    public function getTypeMessage()
-    {
-        return self::TYPE_MESSAGE;
-    }
-
-    public function getTypeCallbackQuery()
-    {
-        return self::TYPE_CALLBACK_QUERY;
-    }
-
     public function getChatId()
     {
         if (isset($this->requestData[$this->getType()]['from']['id'])) {
