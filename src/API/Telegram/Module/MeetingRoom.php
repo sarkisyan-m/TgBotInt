@@ -189,7 +189,7 @@ class MeetingRoom extends Module
             return;
         }
 
-        if ($time[0] < time() && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
+        if (strtotime($time[0]) < time() && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.past'),
@@ -703,7 +703,7 @@ class MeetingRoom extends Module
                 $meetingRoomName = $meetingRoomUser->getMeetingRoom();
                 $calendarId = $this->googleCalendar->getCalendarId($meetingRoomName);
 
-                $textMembers = $this->googleCalendarDescriptionConvertTextToLtext($meetingRoomMembers, $emailList);
+                $textMembers = $this->googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, $emailList);
 
                 $attendees = [];
                 foreach ($emailList as $key => $email) {
@@ -1023,7 +1023,7 @@ class MeetingRoom extends Module
         return $this->membersList($data, false, true);
     }
 
-    public function googleCalendarDescriptionConvertTextToLtext($meetingRoomMembers, &$emailList)
+    public function googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, &$emailList)
     {
         $textMembers = null;
         $emailList = [];

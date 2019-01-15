@@ -13,7 +13,7 @@ class TelegramAPI
     protected $translator;
     protected $tgLogger;
 
-    public function __construct($tgUrl, $tgToken, array $proxy, TranslatorInterface $translator, $tgLogger)
+    public function __construct($tgUrl, $tgToken, array $proxy, TranslatorInterface $translator = null, $tgLogger = null)
     {
         $this->tgToken = $tgToken;
         $this->proxy = $proxy;
@@ -27,9 +27,9 @@ class TelegramAPI
         return $this->translator->trans($key, $params, 'telegram', 'ru');
     }
 
-    public function tgLogger($request, Logger $tgLogger)
+    public function tgLogger($request, Logger $tgLogger = null)
     {
-        if ($request) {
+        if ($request && $tgLogger) {
             $tgLogger->notice(json_encode($request, JSON_UNESCAPED_UNICODE));
         }
     }
@@ -214,11 +214,6 @@ class TelegramAPI
      * __________________________Методы телеграма__________________________
      */
 
-    public function getResponse()
-    {
-        return json_decode(file_get_contents('php://input'), true);
-    }
-
     /**
      * @param int|null   $offset
      * @param int|null   $limit
@@ -282,17 +277,6 @@ class TelegramAPI
      */
     public function sendMessage($chat_id, string $text, string $parse_mode = null, bool $disable_web_page_preview = false, bool $disable_notification = false, int $reply_to_message_id = null, $reply_markup = null)
     {
-//        $text = urlencode($text);
-//        $args = [
-//            "chat_id={$chat_id}",
-//            "text={$text}",
-//            "parse_mode={$parse_mode}",
-//            "disable_web_page_preview={$disable_web_page_preview}",
-//            "disable_notification={$disable_notification}",
-//            "reply_to_message_id={$reply_to_message_id}",
-//            "reply_markup={$reply_markup}"
-//        ];
-
         $args = [
             'chat_id' => $chat_id,
             'text' => $text,
@@ -317,14 +301,6 @@ class TelegramAPI
      */
     public function answerCallbackQuery(string $callback_query_id, string $text = null, bool $show_alert = false, string $url = null, int $cache_time = null)
     {
-//        $args = [
-//            "callback_query_id={$callback_query_id}",
-//            "text={$text}",
-//            "show_alert={$show_alert}",
-//            "url={$url}",
-//            "cache_time={$cache_time}"
-//        ];
-
         $args = [
             'callback_query_id' => $callback_query_id,
             'text' => $text,

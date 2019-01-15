@@ -15,7 +15,7 @@ class Calendar
     protected $tgRequest;
     protected $translator;
 
-    public function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest, TranslatorInterface $translator)
+    public function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest, TranslatorInterface $translator = null)
     {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;

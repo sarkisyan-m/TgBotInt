@@ -4,7 +4,6 @@ namespace App\API\GoogleCalendar;
 
 use App\Service\Helper;
 use Psr\SimpleCache\CacheInterface;
-use Symfony\Component\Routing\RouterInterface;
 use Google_Client;
 use Google_Service_Calendar;
 use Google_Service_Calendar_CalendarList;
@@ -14,7 +13,6 @@ use Google_Service_Calendar_EventAttendee;
 
 class GoogleCalendarAPI
 {
-    private $router;
     private $notification;
     private $notificationTime;
 
@@ -31,7 +29,6 @@ class GoogleCalendarAPI
 
     public function __construct(
         $notificationTime,
-        RouterInterface $router,
         CacheInterface $cache,
         $cacheTime,
         $cacheContainer,
@@ -40,7 +37,6 @@ class GoogleCalendarAPI
         $meetingRoom,
         bool $meetingRoomAutoAdd
     ) {
-        $this->router = $router;
         $this->notification = $notification;
         $this->notificationTime = $notificationTime;
 

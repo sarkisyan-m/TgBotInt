@@ -16,6 +16,10 @@ parameters:
     tg_token: '%env(TG_TOKEN)%'
     tg_admin_list: '%env(TG_ADMIN_LIST)%'
     tg_url: 'https://api.telegram.org/bot'
+    tg_proxy:
+    - '%env(PROXY_NAME)%'
+    - '%env(PROXY_PORT)%'
+    - '%env(PROXY_LOGPASS)%'
 
     # bitrix24
     bitrix24_base_url: '%env(BITRIX24_BASE_URL)%'
@@ -115,18 +119,15 @@ services:
     App\API\Telegram\TelegramAPI:
         arguments:
             $tgUrl: '%tg_url%'
-            $tgToken: '%env(TG_TOKEN)%'
-            $proxy:
-            - '%env(PROXY_NAME)%'
-            - '%env(PROXY_PORT)%'
-            - '%env(PROXY_LOGPASS)%'
+            $tgToken: '%tg_token%'
+            $proxy: '%tg_proxy%'
             $tgLogger: '@monolog.logger.telegram_request_out'
 
     App\API\Bitrix24\Bitrix24API:
         arguments:
             $bitrix24Url: '%bitrix24_url%'
-            $bitrix24UserId: '%env(BITRIX24_USER_ID)%'
-            $bitrix24Api: '%env(BITRIX24_API)%'
+            $bitrix24UserId: '%bitrix24_user_id%'
+            $bitrix24Api: '%bitrix24_api%'
             $cacheTime: '%cache_time_bitrix24%'
             $cacheContainer: '%cache_bitrix24%'
 

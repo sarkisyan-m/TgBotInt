@@ -94,17 +94,4 @@ class TelegramRequest
 
         return null;
     }
-
-    public function isBotCommand()
-    {
-        if (isset($this->requestData[$this->getType()]['entities'])) {
-            foreach ($this->requestData[$this->getType()]['entities'] as $entity) {
-                if (isset($entity['type']) && 'bot_command' == $entity['type']) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 }

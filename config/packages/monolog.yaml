@@ -1,5 +1,5 @@
 monolog:
-    channels: ['telegram_request_in', 'telegram_request_out']
+    channels: ['telegram_request_in', 'telegram_request_out', 'dump']
     handlers:
         main:
             type: rotating_file

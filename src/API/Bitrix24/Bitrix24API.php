@@ -24,8 +24,15 @@ class Bitrix24API
 
     protected $serializer;
 
-    public function __construct($bitrix24Url, $bitrix24UserId, $bitrix24Api, CacheInterface $cache, $cacheTime, $cacheContainer, SerializerInterface $serializer)
-    {
+    public function __construct(
+        $bitrix24Url,
+        $bitrix24UserId,
+        $bitrix24Api,
+        CacheInterface $cache,
+        $cacheTime,
+        $cacheContainer,
+        SerializerInterface $serializer
+    ) {
         $this->bitrix24Url = $bitrix24Url;
         $this->bitrix24Url .= $bitrix24UserId.'/';
         $this->bitrix24Url .= $bitrix24Api.'/';
@@ -272,7 +279,7 @@ class Bitrix24API
         $result = array_merge($filterAvailableKeys, $resultFilter);
 
         foreach ($result as $filterKey => $filterValue) {
-            if ($filterValue === null) {
+            if (null === $filterValue) {
                 unset($result[$filterKey]);
             }
         }
@@ -294,7 +301,7 @@ class Bitrix24API
             foreach ($this->users as $user) {
                 foreach ($filter as $filterKey => $filterValue) {
                     if ('active' == $filterKey) {
-                        if (count($filter) == 1) {
+                        if (1 == count($filter)) {
                             if ($user->getActive() == $filterValue) {
                                 $users[] = $user;
                             }

@@ -106,7 +106,7 @@ class Admin extends Module
             'Markdown'
         );
     }
-    
+
     public function eventInfo()
     {
         $keyboard = [];
@@ -138,22 +138,22 @@ class Admin extends Module
         $bitrix24UsersNotEmail = 0;
         foreach ($bitrix24Users as $bitrix24User) {
             if ($bitrix24User->getActive()) {
-                $bitrix24UsersActiveTrue++;
+                ++$bitrix24UsersActiveTrue;
             } else {
-                $bitrix24UsersActiveFalse++;
+                ++$bitrix24UsersActiveFalse;
             }
 
             if ($bitrix24User->getActive()) {
                 if (!$bitrix24User->getFirstPhone()) {
-                    $bitrix24UsersNotPhone++;
+                    ++$bitrix24UsersNotPhone;
                 }
 
                 if (!$bitrix24User->getEmail()) {
-                    $bitrix24UsersNotEmail++;
+                    ++$bitrix24UsersNotEmail;
                 }
             }
 
-            $bitrix24UsersTotal++;
+            ++$bitrix24UsersTotal;
         }
 
         $tgUsers = $this->tgDb->getTgUsers([]);
@@ -295,14 +295,14 @@ class Admin extends Module
         $keyboard = [];
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_info' => 'event_info']]]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event.info.button'), $callback);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event_management'), null, "calendar.google.com");
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event_management'), null, 'calendar.google.com');
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['cache_clear' => 'cache_clear']]]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.cache.clear'), $callback);
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_clear' => 'event_clear']]]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('admin.event.clear.button'), $callback);
         $this->tgDb->setCallbackQuery();
 
-        if ($messageType == 'send') {
+        if ('send' == $messageType) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('admin.command_list.head'),
@@ -312,7 +312,7 @@ class Admin extends Module
                 null,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
-        } elseif ($messageType == 'edit') {
+        } elseif ('edit' == $messageType) {
             $this->tgBot->editMessageText(
                 $this->translate('admin.command_list.head'),
                 $this->tgRequest->getChatId(),

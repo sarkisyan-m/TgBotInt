@@ -401,16 +401,15 @@ class TelegramController extends Controller
 
         // админка
         if (isset($data['callback_event']['admin'])) {
-
             if (isset($data['callback_event']['admin']['event_info'])) {
-                if ($data['callback_event']['admin']['event_info'] == 'event_info') {
+                if ('event_info' == $data['callback_event']['admin']['event_info']) {
                     $this->tgModuleAdmin->eventInfo();
 
                     return true;
                 }
 
-                if ($data['callback_event']['admin']['event_info'] == 'confirm') {
-                    if ($data['callback_event']['data']['ready'] == 'back') {
+                if ('confirm' == $data['callback_event']['admin']['event_info']) {
+                    if ('back' == $data['callback_event']['data']['ready']) {
                         $this->tgModuleAdmin->commandList('edit');
                     }
 
@@ -419,18 +418,18 @@ class TelegramController extends Controller
             }
 
             if (isset($data['callback_event']['admin']['cache_clear'])) {
-                if ($data['callback_event']['admin']['cache_clear'] == 'cache_clear') {
+                if ('cache_clear' == $data['callback_event']['admin']['cache_clear']) {
                     $this->tgModuleAdmin->cacheClear();
 
                     return true;
                 }
 
-                if ($data['callback_event']['admin']['cache_clear'] == 'confirm') {
-                    if ($data['callback_event']['data']['ready'] == 'yes') {
+                if ('confirm' == $data['callback_event']['admin']['cache_clear']) {
+                    if ('yes' == $data['callback_event']['data']['ready']) {
                         $this->tgModuleAdmin->cacheClearCallback();
                     }
 
-                    if ($data['callback_event']['data']['ready'] == 'no') {
+                    if ('no' == $data['callback_event']['data']['ready']) {
                         $this->tgModuleAdmin->commandList('edit');
                     }
 
@@ -439,18 +438,18 @@ class TelegramController extends Controller
             }
 
             if (isset($data['callback_event']['admin']['event_clear'])) {
-                if ($data['callback_event']['admin']['event_clear'] == 'event_clear') {
+                if ('event_clear' == $data['callback_event']['admin']['event_clear']) {
                     $this->tgModuleAdmin->eventClear();
 
                     return true;
                 }
 
-                if ($data['callback_event']['admin']['event_clear'] == 'confirm') {
-                    if ($data['callback_event']['data']['ready'] == 'yes') {
+                if ('confirm' == $data['callback_event']['admin']['event_clear']) {
+                    if ('yes' == $data['callback_event']['data']['ready']) {
                         $this->tgModuleAdmin->eventClearCallback();
                     }
 
-                    if ($data['callback_event']['data']['ready'] == 'no') {
+                    if ('no' == $data['callback_event']['data']['ready']) {
                         $this->tgModuleAdmin->commandList('edit');
                     }
 

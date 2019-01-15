@@ -17,7 +17,7 @@ class TelegramDb
     protected $tgRequest;
     protected $dataCallbackQuery;
 
-    public function __construct(EntityManagerInterface $entityManager, TelegramRequest $tgRequest)
+    public function __construct(TelegramRequest $tgRequest, EntityManagerInterface $entityManager = null)
     {
         $this->entityManager = $entityManager;
         $this->tgRequest = $tgRequest;
@@ -135,7 +135,7 @@ class TelegramDb
     /**
      * @param array $params
      *
-     * @return TgUsers[]|\App\Entity\Verification[]|object[]|null
+     * @return TgUsers[]|Verification[]|object[]|null
      */
     public function getTgUsers(array $params)
     {
