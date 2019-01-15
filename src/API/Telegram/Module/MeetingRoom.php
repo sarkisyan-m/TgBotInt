@@ -177,41 +177,51 @@ class MeetingRoom extends Module
         }
 
         $time = explode('-', $this->tgRequest->getText());
-        if (isset($time[0]) && isset($time[1]) &&
-            $this->tgPluginCalendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
-            $times = $this->googleEventCurDayTimes();
-            if ($this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1])) {
-                $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-                $timeDiff = $this->tgPluginCalendar->timeDiff(strtotime($time[0]), strtotime($time[1]));
-                $meetingRoomUser->setTime("{$time[0]}-{$time[1]}");
-                $this->tgDb->insert($meetingRoomUser);
 
-                if ('edit' == $meetingRoomUser->getStatus()) {
-                    $this->meetingRoomConfirm();
+        if (!isset($time[0]) || !isset($time[1]) ||
+            !$this->tgPluginCalendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('meeting_room.time.incorrect', ['%exampleRandomTime%' => $this->exampleRandomTime()]),
+                'Markdown'
+            );
 
-                    return;
-                } else {
-//                    $text = "Выбрано время _{$time[0]}-{$time[1]} ({$timeDiff})_\n\n";
-                    $text = $this->translate('meeting_room.time.selected', ['%time0%' => $time[0], '%time1%' => $time[1], '%timeDiff%' => $timeDiff]);
-                    $text .= $this->translate('meeting_room.event_name');
-                    $this->tgBot->sendMessage(
-                        $this->tgRequest->getChatId(),
-                        $text,
-                        'Markdown'
-                    );
-                }
+            return;
+        }
+
+        if ($time[0] < time() && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('meeting_room.time.past'),
+                'Markdown'
+            );
+
+            return;
+        }
+
+        $times = $this->googleEventCurDayTimes();
+        if ($this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1])) {
+            $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+            $timeDiff = $this->tgPluginCalendar->timeDiff(strtotime($time[0]), strtotime($time[1]));
+            $meetingRoomUser->setTime("{$time[0]}-{$time[1]}");
+            $this->tgDb->insert($meetingRoomUser);
+            if ('edit' == $meetingRoomUser->getStatus()) {
+                $this->meetingRoomConfirm();
+
+                return;
             } else {
+                $text = $this->translate('meeting_room.time.selected', ['%time0%' => $time[0], '%time1%' => $time[1], '%timeDiff%' => $timeDiff]);
+                $text .= $this->translate('meeting_room.event_name');
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
-//                    "В это время уже существует событие!"
-                    $this->translate('meeting_room.time.validate_failed')
+                    $text,
+                    'Markdown'
                 );
             }
         } else {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('meeting_room.time.error', ['%exampleRandomTime%' => $this->exampleRandomTime()]),
-                'Markdown'
+                $this->translate('meeting_room.time.engaged')
             );
         }
     }
@@ -802,7 +812,7 @@ class MeetingRoom extends Module
             }
         }
 
-        return $this->tgPluginCalendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd);
+        return $this->tgPluginCalendar->AvailableTimes($meetingRoomUser->getDate(), $times, $this->workTimeStart, $this->workTimeEnd);
     }
 
     public function googleEventCurDay()
@@ -866,11 +876,11 @@ class MeetingRoom extends Module
             $text .= "{$this->translate('meeting_room.google_event.current_day.event_empty')}\n";
         }
 
-        $times = $this->tgPluginCalendar->AvailableTimes($times, $this->workTimeStart, $this->workTimeEnd, true, $timesCount);
+        $times = $this->tgPluginCalendar->AvailableTimes($meetingRoomUser->getDate(), $times, $this->workTimeStart, $this->workTimeEnd, true, $timesCount);
         $example = null;
 
         if (!$timesCount) {
-            $times = "{$this->translate('meeting_room.google_event.current_day.day_busy')}\n";
+            $times = "{$this->translate('meeting_room.google_event.current_day.engaged')}\n";
         } else {
             $example = $this->translate('meeting_room.google_event.current_day.example', ['%workTimeStart%' => $this->workTimeStart, '%workTimeEnd%' => $this->workTimeEnd, '%exampleRandomTime%' => $this->exampleRandomTime()]);
         }

@@ -81,7 +81,10 @@ class Calendar
 
         $ln = 0;
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'current'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton("{$this->getMonthText($day, $month, $year)}, {$this->getYear($day, $month, $year)}", $callback);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(
+            $this->translate('calendar.current_date', ['%monthText%' => $this->getMonthText($day, $month, $year), '%year%' => $this->getYear($day, $month, $year)]),
+            $callback
+        );
 
         ++$ln;
         $dWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -98,6 +101,7 @@ class Calendar
             }
 
             $curDay = $i + 1;
+            $curDay = $this->translate('calendar.day', ['%day%' => $curDay]);
 
             // создаем пустые ячейки в начале
             if (1 == $curDay) {
@@ -111,6 +115,11 @@ class Calendar
             // создаем ячейки из чисел
 
             $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'selectDay'], 'data' => ['day' => $curDay, 'month' => $this->getMonth($day, $month, $year), 'year' => $this->getYear($day, $month, $year)]]);
+
+            if ($this->getDate($day, $month, $year) == $this->getDate() && $this->getDay() == $curDay) {
+                $curDay = $this->translate('calendar.day_current', ['%day%' => $curDay]);
+            }
+
             $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDay, $callback);
 
             // создаем пустые ячейки в конце
@@ -204,10 +213,14 @@ class Calendar
         ];
     }
 
-    public function AvailableTimes(array $times, $workTimeStart, $workTimeEnd, $returnString = false, &$count = 0)
+    public function AvailableTimes($date, array $times, $workTimeStart, $workTimeEnd, $returnString = false, &$count = 0)
     {
         $workTimeStart = strtotime($workTimeStart);
         $workTimeEnd = strtotime($workTimeEnd);
+
+        if ($date == $this->getDate()) {
+            $workTimeStart = strtotime(date('H:i', time()));
+        }
 
         $result = [];
         $tempTime = null;
@@ -250,12 +263,6 @@ class Calendar
             }
 
             if ($time['timeStart'] > $workTimeEnd && $time['timeEnd'] > $workTimeEnd) {
-                if ($tempTime) {
-                    if ($tempTime['timeEnd'] < $workTimeEnd) {
-//                        $result[] = $this->makeAvailableTime($tempTime["timeEnd"], $tempTime["timeEnd"]);
-                    }
-                }
-
                 continue;
             } elseif ($time['timeStart'] <= $workTimeEnd && $time['timeEnd'] > $workTimeEnd) {
                 if ($tempTime) {

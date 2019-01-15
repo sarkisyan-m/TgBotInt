@@ -133,7 +133,7 @@ meeting_room:
             info: "\U0001F4C5 *%meetingRoomName%, %date%*\n"
             event_editing: "\U000026A0 _В настоящий момент вы редактируете это событие_"
             event_empty: "Список событий пуст"
-            day_busy: "День полностью занят"
+            engaged: "День полностью занят"
             example: "\U0001F4DD Теперь укажите время.
             \n_Например: %exampleRandomTime%._"
             available_times: "\n\U000023F0 *Доступные промежутки времени*
@@ -141,9 +141,10 @@ meeting_room:
             \n%example%"
     time:
         selected: "Выбрано время _%time0%-%time1% (%timeDiff%)_\n\n"
-        validate_failed: "Это время уже занято"
-        error: "*Некорректно указано время*
+        engaged: "Это время уже занято"
+        incorrect: "*Некорректно указано время*
         \nПопробуйте снова! Например, *%exampleRandomTime%*"
+        past: "*Нельзя указывать прошедшее время!*"
     event_name: "*Введите название события*"
     event_members:
         info: "*Укажите список участников через запятую, например:*
@@ -210,8 +211,11 @@ members:
         unknown: "Неизвестно"
 
 calendar:
+    current_date: "%monthText%, %year%"
     today: "Сегодня"
     tomorrow: "Завтра"
     day_after_tomorrow: "Послезавтра"
-    forward: "\U00002192"
-    back: "\U00002190"
+    forward: ">>"
+    back: "<<"
+    day: "%day%"
+    day_current: "%day%''"
