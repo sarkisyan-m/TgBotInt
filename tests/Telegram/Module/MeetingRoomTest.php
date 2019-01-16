@@ -129,7 +129,8 @@ class MeetingRoomTest extends WebTestCase
          * TelegramPluginCalendar
          */
 
-        $tgPluginCalendar = new TelegramPluginCalendar($tgBot, $tgDb, $tgRequest);
+        $translator = $container->get('translator');
+        $tgPluginCalendar = new TelegramPluginCalendar($tgBot, $tgDb, $tgRequest, $translator);
 
         /*
          * Bitrix24API

@@ -77,7 +77,7 @@ class TelegramDb
 
     public function setCallbackQuery()
     {
-        if (!$this->dataCallbackQuery) {
+        if (!$this->dataCallbackQuery || !$this->entityManager) {
             return false;
         }
 

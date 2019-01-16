@@ -188,7 +188,7 @@ class MeetingRoom extends Module
             return;
         }
 
-        if (!$this->tgPluginCalendar->validateTimeRelativelyWork($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
+        if (!$this->tgPluginCalendar->validateTimeRelativelyWork($time, $this->workTimeStart, $this->workTimeEnd)) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.incorrect_time', ['%workTimeStart%' => $this->workTimeStart, '%workTimeEnd%' => $this->workTimeEnd]),
@@ -230,7 +230,8 @@ class MeetingRoom extends Module
         } else {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('meeting_room.time.engaged')
+                $this->translate('meeting_room.time.engaged'),
+                'Markdown'
             );
         }
     }
@@ -876,6 +877,10 @@ class MeetingRoom extends Module
                 // если существует $timeDate, то элемент всегда будет на первом месте
                 if ($timeDate) {
                     $text .= "*{$this->workTimeStart}-{$this->workTimeEnd}* {$textTime}\n";
+                    break;
+                }
+
+                if (strlen($text) > 5000) {
                     break;
                 }
 

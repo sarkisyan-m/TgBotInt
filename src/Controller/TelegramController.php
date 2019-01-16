@@ -103,7 +103,6 @@ class TelegramController extends Controller
         $this->tgModuleAntiFlood->request($this->tgRequest);
         $this->tgLogger($this->tgRequest->getRequestContent(), $this->get('monolog.logger.telegram_request_in'));
 
-        dump($this->tgDb->getTgUsers(['bitrix_id' => 454]));
         if (!$this->isTg) {
             return new Response('', Response::HTTP_FORBIDDEN);
         }

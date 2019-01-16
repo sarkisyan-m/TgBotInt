@@ -16,8 +16,12 @@ class Calendar
     protected $tgRequest;
     protected $translator;
 
-    public function __construct(TelegramAPI $tgBot, TelegramDb $tgDb, TelegramRequest $tgRequest, TranslatorInterface $translator = null)
-    {
+    public function __construct(
+        TelegramAPI $tgBot,
+        TelegramDb $tgDb,
+        TelegramRequest $tgRequest,
+        TranslatorInterface $translator
+    ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
         $this->tgRequest = $tgRequest;
@@ -182,7 +186,7 @@ class Calendar
             }
         }
 
-        return false;
+        return null;
     }
 
     public function validateTime($time)
@@ -200,8 +204,10 @@ class Calendar
         return false;
     }
 
-    public function validateTimeRelativelyWork($timeStart, $timeEnd, $workTimeStart, $workTimeEnd)
+    public function validateTimeRelativelyWork($time, $workTimeStart, $workTimeEnd)
     {
+        $timeStart = $time[0];
+        $timeEnd = $time[1];
         if (strtotime($timeStart) < strtotime($workTimeStart) ||
             strtotime($timeEnd) > strtotime($workTimeEnd)) {
             return false;
