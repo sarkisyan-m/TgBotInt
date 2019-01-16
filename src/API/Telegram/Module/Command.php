@@ -117,7 +117,7 @@ class Command extends Module
         $text .= $this->translate('myinfo.personal_info_server');
         $text .= $this->translate('myinfo.personal_info_server_data', [
             '%bitrix24Id%' => $bitrixUser->getId(),
-            '%telegramId%' => $tgUser->getChatId()
+            '%telegramId%' => $tgUser->getChatId(),
         ]);
 
         $this->tgBot->sendMessage(

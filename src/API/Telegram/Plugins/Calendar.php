@@ -189,7 +189,7 @@ class Calendar
     {
         $time = array_filter($time);
 
-        if (count($time) != 2) {
+        if (2 != count($time)) {
             return false;
         }
 

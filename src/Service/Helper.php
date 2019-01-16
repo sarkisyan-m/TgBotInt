@@ -26,7 +26,6 @@ class Helper
         return json_decode($data, $assoc);
     }
 
-
     public static function getTime($time)
     {
         if (!$time) {
