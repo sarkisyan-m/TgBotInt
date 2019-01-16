@@ -102,11 +102,6 @@ class GoogleCalendarAPI
         }
     }
 
-    public function getServiceTest()
-    {
-        return new Google_Service_Calendar($this->googleClient);
-    }
-
     public function loadData()
     {
         try {

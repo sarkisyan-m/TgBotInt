@@ -360,10 +360,6 @@ class Calendar
         $timeStart = strtotime($timeStart);
         $timeEnd = strtotime($timeEnd);
 
-//        if (!$times) {
-//            return true;
-//        }
-
         foreach ($times as $time) {
             $time['timeStart'] = strtotime($time['timeStart']);
             $time['timeEnd'] = strtotime($time['timeEnd']);

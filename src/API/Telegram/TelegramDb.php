@@ -30,12 +30,20 @@ class TelegramDb
 
     public function insert($entity)
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $this->entityManager->persist($entity);
         $this->entityManager->flush();
     }
 
     public function delete($entity)
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         if (is_array($entity)) {
             foreach ($entity as $item) {
                 $this->entityManager->remove($item);
@@ -108,6 +116,10 @@ class TelegramDb
 
     public function getCallbackQuery()
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $repository = $this->entityManager->getRepository(CallbackQuery::class);
         $callbackQuery = $repository->findBy(['tg_user' => $this->getTgUser()]);
 
@@ -122,6 +134,10 @@ class TelegramDb
 
     public function getTgUser()
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $repository = $this->entityManager->getRepository(TgUsers::class);
         $tgUser = $repository->findBy(['chat_id' => $this->tgRequest->getChatId()]);
 
@@ -139,6 +155,10 @@ class TelegramDb
      */
     public function getTgUsers(array $params)
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $repository = $this->entityManager->getRepository(TgUsers::class);
         $tgUsers = $repository->findBy($params);
 
@@ -156,6 +176,10 @@ class TelegramDb
      */
     public function getHash($params)
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $repository = $this->entityManager->getRepository(Verification::class);
         $hash = $repository->findBy($params);
 
@@ -183,6 +207,10 @@ class TelegramDb
 
     public function setHash($hashVal, $salt)
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $this->autoRemoveHash();
 
         $hash = new Verification();
@@ -200,6 +228,10 @@ class TelegramDb
 
     public function getMeetingRoomUser($refresh = false)
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $repository = $this->entityManager->getRepository(MeetingRoom::class);
         $meetingRoomUser = $repository->findBy(['tg_user' => $this->getTgUser()]);
 
@@ -221,6 +253,10 @@ class TelegramDb
 
     public function getAntiFlood()
     {
+        if (!$this->entityManager) {
+            return null;
+        }
+
         $repository = $this->entityManager->getRepository(AntiFlood::class);
         $antiFlood = $repository->findBy(['tg_user' => $this->getTgUser()]);
 

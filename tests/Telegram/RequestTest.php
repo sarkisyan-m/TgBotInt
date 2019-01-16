@@ -93,19 +93,16 @@ class RequestTest extends WebTestCase
     {
         return json_encode([
             'update_id' => 999999999,
-            'message' =>
-                [
+            'message' => [
                     'message_id' => 999999999,
-                    'from' =>
-                        [
+                    'from' => [
                             'id' => 999999999,
                             'is_bot' => false,
                             'first_name' => 'FirstNameTest',
                             'last_name' => 'LastNameTest',
                             'language_code' => 'ru',
                         ],
-                    'chat' =>
-                        [
+                    'chat' => [
                             'id' => 999999999,
                             'first_name' => 'FirstNameTest',
                             'last_name' => 'LastNameTest',
@@ -113,8 +110,7 @@ class RequestTest extends WebTestCase
                         ],
                     'date' => 999999999,
                     'text' => 'testText',
-                    'contact' =>
-                        [
+                    'contact' => [
                             'phone_number' => '+71231231231',
                             'first_name' => 'FirstNameTest',
                             'last_name' => 'LastNameTest',
@@ -128,29 +124,24 @@ class RequestTest extends WebTestCase
     {
         return json_encode([
             'update_id' => 999999999,
-            'callback_query' =>
-                [
+            'callback_query' => [
                     'id' => '999999999',
-                    'from' =>
-                        [
+                    'from' => [
                             'id' => 999999999,
                             'is_bot' => false,
                             'first_name' => 'FirstNameTest',
                             'last_name' => 'LastNameTest',
                             'language_code' => 'ru',
                         ],
-                    'message' =>
-                        [
+                    'message' => [
                             'message_id' => 999999999,
-                            'from' =>
-                                [
+                            'from' => [
                                     'id' => 999999999,
                                     'is_bot' => true,
                                     'first_name' => 'botTest',
                                     'username' => 'botTest',
                                 ],
-                            'chat' =>
-                                [
+                            'chat' => [
                                     'id' => 999999999,
                                     'first_name' => 'FirstNameTest',
                                     'last_name' => 'LastNameTest',

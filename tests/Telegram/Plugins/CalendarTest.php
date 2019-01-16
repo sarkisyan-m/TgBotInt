@@ -13,26 +13,32 @@ class CalendarTest extends WebTestCase
 {
     public function testCalendarKeyboard()
     {
-        $tgBot = $this->getTgBot();
-        $tgDb = $this->getTgDb();
-        $tgRequest = $this->getTgRequest();
-        $translator = $this->getTranslator();
-
-        $tgPluginCalendar = new Calendar($tgBot, $tgDb, $tgRequest, $translator);
+        $tgPluginCalendar = $this->getTgPluginCalendar();
 
         $calendarKeyboard = $tgPluginCalendar->keyboard();
         // try dump($calendarKeyboard)
+
+        $calendarKeyboardOneElement = $calendarKeyboard[0][0];
+
         $this->assertNotEmpty($calendarKeyboard);
+
+        $this->assertTrue(
+            array_key_exists('text', $calendarKeyboardOneElement) &&
+            array_key_exists('callback_data', $calendarKeyboardOneElement) &&
+            array_key_exists('url', $calendarKeyboardOneElement) &&
+            array_key_exists('switch_inline_query', $calendarKeyboardOneElement) &&
+            array_key_exists('switch_inline_query_current_chat', $calendarKeyboardOneElement) &&
+            array_key_exists('callback_game', $calendarKeyboardOneElement) &&
+            array_key_exists('pay', $calendarKeyboardOneElement)
+        );
+
+        $calendarKeyboardOneElementCallbackData = json_decode($calendarKeyboardOneElement['callback_data'], true);
+        $this->assertNotNull($calendarKeyboardOneElementCallbackData['uuid']);
     }
 
     public function testValidateDate()
     {
-        $tgBot = $this->getTgBot();
-        $tgDb = $this->getTgDb();
-        $tgRequest = $this->getTgRequest();
-        $translator = $this->getTranslator();
-
-        $tgPluginCalendar = new Calendar($tgBot, $tgDb, $tgRequest, $translator);
+        $tgPluginCalendar = $this->getTgPluginCalendar();
 
         $date = date('d.m.Y', time());
         $dataRange = '30';
@@ -42,12 +48,7 @@ class CalendarTest extends WebTestCase
 
     public function testTimeDiff()
     {
-        $tgBot = $this->getTgBot();
-        $tgDb = $this->getTgDb();
-        $tgRequest = $this->getTgRequest();
-        $translator = $this->getTranslator();
-
-        $tgPluginCalendar = new Calendar($tgBot, $tgDb, $tgRequest, $translator);
+        $tgPluginCalendar = $this->getTgPluginCalendar();
 
         $timeStart = '08:00';
         $timeEnd = '10:00';
@@ -67,12 +68,7 @@ class CalendarTest extends WebTestCase
 
     public function testValidateTime()
     {
-        $tgBot = $this->getTgBot();
-        $tgDb = $this->getTgDb();
-        $tgRequest = $this->getTgRequest();
-        $translator = $this->getTranslator();
-
-        $tgPluginCalendar = new Calendar($tgBot, $tgDb, $tgRequest, $translator);
+        $tgPluginCalendar = $this->getTgPluginCalendar();
 
         $time = '10:00-12:00';
         $time = explode('-', $time);
@@ -82,12 +78,7 @@ class CalendarTest extends WebTestCase
 
     public function testValidateTimeRelativelyWork()
     {
-        $tgBot = $this->getTgBot();
-        $tgDb = $this->getTgDb();
-        $tgRequest = $this->getTgRequest();
-        $translator = $this->getTranslator();
-
-        $tgPluginCalendar = new Calendar($tgBot, $tgDb, $tgRequest, $translator);
+        $tgPluginCalendar = $this->getTgPluginCalendar();
 
         $time = '10:00-12:00';
         $time = explode('-', $time);
@@ -99,12 +90,7 @@ class CalendarTest extends WebTestCase
 
     public function testMakeAvailableTime()
     {
-        $tgBot = $this->getTgBot();
-        $tgDb = $this->getTgDb();
-        $tgRequest = $this->getTgRequest();
-        $translator = $this->getTranslator();
-
-        $tgPluginCalendar = new Calendar($tgBot, $tgDb, $tgRequest, $translator);
+        $tgPluginCalendar = $this->getTgPluginCalendar();
 
         $timeStart = '13:30';
         $timeEnd = '15:00';
@@ -119,7 +105,104 @@ class CalendarTest extends WebTestCase
         $this->assertEquals(json_encode($resultExpected), json_encode($makeAvailableTime));
     }
 
+    public function testAvailableTimes()
+    {
+        $tgPluginCalendar = $this->getTgPluginCalendar();
 
+        $date = '01.01.2019';
+        $workTimeStart = '08:00';
+        $workTimeEnd = '20:00';
+
+        $times = [
+            0 => [
+                'timeStart' => '10:00',
+                'timeEnd' => '11:00',
+            ],
+        ];
+
+        $availableTimes = $tgPluginCalendar->availableTimes($date, $times, $workTimeStart, $workTimeEnd);
+        $availableTimesExpected = [
+            0 => [
+                'timeStart' => '08:00',
+                'timeEnd' => '10:00',
+                'timeText' => '2 ч.',
+            ],
+            1 => [
+                'timeStart' => '11:00',
+                'timeEnd' => '20:00',
+                'timeText' => '9 ч.',
+            ],
+        ];
+
+        $this->assertEquals(json_encode($availableTimesExpected), json_encode($availableTimes));
+
+        $times = [];
+        $availableTimes = $tgPluginCalendar->availableTimes($date, $times, $workTimeStart, $workTimeEnd);
+
+        $availableTimesExpected = [
+            0 => [
+                'timeStart' => '08:00',
+                'timeEnd' => '20:00',
+                'timeText' => '12 ч.',
+            ],
+        ];
+
+        $this->assertEquals(json_encode($availableTimesExpected), json_encode($availableTimes));
+    }
+
+    public function testValidateAvailableTimes()
+    {
+        $tgPluginCalendar = $this->getTgPluginCalendar();
+
+        $times = [
+            0 => [
+                'timeStart' => '10:00',
+                'timeEnd' => '15:00',
+            ],
+        ];
+
+        $timeStart = '10:00';
+        $timeEnd = '13:30';
+
+        $validateAvailableTimes = $tgPluginCalendar->validateAvailableTimes($times, $timeStart, $timeEnd);
+
+        $this->assertTrue($validateAvailableTimes);
+    }
+
+    public function testDateFormatAll()
+    {
+        $tgPluginCalendar = $this->getTgPluginCalendar();
+
+        $resultExpected = date('t', time());
+        $getDays = $tgPluginCalendar->getDays();
+        $this->assertEquals($resultExpected, $getDays);
+
+        $resultExpected = date('d', time());
+        $getDay = $tgPluginCalendar->getDay();
+        $this->assertEquals($resultExpected, $getDay);
+
+        $resultExpected = date('m', time());
+        $getMonth = $tgPluginCalendar->getMonth();
+        $this->assertEquals($resultExpected, $getMonth);
+
+        $monthName = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+        $resultExpected = $monthName[date('m', time()) - 1];
+        $getMonthText = $tgPluginCalendar->getMonthText();
+        $this->assertEquals($resultExpected, $getMonthText);
+
+        $days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+        $resultExpected = $days[(date('w', time())) - 1];
+        $getWeekText = $tgPluginCalendar->getWeekText();
+        $this->assertEquals($resultExpected, $getWeekText);
+
+        $resultExpected = date('Y', time());
+        $getYear = $tgPluginCalendar->getYear();
+        $this->assertEquals($resultExpected, $getYear);
+
+        $resultExpected = date('d.m.Y', time());
+        $getDate = $tgPluginCalendar->getDate();
+        $this->assertEquals($resultExpected, $getDate);
+    }
 
     public function getTgBot()
     {
@@ -136,7 +219,6 @@ class CalendarTest extends WebTestCase
             $tgToken,
             $tgProxy
         );
-
 
         return $tgBot;
     }
@@ -168,23 +250,30 @@ class CalendarTest extends WebTestCase
         return $container->get('translator');
     }
 
+    public function getTgPluginCalendar()
+    {
+        return new Calendar(
+            $this->getTgBot(),
+            $this->getTgDb(),
+            $this->getTgRequest(),
+            $this->getTranslator()
+        );
+    }
+
     public function getRequestMessage()
     {
         return json_encode([
             'update_id' => 999999999,
-            'message' =>
-                [
+            'message' => [
                     'message_id' => 999999999,
-                    'from' =>
-                        [
+                    'from' => [
                             'id' => 999999999,
                             'is_bot' => false,
                             'first_name' => 'FirstNameTest',
                             'last_name' => 'LastNameTest',
                             'language_code' => 'ru',
                         ],
-                    'chat' =>
-                        [
+                    'chat' => [
                             'id' => 999999999,
                             'first_name' => 'FirstNameTest',
                             'last_name' => 'LastNameTest',
@@ -192,8 +281,7 @@ class CalendarTest extends WebTestCase
                         ],
                     'date' => 999999999,
                     'text' => 'testText',
-                    'contact' =>
-                        [
+                    'contact' => [
                             'phone_number' => '+71231231231',
                             'first_name' => 'FirstNameTest',
                             'last_name' => 'LastNameTest',

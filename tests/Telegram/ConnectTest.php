@@ -12,7 +12,7 @@ class ConnectTest extends WebTestCase
         self::bootKernel();
 
         $container = self::$container;
-        
+
         $tgUrl = $container->getParameter('tg_url');
         $tgToken = $container->getParameter('tg_token');
         $tgProxy = $container->getParameter('tg_proxy');
