@@ -26,6 +26,16 @@ class Helper
         return json_decode($data, $assoc);
     }
 
+
+    public static function getTime($time)
+    {
+        if (!$time) {
+            return null;
+        }
+
+        return date('H:i', $time);
+    }
+
     public static function getDateStr($dateStr)
     {
         if (!$dateStr) {

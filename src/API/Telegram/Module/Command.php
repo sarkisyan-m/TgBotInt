@@ -37,6 +37,7 @@ class Command extends Module
             '/eventlist' => $this->translate('bot_command.event_list'),
             '/help' => $this->translate('bot_command.help'),
             '/exit' => $this->translate('bot_command.exit'),
+            '/myinfo' => '',
             '/helpmore' => '',
             '/contacts' => '',
             '/admin' => '',
@@ -84,6 +85,44 @@ class Command extends Module
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
             $this->translate('command.helpmore'),
+            'Markdown',
+            false,
+            false,
+            null,
+            $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
+        );
+    }
+
+    public function commandMyInfo()
+    {
+        $tgUser = $this->tgDb->getTgUser();
+        if ($tgUser && !is_null($bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]))) {
+            $bitrixUser = $bitrixUser[0];
+        } else {
+            return;
+        }
+
+        $text = $this->translate('command.myinfo');
+
+        $text .= $this->translate('myinfo.personal_info_bitrix24');
+        $text .= $this->translate('myinfo.personal_info_bitrix24_data', [
+            '%name%' => $bitrixUser->getName(),
+            '%phone%' => $bitrixUser->getFirstPhone(),
+            '%email%' => $bitrixUser->getEmail(),
+        ]);
+
+        $text .= $this->translate('myinfo.personal_info_google_calendar');
+        $text .= $this->translate('myinfo.personal_info_google_calendar_data');
+
+        $text .= $this->translate('myinfo.personal_info_server');
+        $text .= $this->translate('myinfo.personal_info_server_data', [
+            '%bitrix24Id%' => $bitrixUser->getId(),
+            '%telegramId%' => $tgUser->getChatId()
+        ]);
+
+        $this->tgBot->sendMessage(
+            $this->tgRequest->getChatId(),
+            $text,
             'Markdown',
             false,
             false,

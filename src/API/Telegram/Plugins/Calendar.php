@@ -5,6 +5,7 @@ namespace App\API\Telegram\Plugins;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
+use App\Service\Validator;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class Calendar
@@ -184,11 +185,25 @@ class Calendar
         return false;
     }
 
-    public function validateTime($timeStart, $timeEnd, $workTimeStart, $workTimeEnd)
+    public function validateTime($time)
+    {
+        $time = array_filter($time);
+
+        if (count($time) != 2) {
+            return false;
+        }
+
+        if (Validator::time($time[0]) && Validator::time($time[1])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function validateTimeRelativelyWork($timeStart, $timeEnd, $workTimeStart, $workTimeEnd)
     {
         if (strtotime($timeStart) < strtotime($workTimeStart) ||
-            strtotime($timeEnd) > strtotime($workTimeEnd) ||
-            5 != strlen($timeStart) || 5 != strlen($timeEnd)) {
+            strtotime($timeEnd) > strtotime($workTimeEnd)) {
             return false;
         }
 
@@ -213,13 +228,16 @@ class Calendar
         ];
     }
 
-    public function AvailableTimes($date, array $times, $workTimeStart, $workTimeEnd, $returnString = false, &$count = 0)
+    public function availableTimes($date, array $times, $workTimeStart, $workTimeEnd, $returnString = false, &$count = 0)
     {
         $workTimeStart = strtotime($workTimeStart);
         $workTimeEnd = strtotime($workTimeEnd);
 
         if ($date == $this->getDate()) {
-            $workTimeStart = strtotime(date('H:i', time()));
+            $workTimeStartNew = strtotime(date('H:i', time()));
+            if ($workTimeStartNew > $workTimeStart && $workTimeStartNew < $workTimeEnd) {
+                $workTimeStart = $workTimeStartNew;
+            }
         }
 
         $result = [];
@@ -336,9 +354,9 @@ class Calendar
         $timeStart = strtotime($timeStart);
         $timeEnd = strtotime($timeEnd);
 
-        if (!$times) {
-            return true;
-        }
+//        if (!$times) {
+//            return true;
+//        }
 
         foreach ($times as $time) {
             $time['timeStart'] = strtotime($time['timeStart']);

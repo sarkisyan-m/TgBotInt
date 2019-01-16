@@ -103,6 +103,7 @@ class TelegramController extends Controller
         $this->tgModuleAntiFlood->request($this->tgRequest);
         $this->tgLogger($this->tgRequest->getRequestContent(), $this->get('monolog.logger.telegram_request_in'));
 
+        dump($this->tgDb->getTgUsers(['bitrix_id' => 454]));
         if (!$this->isTg) {
             return new Response('', Response::HTTP_FORBIDDEN);
         }
@@ -171,6 +172,8 @@ class TelegramController extends Controller
                 $this->tgModuleCommand->commandHelp();
 
                 return new Response();
+            } else {
+                return new Response();
             }
             // Спамим, что ему надо зарегаться
         } else {
@@ -227,6 +230,12 @@ class TelegramController extends Controller
 
         if ($this->tgModuleCommand->isBotCommand('/eventlist')) {
             $this->tgModuleMeetingRoom->userMeetingRoomList();
+
+            return true;
+        }
+
+        if ($this->tgModuleCommand->isBotCommand('/myinfo')) {
+            $this->tgModuleCommand->commandMyInfo();
 
             return true;
         }

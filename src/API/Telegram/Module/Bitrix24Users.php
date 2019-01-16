@@ -66,19 +66,19 @@ class Bitrix24Users extends Module
 
         if ($bitrixUser) {
             $bitrixUser = $bitrixUser[0];
-        }
 
-        if ($bitrixUser->getActive() && $this->tgDb->userRegistration($bitrixUser->getId())) {
-            $this->tgBot->sendMessage(
-                $this->tgRequest->getChatId(),
-                $this->translate('user.registration.success', ['%name%' => $bitrixUser->getFirstName()]),
-                'Markdown',
-                false,
-                false,
-                null
-            );
+            if ($bitrixUser->getActive() && $this->tgDb->userRegistration($bitrixUser->getId())) {
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $this->translate('user.registration.success', ['%name%' => $bitrixUser->getFirstName()]),
+                    'Markdown',
+                    false,
+                    false,
+                    null
+                );
 
-            return true;
+                return true;
+            }
         }
 
         $this->tgBot->sendMessage(

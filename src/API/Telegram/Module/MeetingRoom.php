@@ -178,18 +178,27 @@ class MeetingRoom extends Module
 
         $time = explode('-', $this->tgRequest->getText());
 
-        if (!isset($time[0]) || !isset($time[1]) ||
-            !$this->tgPluginCalendar->validateTime($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
+        if (!$this->tgPluginCalendar->validateTime($time)) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('meeting_room.time.incorrect', ['%exampleRandomTime%' => $this->exampleRandomTime()]),
+                $this->translate('meeting_room.time.incorrect_time_format', ['%exampleRandomTime%' => $this->exampleRandomTime()]),
                 'Markdown'
             );
 
             return;
         }
 
-        if (strtotime($time[0]) < time() && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
+        if (!$this->tgPluginCalendar->validateTimeRelativelyWork($time[0], $time[1], $this->workTimeStart, $this->workTimeEnd)) {
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('meeting_room.time.incorrect_time', ['%workTimeStart%' => $this->workTimeStart, '%workTimeEnd%' => $this->workTimeEnd]),
+                'Markdown'
+            );
+
+            return;
+        }
+
+        if (strtotime($time[0]) < strtotime(Helper::getTime(time())) && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.past'),
@@ -812,7 +821,7 @@ class MeetingRoom extends Module
             }
         }
 
-        return $this->tgPluginCalendar->AvailableTimes($meetingRoomUser->getDate(), $times, $this->workTimeStart, $this->workTimeEnd);
+        return $this->tgPluginCalendar->availableTimes($meetingRoomUser->getDate(), $times, $this->workTimeStart, $this->workTimeEnd);
     }
 
     public function googleEventCurDay()
@@ -876,7 +885,7 @@ class MeetingRoom extends Module
             $text .= "{$this->translate('meeting_room.google_event.current_day.event_empty')}\n";
         }
 
-        $times = $this->tgPluginCalendar->AvailableTimes($meetingRoomUser->getDate(), $times, $this->workTimeStart, $this->workTimeEnd, true, $timesCount);
+        $times = $this->tgPluginCalendar->availableTimes($meetingRoomUser->getDate(), $times, $this->workTimeStart, $this->workTimeEnd, true, $timesCount);
         $example = null;
 
         if (!$timesCount) {
@@ -1148,8 +1157,9 @@ class MeetingRoom extends Module
                 $user = $this->membersFormatArray($user);
 
                 if ($tgLink && 'organizer' == $status) {
-                    $tgUser = $this->tgDb->getTgUser();
-                    if ($tgUser->getBitrixId() == $user['bitrix_id']) {
+                    $tgUser = $this->tgDb->getTgUsers(['bitrix_id' => $user['bitrix_id']]);
+                    if ($tgUser) {
+                        $tgUser = $tgUser[0];
                         $user['name'] = str_replace('#name#', $user['name'], $tgLink);
                         $user['name'] = str_replace('#id#', $tgUser->getChatId(), $user['name']);
                     }
