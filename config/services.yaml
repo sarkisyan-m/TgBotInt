@@ -63,7 +63,7 @@ parameters:
     meeting_room_event_members_len: 50
 
     # вклчюить / выключить оповещения (bool)
-    notification: false
+    notification: true
     # Оповещение за хх мин. до начала события
     # Работает только для гугл-ящиков
     notification_time: 30

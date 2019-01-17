@@ -4,17 +4,19 @@
 - Общие сведения
   - [Особенности](#Особенности)
   - [Возможности](#Возможности)
-- Установка
+- Подготовка к установке
   - [Рекомендуемые требования](#Рекомендуемые-требования)
   - [Конфигурация](#Конфигурация)
+  - [Установка](#Установка)
+  - [Тесты](#Тесты)
   - [Telegram Webhook](#Telegram-Webhook)
   - [Bitrix24 Webhook](#Bitrix24-Webhook)
-  - [Google API](#Google-API)
+  - [Google Calendar API](#Google-Calendar-API)
 
-- Каркасы для работы с API
-  - [Service TelegramAPI](#Service-TelegramAPI)
-  - [Service GoogleCalendarAPI](#Service-GoogleCalendarAPI)
-  - [Service Bitrix24API](#Service-Bitrix24API)
+- Библиотеки для работы с API
+  - [TelegramAPI](#TelegramAPI)
+  - [GoogleCalendarAPI](#GoogleCalendarAPI)
+  - [Bitrix24API](#Bitrix24API)
 
 Общие сведения
 ======
@@ -25,16 +27,17 @@
 - **Google Calendar API v3** и **Google Service Account** для работы с событиями. 
 - **Bitrix24 Webhook** для получения данных о сотрудинках.
 - **Telegram API** для работы с ботом.
-- **Собственные каркасы** для работы с API
+- **Собственные библиотеки** для работы с API
 
 Возможности
 ------
 
-- Регистрация
+- Регистрация через данные из Bitrix24, если активен аккаунт
 - Бронирование переговорок
-- Управление событиями (добавить / изменить / удалить)
-- Поиск участников
-- Удаление персональных данных
+- Управление событиями Google calendar (добавить / изменить / удалить)
+- Поиск участников в Bitrix24
+- Административное меню
+- Управление персональными данными
 
 Подготовка к установке
 ======
@@ -52,16 +55,20 @@
 **.env**
 - Доступ к БД
 - Данные для установки вебхука Bitrix24
-- Токен для телеграм-бота
+- Список админов по BitrixID
+- Данные для установки вебхука Telegram
+- Секретный файл json для работы сервис-аккаунта Google
 - Данные прокси для работы с телеграм-ботом
-- Секретный файл json для работы сервис аккаунта Google
 
 **config/services.yaml**
 - Диапазон начала и конца рабочего дня
 - На сколько дней вперед можно бронировать
-- За сколько минут до начала события оповещать участников
-- Время кеширование данных Google и Bitrix
+- За сколько минут до начала события оповещать участников, если почта от Google
+- Время кеширование данных Google и Bitrix24
 - Анти-флуд: сколько сообщений в минуту можно отправлять одному пользователю
+- Добавление и сортировка переговорок (1 переговорка - 1 календарь в Google)
+- Возможность автоматически добавлять переговорки
+- Фиксация размеров входных данных от пользователей
 
 Установка
 ------
@@ -74,8 +81,15 @@ php7.1 bin/console doctrine:migrations:diff
 php7.1 bin/console doctrine:migrations:migrate
 ```
 
+Тесты
+------
+```bash
+php7.1 bin/phpunit tests/
+```
+
 Telegram Webhook
 ------
+
 Вебхук для телеграма можно установить несколькими способами.
 
     Рекомендуется использовать url вместе с токеном для дополнителньой безопасности:
@@ -91,8 +105,7 @@ php7.1 bin/console telegram_webhook --get
 php7.1 bin/console telegram_webhook --del
 ```
 
-- Через контроллер
-Сайт обязательно должен иметь ssl-сертификат. Для самоподписанных сертификатов необходимо задать дополнительные
+- Через контроллер сайт обязательно должен иметь ssl-сертификат. Для самоподписанных сертификатов необходимо задать дополнительные
 параметры в методе setWebHook.
 ```php
 <?php
@@ -100,7 +113,7 @@ php7.1 bin/console telegram_webhook --del
 ...
 public function tgWebhook(Request $request)
 {
-    $this->tgBot->setWebHook("https://example.com");
+    $this->tgBot->setWebHook('https://example.com');
     $this->tgBot->getWebhookInfo();
     $this->tgBot->deleteWebhook();
 }
@@ -115,16 +128,16 @@ Bitrix24 Webhook
 
 Получить доступ к вебхуку может любой пользователь, который имеет права на просмотр данных сотрудников.
 
-Google API
+Google Calendar API
 ------
 
 Создаем сервис-аккаунт, скачиваем json и добавляем в конфиг. Для того, чтобы сервис-аккаунт видел календари, необходимо
 добавить его почту и выдать необходимые права (минимум на изменение событий).
 
-Каркасы для работы с API
+Библиотеки для работы с API
 ======
 
-Service TelegramAPI
+TelegramAPI
 ------
 
 ```php
@@ -136,22 +149,22 @@ public function tgWebhook(Request $request)
     if ($this->isTg && $this->tgRequest->getRequestType()) {
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
-            "*Привет*, _как дела_?",
-            "Markdown"
+            '*Привет*, _как дела_?',
+            'Markdown'
         );
         
         $this->tgBot->editMessageText(
-            "*Привет*, _как дела_? Отлично?",
+            '*Привет*, _как дела_? Отлично?',
             $this->tgRequest->getChatId(),
             $this->tgRequest->getMessageId(),
             null,
-            "Markdown"
+            'Markdown'
         );
         
         // Отправить клавиатуру
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
-            "Вот вам клавиатура!",
+            'Вот вам клавиатура!',
             null,
             false,
             false,
@@ -163,7 +176,7 @@ public function tgWebhook(Request $request)
 ...
 ```
 
-Service GoogleCalendarAPI
+GoogleCalendarAPI
 ------
 
 ```php
@@ -172,40 +185,40 @@ Service GoogleCalendarAPI
 ...
 public function tgWebhook(Request $request)
 {
-    $filter = ["calendarName" => "Название календаря"];
+    $filter = ['calendarName' => 'Название календаря'];
     $this->googleCalendar->getList($filter);
     
     // Добавить событие
     $this->googleCalendar->addEvent(
         $calendarId,
-        $meetingRoomEventName,
-        $textMembers,
-        $meetingRoomDateTimeStart,
-        $meetingRoomDateTimeEnd,
-        $attendees
+        $eventName,
+        $eventDescription,
+        $eventTimeStart,
+        $eventTimeEnd,
+        $eventAttendees
     );
     
     // Изменить событие
     $this->googleCalendar->editEvent(
         $calendarId,
-        $event["eventId"],
-        $meetingRoomEventName,
-        $textMembers,
-        $meetingRoomDateTimeStart,
-        $meetingRoomDateTimeEnd,
-        $attendees
+        $eventId,
+        $eventName,
+        $evnetDescription,
+        $eventTimeStart,
+        $eventTimeEnd,
+        $eventAttendees
     );
     
     // Удалить событие
     $this->googleCalendar->removeEvent(
-        $event["calendarId"], 
-        $event["eventId"]
+        $calendarId, 
+        $eventId
     );
 }
 ...
 ```
 
-Service Bitrix24API
+Bitrix24API
 ------
 
 ```php
@@ -215,8 +228,10 @@ Service Bitrix24API
 
 public function tgWebhook(Request $request)
 {
-    $filter = ["id" => 1];
-    $filter = ["name" => ["Иван Иванов", "Иван", "Иванов"]];
+    // Список фильтров можно посмотреть в методе GoogleCalendarAPI - getFilters()
+    $filter = ['id' => 1];
+    $filter = ['name' => ['Иван Иванов', 'Иван', 'Иванов']];
+    $filter = ['phone' => '+71231231231'];
     $this->bitrix24->getUsers($filter);
 }
 ...
