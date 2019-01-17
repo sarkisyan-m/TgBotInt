@@ -138,7 +138,7 @@ class TelegramController extends Controller
                     $this->translate('account.verify_phone_failed').
                     $this->translate('account_bitrix.fix_profile', [
                         '%bitrixUserProfileEdit%' => $this->container->getParameter('bitrix24_base_url'),
-                        '%bitrixId%' => $bitrixUser->getId()
+                        '%bitrixId%' => $bitrixUser->getId(),
                     ]),
                     'Markdown',
                     true

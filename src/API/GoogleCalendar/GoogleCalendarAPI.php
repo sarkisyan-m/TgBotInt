@@ -259,7 +259,7 @@ class GoogleCalendarAPI
                             continue;
                         }
 
-                        if (array_search($filter['attendees_member'], $attendeesEmail) === false) {
+                        if (false === array_search($filter['attendees_member'], $attendeesEmail)) {
                             continue;
                         }
                     }

@@ -177,6 +177,8 @@ class MeetingRoom extends Module
         }
 
         $time = explode('-', $this->tgRequest->getText());
+        $time = str_replace('.', ':', $time);
+        $time = str_replace(' ', ':', $time);
 
         if (!$this->tgPluginCalendar->validateTime($time)) {
             $this->tgBot->sendMessage(
@@ -1122,7 +1124,20 @@ class MeetingRoom extends Module
             date('H', strtotime('12:00'))
         ), $timeStartM);
 
-        return "{$timeStart}-{$timeEnd}";
+        $time1 = "{$timeStart}-{$timeEnd}";
+        $time2TimeStart = str_replace(':', '.', $timeStart);
+        $time2TimeEnd = str_replace(':', '.', $timeEnd);
+        $time2 = "{$time2TimeStart}-{$time2TimeEnd}";
+        $time3TimeStart = str_replace(':', ' ', $timeStart);
+        $time3TimeEnd = str_replace(':', ' ', $timeEnd);
+        $time3 = "{$time3TimeStart}-{$time3TimeEnd}";
+
+//        return implode(', ', [$time1, $time2, $time3]);
+        return $this->translate('meeting_room.google_event.current_day.example_format', [
+            '%time1%' => $time1,
+            '%time2%' => $time2,
+            '%time3%' => $time3,
+        ]);
     }
 
     public function membersFormat(BitrixUser $bitrixUser = null): array
