@@ -130,6 +130,23 @@ class TelegramController extends Controller
         if ($tgUser && !is_null($bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]))) {
             $bitrixUser = $bitrixUser[0];
 
+            $verifyPhone = $this->bitrix24->getUsers(['phone' => $tgUser->getPhone()]);
+
+            if (!$verifyPhone) {
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $this->translate('account.verify_phone_failed').
+                    $this->translate('account_bitrix.fix_profile', [
+                        '%bitrixUserProfileEdit%' => $this->container->getParameter('bitrix24_base_url'),
+                        '%bitrixId%' => $bitrixUser->getId()
+                    ]),
+                    'Markdown',
+                    true
+                );
+
+                return new Response();
+            }
+
             // Если пользователь является действующим сотрудником
             if ($bitrixUser->getActive() && $bitrixUser->getEmail()) {
                 if ($this->tgModuleAntiFlood->isFlood()) {

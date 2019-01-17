@@ -26,6 +26,11 @@ class TgUsers
      */
     private $bitrix_id;
 
+    /**
+     * @ORM\Column(type="string", nullable=false)
+     */
+    private $phone;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -51,6 +56,18 @@ class TgUsers
     public function setBitrixId(int $bitrix_id): self
     {
         $this->bitrix_id = $bitrix_id;
+
+        return $this;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function setPhone(string $phone): self
+    {
+        $this->phone = $phone;
 
         return $this;
     }

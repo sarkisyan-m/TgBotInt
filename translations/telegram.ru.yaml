@@ -1,6 +1,11 @@
 account:
-    email_empty: "*Email не указан в Bitrix24.* Для использования бота обязательно нужно указать email."
+    email_empty: "*Email не указан в Bitrix24.* Для использования бота обязательно нужно указать email"
     active_false: "*Ваш аккаунт неактивен.* Вы можете удалить все свои личные данные командой /stop"
+    verify_phone_failed: "Телефон, закрепленный в вашем телеграме, *не совпадает* ни с одним полем
+    для телефонов в Bitrix24"
+
+account_bitrix:
+    fix_profile: " [[][исправить](%bitrixUserProfileEdit%company/personal/user/%bitrixId%/edit/)]"
 
 anti_flood:
     message_small: "*Превышен лимит отправки сообщений*\nНеобходимо подождать %reverseDiff% сек."
@@ -14,7 +19,7 @@ bot_command:
 
 command:
     help: "*Бот умеет бронировать переговорки* -  вы можете выбрать комнату, указать дату и время брони
-    (с 08:00 до 22:00 на следующие 30 дней), участников и название события.
+    (с 08:00 до 21:00 на следующие 30 дней), участников и название события.
     Событие будет сохранено в Google Calendar. Если событие переносят или изменяют, все участники будут уведомлены по почте.
     \n\n*Список команд*
     \n/meetingroomlist - выбор переговорки из списка. Это первый шаг для бронирования, после выбора бот запросит остальные данные.
@@ -42,7 +47,7 @@ command:
     \nНапоминания для участников о предстоящем событии реализованы через Google Calendar.
     \n1. Все выбранные в телеграме участники будут получать на почту уведомления о добавлении, редактировании и удалении
     события, в котором они состоят.
-    \n2. Если у вас в Bitrix24 указана почта [*.gmail.com], вам будут приходить напоминания
+    \n2. Если у вас в Bitrix24 указана почта от Google, вам будут приходить напоминания
     о предстоящем событии (например, за полчаса до начала). Уведомления могут быть в виде пуша или письма на почту.
     Время и тип зависят от настроек вашего аккаунта Google.
     \n\n*Обновление данных*
@@ -93,12 +98,16 @@ admin:
 
 myinfo:
     personal_info_bitrix24: "\n*Обрабатываемая информация из Bitrix24*"
-    personal_info_bitrix24_data: "\n- %name%\n- %phone%\n- %email%"
+    personal_info_bitrix24_data: "\nИмя и фамилия: %name%
+    \nТелефон: %phone%
+    \nEmail: %email%"
     personal_info_google_calendar: "\n\n*Данные в Google Calendar*"
-    personal_info_google_calendar_data: "\n- Обрабатываемая информация (до очистки или удаления календаря)"
+    personal_info_google_calendar_data: "\n- Обрабатываемая информация из Bitrix24"
     personal_info_server: "\n\n*Данные на сервере* [[удалить /stop]]"
-    personal_info_server_data: "\n- Bitrix24ID %bitrix24Id%\n- TelegramID %telegramId%\n- Обрабатываемая информация
-    (удаляется после успешного бронирования или завершения сеанса)\n- Информация в кеше и логах (временно)"
+    personal_info_server_data: "\nBitrix24ID: %bitrix24Id%
+    \nTelegramID: %telegramId%
+    \nТелефон: %telegramPhone%
+    \nОбрабатываемая информация из Bitrix24 (временно)"
 
 
 # каждое слово через запятую
@@ -184,7 +193,7 @@ meeting_room:
         data_failed: "*Ошибка бронирования.* Кто-то опередил вас и занял переговорку в это же время"
 
 event_list:
-    room: "\n\U0001F4AD *%calendarName%*\n"
+    room: "\n\U0001F4AC *%calendarName%*\n"
     date: "\n\U0001F4C6 *%date%*\n"
     event_text: "*%timeStart%-%timeEnd%* %textTime% \n"
     event_edit: "[[Изм. /e_%eventId%]] "

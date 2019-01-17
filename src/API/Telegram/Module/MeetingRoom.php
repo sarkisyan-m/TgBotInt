@@ -1108,24 +1108,18 @@ class MeetingRoom extends Module
 
     public function exampleRandomTime()
     {
-        $timeDiffStable = 5;
-        $timeDiff = rand(1, 5);
-        if ($timeDiffStable < date('H', strtotime($this->workTimeEnd))) {
-            $timeDiff = $this->workTimeEnd;
-        }
-
         $timeStartM = [0, 10, 20];
         $timeStartM = $timeStartM[array_rand($timeStartM)];
         $timeStart = sprintf('%02d:%02d', rand(
-            date('H', strtotime($this->workTimeStart)),
-            date('H', strtotime($this->workTimeEnd.'-1 hours'))
+            date('H', strtotime('08:00')),
+            date('H', strtotime('09:00'))
         ), $timeStartM);
 
         $timeStartM = [30, 40, 50];
         $timeStartM = $timeStartM[array_rand($timeStartM)];
         $timeEnd = sprintf('%02d:%02d', rand(
-            date('H', strtotime($timeStart)),
-            date('H', strtotime($timeDiff.'-1 hours'))
+            date('H', strtotime('10:00')),
+            date('H', strtotime('12:00'))
         ), $timeStartM);
 
         return "{$timeStart}-{$timeEnd}";
@@ -1270,7 +1264,7 @@ class MeetingRoom extends Module
         $limitBytesMax = 5500;
         $reserveByte = 100;
         $dateToday = date('d.m.Y', strtotime('today'));
-        $filter = ['startDateTime' => $dateToday, 'attendees' => $bitrixUser->getEmail()];
+        $filter = ['startDateTime' => $dateToday, 'attendees_member' => $bitrixUser->getEmail()];
 
         $args = (int) Helper::getArgs($this->tgRequest->getText()) - 1;
         $meetingRoomList = $this->googleCalendar->getCalendarNameList();
@@ -1320,9 +1314,11 @@ class MeetingRoom extends Module
                     $textTime = "_{$textName}{$verifyDescription['textMembers']}_ {$verifyDescription['textOrganizer']}";
                     $text .= $this->translate('event_list.event_text', ['%timeStart%' => $timeStart, '%timeEnd%' => $timeEnd, '%textTime%' => $textTime]);
 
-                    $eventId = substr($event['eventId'], 0, 4);
-                    $text .= $this->translate('event_list.event_edit', ['%eventId%' => $eventId]);
-                    $text .= $this->translate('event_list.event_remove', ['%eventId%' => $eventId]);
+                    if ($event['attendees'][0] == $bitrixUser->getEmail()) {
+                        $eventId = substr($event['eventId'], 0, 4);
+                        $text .= $this->translate('event_list.event_edit', ['%eventId%' => $eventId]);
+                        $text .= $this->translate('event_list.event_remove', ['%eventId%' => $eventId]);
+                    }
 
                     $dateTemp = $date;
 
@@ -1382,7 +1378,6 @@ class MeetingRoom extends Module
 
     public function eventDelete($data = null)
     {
-//        $args = $this->getArgs();
         $args = Helper::getArgs($this->tgRequest->getText());
 
         if (isset($data['data']['args'])) {

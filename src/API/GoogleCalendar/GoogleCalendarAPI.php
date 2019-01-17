@@ -66,6 +66,7 @@ class GoogleCalendarAPI
             'startDateTime',
             'endDateTime',
             'attendees',
+            'attendees_member',
             'get',
             'eventIdShort',
         ];
@@ -243,8 +244,24 @@ class GoogleCalendarAPI
                         $attendeesEmail[] = $member->getEmail();
                     }
 
-                    if ($filter['attendees'] && (!isset($attendeesEmail[0]) || $filter['attendees'] != $attendeesEmail[0])) {
-                        continue;
+                    if ($filter['attendees']) {
+                        if (!$attendeesEmail) {
+                            continue;
+                        }
+
+                        if ($filter['attendees'] != $attendeesEmail[0]) {
+                            continue;
+                        }
+                    }
+
+                    if ($filter['attendees_member']) {
+                        if (!$attendeesEmail) {
+                            continue;
+                        }
+
+                        if (array_search($filter['attendees_member'], $attendeesEmail) === false) {
+                            continue;
+                        }
                     }
 
                     $eventArray = [

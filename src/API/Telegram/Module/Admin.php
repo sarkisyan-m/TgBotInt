@@ -240,17 +240,6 @@ class Admin extends Module
         $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
         $this->tgDb->setCallbackQuery();
 
-//        $calendars = $this->googleCalendar->getList();
-//        $totalCount = 0;
-//        $text = $this->translate('admin.event.clear.head');
-//        foreach ($calendars as $calendar) {
-//            $eventCount = count($calendar['listEvents']);
-//            $totalCount += $eventCount;
-//            $text .= $this->translate('admin.event.clear.body', ['%calendarName%' => $calendar['calendarName'], '%eventCount%' => $eventCount]);
-//        }
-//
-//        $text .= $this->translate('admin.event.total_count', ['%totalCount%' => $totalCount]);
-
         $this->tgBot->editMessageText(
             $this->translate('admin.event.clear.head'),
             $this->tgRequest->getChatId(),
@@ -270,8 +259,8 @@ class Admin extends Module
             return false;
         }
 
-        $this->cache->clear();
         $this->googleCalendar->removeAllEvents();
+        $this->cache->clear();
 
         $this->tgBot->editMessageText(
             $this->translate('admin.event.clear.success'),

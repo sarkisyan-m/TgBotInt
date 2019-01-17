@@ -68,19 +68,17 @@ class TelegramAPI
         $data = json_decode($data, true);
         $this->tgLogger($data, $this->tgLogger);
 
-        if (!$data['ok']) {
-            if (429 === $data['error_code']) {
-                if (isset($args['chat_id']) && isset($args['text'])) {
-                    if (strlen($args['text']) >= 512) {
-                        $text = $this->translate('anti_flood.message_great', ['%reverseDiff%' => $data['parameters']['retry_after']]);
-                        $this->sendMessage(
-                            $args['chat_id'],
-                            $text,
-                            'Markdown'
-                        );
-
-                        exit();
-                    }
+        if (!$data['ok'] && 429 === $data['error_code']) {
+            if (isset($args['chat_id']) && isset($args['text'])) {
+                if (strlen($args['text']) >= 512) {
+                    $text = $this->translate(
+                        'anti_flood.message_great', ['%reverseDiff%' => $data['parameters']['retry_after']]
+                    );
+                    $this->sendMessage(
+                        $args['chat_id'],
+                        $text,
+                        'Markdown'
+                    );
                 }
             }
         }
