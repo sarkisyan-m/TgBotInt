@@ -183,6 +183,10 @@ class Command extends Module
     {
         $tgText = $this->tgRequest->getText();
 
+        if ($tgText{0} == '_') {
+            return false;
+        }
+
         $isArgs = strpos($tgText, '_');
 
         if (false !== $isArgs) {
