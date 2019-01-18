@@ -88,4 +88,21 @@ class Helper
 
         return null;
     }
+
+    public static function phoneFix($phone)
+    {
+        if (!$phone) {
+            return null;
+        }
+
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        if (11 == strlen($phone)) {
+            $phone = substr($phone, 1);
+            $phone = '+7'.$phone;
+        } elseif (10 == strlen($phone)) {
+            $phone = '+7'.$phone;
+        }
+
+        return $phone;
+    }
 }

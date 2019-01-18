@@ -66,7 +66,7 @@ class TelegramDb
 
         $tgUser->setChatId($this->tgRequest->getChatId());
         $tgUser->setBitrixId($bitrixId);
-        $tgUser->setPhone($this->tgRequest->getPhoneNumber());
+        $tgUser->setPhone(Helper::phoneFix($this->tgRequest->getPhoneNumber()));
         $this->insert($tgUser);
 
         if ($tgUser->getId()) {
