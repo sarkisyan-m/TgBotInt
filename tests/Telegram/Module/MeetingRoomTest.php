@@ -22,17 +22,15 @@ class MeetingRoomTest extends WebTestCase
         self::bootKernel();
 
         $container = self::$kernel->getContainer();
-        $meetingRoom = $this->getMeetingRoom();
-
         $googleServiceAccountEmail = $container->getParameter('google_service_account_email');
+
+        $meetingRoom = $this->getMeetingRoom();
 
         $this->assertTrue($meetingRoom->isGoogleCalendarBotEmail($googleServiceAccountEmail));
     }
 
     public function testGoogleCalendarDescriptionConvertLtextToText()
     {
-        self::bootKernel();
-
         $meetingRoom = $this->getMeetingRoom();
         // $members - текст из описания гугл-события. На нужны только id, остальное все найдется в битриксе
         $members = "Участники\n- Test id#1, +71231231231, test@example.com\n- TestFirstName TestLastName id#none\n- TestFirstName2 TestLastName2 id#none\n\nОрганизатор\n- TestFirstName TestLastName id#1, +71231231231, test@example.com";
@@ -116,9 +114,18 @@ class MeetingRoomTest extends WebTestCase
     {
         $meetingRoom = $this->getMeetingRoom();
 
-        $randomTime = $meetingRoom->exampleRandomTime();
-        $randomTime = explode('-', $randomTime);
+        $randomTimeFormat = $meetingRoom->exampleRandomTime();
+        $randomTimeFormat = array_map('trim', explode("\n", $randomTimeFormat));
 
+        $randomTime = explode('-', $randomTimeFormat[0]);
+        $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
+
+        $randomTime = str_replace('.', ':', $randomTimeFormat[1]);
+        $randomTime = explode('-', $randomTime);
+        $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
+
+        $randomTime = str_replace(' ', ':', $randomTimeFormat[2]);
+        $randomTime = explode('-', $randomTime);
         $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
     }
 

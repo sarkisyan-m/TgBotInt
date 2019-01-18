@@ -103,22 +103,14 @@ class Command extends Module
         }
 
         $text = $this->translate('command.myinfo');
-
-        $text .= $this->translate('myinfo.personal_info_bitrix24');
-        $text .= $this->translate('myinfo.personal_info_bitrix24_data', [
+        $text .= $this->translate('myinfo.personal_info', [
             '%name%' => $bitrixUser->getName(),
             '%phone%' => $bitrixUser->getFirstPhone(),
             '%email%' => $bitrixUser->getEmail(),
-        ]);
-
-        $text .= $this->translate('myinfo.personal_info_google_calendar');
-        $text .= $this->translate('myinfo.personal_info_google_calendar_data');
-
-        $text .= $this->translate('myinfo.personal_info_server');
-        $text .= $this->translate('myinfo.personal_info_server_data', [
             '%bitrix24Id%' => $bitrixUser->getId(),
-            '%telegramId%' => $tgUser->getChatId(),
+            '%status%' => $this->translate('myinfo.personal_info_bitrix24_data_status'),
             '%telegramPhone%' => $tgUser->getPhone(),
+            '%telegramId%' => $tgUser->getChatId(),
         ]);
 
         $this->tgBot->sendMessage(

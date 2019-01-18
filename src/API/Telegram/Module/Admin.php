@@ -96,13 +96,13 @@ class Admin extends Module
                     $adminContact = null;
                 }
 
-                $text .= $this->translate('admin.command_list.user_info', ['%adminName%' => $name, '%adminContact%' => $adminContact]);
+                $text .= $this->translate('command.contacts.admin_info', ['%adminName%' => $name, '%adminContact%' => $adminContact]);
             }
         }
 
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
-            $this->translate('command.admin_list').$text,
+            $this->translate('command.contacts.head', ['%adminInfo%' => $text]),
             'Markdown'
         );
     }
@@ -294,7 +294,7 @@ class Admin extends Module
         if ('send' == $messageType) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('admin.command_list.head'),
+                $this->translate('admin.head'),
                 'Markdown',
                 false,
                 false,
@@ -303,7 +303,7 @@ class Admin extends Module
             );
         } elseif ('edit' == $messageType) {
             $this->tgBot->editMessageText(
-                $this->translate('admin.command_list.head'),
+                $this->translate('admin.head'),
                 $this->tgRequest->getChatId(),
                 $this->tgRequest->getMessageId(),
                 null,

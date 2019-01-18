@@ -61,15 +61,15 @@ command:
     \n\n*Лимит на количество запросов*
     \n1. Частота отправки любых сообщений - 30 сообщ. / 1 мин.
     \n2. Частота отправки больших сообщений (> 512 байт) - 20 сообщ. / 3 мин."
-    myinfo: "Личные данные требуются для идентификации организаторов, поиска сотрудников и отображения ваших контактых данных
-    в Google Calendar.\n"
-    admin_list: "*Список админов*\n"
+    myinfo: "Личные данные требуются для идентификации организаторов и участников, поиска сотрудников и отображения
+    контактых данных в Google Calendar.\n"
+    contacts:
+        head: "*Список админов*\n%adminInfo%"
+        admin_info: "- %adminName% %adminContact%\n"
     exit: "\U0001F413 Сеанс завершен"
 
 admin:
-    command_list:
-        head: "\U0001F425 Административное меню"
-        user_info: "- %adminName% %adminContact%\n"
+    head: "\U0001F425 Административное меню"
     cache:
         head: "\U0001F6C1 Вы уверены, что хотите *очистить весь кеш*?"
         clear: "Очистить весь кеш"
@@ -99,18 +99,20 @@ admin:
             \n*Всего сотрудников: %userTotalCount%*\n\n"
 
 myinfo:
-    personal_info_bitrix24: "\n*Обрабатываемая информация из Bitrix24*"
-    personal_info_bitrix24_data: "\nИмя и фамилия: %name%
+    personal_info: "\n*Обрабатываемая информация из Bitrix24*
     \nТелефон: %phone%
-    \nEmail: %email%"
-    personal_info_google_calendar: "\n\n*Данные в Google Calendar*"
-    personal_info_google_calendar_data: "\n- Обрабатываемая информация из Bitrix24"
-    personal_info_server: "\n\n*Данные на сервере* [[удалить /stop]]"
-    personal_info_server_data: "\nBitrix24ID: %bitrix24Id%
+    \nEmail: %email%
+    \nBitrix24ID: %bitrix24Id%
+    \nСтатус профиля: %status%
+    \n\n*Данные в Google Calendar*
+    \nОбрабатываемая информация из Bitrix24
+    \n\n*Данные на сервере* [[удалить /stop]]
+    \nТелефон: %phone%
+    \nBitrix24ID: %bitrix24Id%
     \nTelegramID: %telegramId%
-    \nТелефон: %telegramPhone%
-    \nОбрабатываемая информация из Bitrix24 (временно)"
-
+    \n\n*Временные данные на сервере*
+    \nОбрабатываемая информация из Bitrix24 (в кеше и логах)"
+    personal_info_bitrix24_data_status: "Активен"
 
 # каждое слово через запятую
 no_command_word: "нет, 0, -, отсутствует, н, n, net"
