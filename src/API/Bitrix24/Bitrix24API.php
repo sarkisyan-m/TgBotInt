@@ -109,8 +109,8 @@ class Bitrix24API
                 $firstPhone = $workPhone;
             }
 
-            $user['name'] = str_replace('Ё', 'Е', str_replace('ё', 'е', $user['name']));
-            $user['last_name'] = str_replace('Ё', 'Е', str_replace('ё', 'е', $user['last_name']));
+            $user['name'] = Helper::rusLetterFix($user['name']);
+            $user['last_name'] = Helper::rusLetterFix($user['last_name']);
 
             $name = "{$user['name']} {$user['last_name']}";
 

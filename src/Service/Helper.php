@@ -104,4 +104,9 @@ class Helper
 
         return $phone;
     }
+
+    public static function rusLetterFix($text)
+    {
+        return str_replace('Ё', 'Е', str_replace('ё', 'е', $text));
+    }
 }

@@ -541,6 +541,7 @@ class MeetingRoom extends Module
                 $meetingRoomUserData['users']['none'] = 'none';
             } else {
                 $members = $this->tgRequest->getText();
+                $members = Helper::rusLetterFix($members);
                 $members = mb_convert_case(mb_strtolower($members), MB_CASE_TITLE, 'UTF-8');
 
                 $limit = $this->eventMembersLimit;
