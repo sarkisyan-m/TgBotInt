@@ -22,14 +22,14 @@ class CommandTest extends WebTestCase
         foreach ($botCommands as $botCommand => $botCommandText) {
             if ($botCommandText) {
                 $this->tgText = $botCommand;
-                $command = $this->getCommand(false);
+                $command = $this->getCommand();
                 $command->request($this->getTgRequest());
 
                 $this->assertTrue($command->isBotCommand($botCommand));
             }
 
             $this->tgText = $botCommand;
-            $command = $this->getCommand(false);
+            $command = $this->getCommand();
             $command->request($this->getTgRequest());
 
             $this->assertTrue($command->isBotCommand($botCommand));
@@ -52,7 +52,7 @@ class CommandTest extends WebTestCase
         $this->assertTrue(strpos($globalButtons[1][1], $botCommands['/exit']) !== false);
     }
 
-    public function getCommand($requestAuto = true)
+    public function getCommand()
     {
         $tgBot = $this->getTgBot();
         $tgDb = $this->getTgDb();
@@ -66,9 +66,7 @@ class CommandTest extends WebTestCase
             $translator
         );
 
-        if ($requestAuto) {
-            $command->request($this->getTgRequest());
-        }
+        $command->request($this->getTgRequest());
 
         return $command;
     }

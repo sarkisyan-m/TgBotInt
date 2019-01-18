@@ -69,7 +69,6 @@ class Helper
         $sing = $dateDiff->format('%R');
 
         return (int) "{$sing}{$dateDiff->d}";
-//        return $dateDiff;
     }
 
     public static function getArgs($text, &$command = null)
