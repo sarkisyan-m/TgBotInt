@@ -109,4 +109,16 @@ class Helper
     {
         return str_replace('Ё', 'Е', str_replace('ё', 'е', $text));
     }
+
+    public static function markDownReplace($text)
+    {
+        $text = str_replace('`', '"', $text);
+        $text = str_replace('*', '"', $text);
+        $text = str_replace('_', '-', $text);
+        $text = str_replace('\\', '/', $text);
+        $text = str_replace('[', '(', $text);
+        $text = str_replace(']', ')', $text);
+
+        return $text;
+    }
 }

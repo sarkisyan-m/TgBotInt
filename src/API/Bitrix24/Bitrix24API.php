@@ -136,81 +136,81 @@ class Bitrix24API
         //TEST
         //______________________________________________________________________
 
-//        $user = [
-//            'id' => 1000,
-//            'email' => 'test2@example.com',
-//            'name' => 'Иван Иванов',
-//            'first_name' => 'Иван',
-//            'last_name' => 'Иванов',
-//            'personal_phone' => '+72231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+72231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1001,
-//            'email' => null,
-//            'name' => 'Иван Иванов',
-//            'first_name' => 'Иван',
-//            'last_name' => 'Иванов',
-        ////            "personal_phone" => "+71231231231",
-//            'personal_phone' => null,
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => null,
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1002,
-//            'email' => 'test3@example.com',
-//            'name' => 'Петр Петров',
-//            'first_name' => 'Петр',
-//            'last_name' => 'Петров',
-//            'personal_phone' => '+73231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+73231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1003,
-//            'email' => 'test4@example.com',
-//            'name' => 'Петр Петров',
-//            'first_name' => 'Петр',
-//            'last_name' => 'Петров',
-//            'personal_phone' => '+74231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+74231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1004,
-//            'email' => 'test5@example.com',
-//            'name' => 'Петр Петров',
-//            'first_name' => 'Петр',
-//            'last_name' => 'Петров',
-//            'personal_phone' => '+75231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+75231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
+        $user = [
+            'id' => 1000,
+            'email' => 'test2@example.com',
+            'name' => 'Иван Иванов',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'personal_phone' => '+72231231231',
+            'personal_mobile' => null,
+            'work_phone' => null,
+            'first_phone' => '+72231231231',
+            'active' => true,
+        ];
+        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
+        array_push($result, $user);
+
+        $user = [
+            'id' => 1001,
+            'email' => null,
+            'name' => 'Иван Иванов',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+        //            "personal_phone" => "+71231231231",
+            'personal_phone' => null,
+            'personal_mobile' => null,
+            'work_phone' => null,
+            'first_phone' => null,
+            'active' => true,
+        ];
+        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
+        array_push($result, $user);
+
+        $user = [
+            'id' => 1002,
+            'email' => 'test3@example.com',
+            'name' => 'Петр Петров',
+            'first_name' => 'Петр',
+            'last_name' => 'Петров',
+            'personal_phone' => '+73231231231',
+            'personal_mobile' => null,
+            'work_phone' => null,
+            'first_phone' => '+73231231231',
+            'active' => true,
+        ];
+        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
+        array_push($result, $user);
+
+        $user = [
+            'id' => 1003,
+            'email' => 'test4@example.com',
+            'name' => 'Петр Петров',
+            'first_name' => 'Петр',
+            'last_name' => 'Петров',
+            'personal_phone' => '+74231231231',
+            'personal_mobile' => null,
+            'work_phone' => null,
+            'first_phone' => '+74231231231',
+            'active' => true,
+        ];
+        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
+        array_push($result, $user);
+
+        $user = [
+            'id' => 1004,
+            'email' => 'test5@example.com',
+            'name' => 'Петр Петров',
+            'first_name' => 'Петр',
+            'last_name' => 'Петров',
+            'personal_phone' => '+75231231231',
+            'personal_mobile' => null,
+            'work_phone' => null,
+            'first_phone' => '+75231231231',
+            'active' => true,
+        ];
+        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
+        array_push($result, $user);
 
         //______________________________________________________________________
         //TEST
