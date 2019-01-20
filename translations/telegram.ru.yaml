@@ -5,7 +5,7 @@ account:
     для телефонов в Bitrix24"
 
 account_bitrix:
-    fix_profile: " [[][исправить](%bitrixUserProfileEdit%company/personal/user/%bitrixId%/edit/)]"
+    fix_profile: " \\[[исправить](%bitrixUserProfileEdit%company/personal/user/%bitrixId%/edit/)]"
 
 anti_flood:
     message_small: "*Превышен лимит отправки сообщений*\nНеобходимо подождать %reverseDiff% сек."
@@ -24,11 +24,11 @@ command:
     \n\n*Список команд*
     \n/meetingroomlist - выбор переговорки из списка. Это первый шаг для бронирования, после выбора бот запросит остальные данные.
     \n/eventlist - список ваших событий.
-    \n[/eventlist_1], [/eventlist_2], [/eventlist_3] и т.д. - список ваших событий в отдельных комнатах.
+    \n/eventlist\\_1, /eventlist\\_2, /eventlist\\_3 и т.д. - список ваших событий в отдельных комнатах.
     В этих списках также доступны команды редактирования (/e) и удаления (/d) событий.
-    \n[/contacts] - список админов.
+    \n/contacts - список админов.
     \n/exit - завершить текущий сеанс. Команды, не относящиеся к текущему действию, так же завершают все сеансы.
-    \n[/myinfo] - ваши личные данные, которые будут обрабатываться.
+    \n/myinfo - ваши личные данные, которые будут обрабатываться.
     \n/stop - удалить свои личные данные с сервера бота. Все ваши события останутся в Google Calendar. По факту вы не
     заметите никакой разницы, за исключением сброса регистрации. Эта возможность доступна вне зависимости от статуса
     аккаунта Bitrix24.
@@ -106,7 +106,7 @@ myinfo:
     \nСтатус профиля: %status%
     \n\n*Данные в Google Calendar*
     \nОбрабатываемая информация из Bitrix24
-    \n\n*Данные на сервере* [[удалить /stop]]
+    \n\n*Данные на сервере* \\[удалить /stop]
     \nТелефон: %phone%
     \nBitrix24ID: %bitrix24Id%
     \nTelegramID: %telegramId%
@@ -206,7 +206,7 @@ event_list:
     event_empty: "\nСписок событий пуст\n"
     event_is_big: "\nСписок событий слишком большой\n"
     event_over: "\n*Не отображено событий*: %eventOverCount%"
-    event_show_all: "\n[[Показать все /eventlist_%meetingRoomNumber%]]\n"
+    event_show_all: "\n\\[Показать все /eventlist\\_%meetingRoomNumber%]\n"
     remove:
         confirmation: "*Вы действительно хотите удалить событие?*\n\n"
         success: "\n*Событие успешно удалено*"
