@@ -95,7 +95,7 @@ class MeetingRoom extends Module
                 $this->tgRequest->getMessageId(),
                 null,
                 'Markdown',
-                false,
+                true,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
         } else {
@@ -103,7 +103,7 @@ class MeetingRoom extends Module
                 $this->tgRequest->getChatId(),
                 $text,
                 'Markdown',
-                false,
+                true,
                 false,
                 null,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
@@ -122,7 +122,8 @@ class MeetingRoom extends Module
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
             $this->translate('meeting_room.date.info', ['%getDate%' => $this->tgPluginCalendar->getDate(), '%dateRange%' => $this->tgPluginCalendar->getDate('-'.$this->dateRange)]),
-            'Markdown'
+            'Markdown',
+            true
         );
     }
 
@@ -136,7 +137,7 @@ class MeetingRoom extends Module
             $this->tgRequest->getMessageId(),
             null,
             'Markdown',
-            false,
+            true,
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
     }
@@ -158,7 +159,8 @@ class MeetingRoom extends Module
                 $this->tgRequest->getChatId(),
                 $this->tgRequest->getMessageId() + 1,
                 null,
-                'Markdown'
+                'Markdown',
+                true
             );
         }
     }
@@ -170,7 +172,8 @@ class MeetingRoom extends Module
         if (!$meetingRoomUser->getDate()) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('meeting_room.date.error')
+                $this->translate('meeting_room.date.error'),
+                true
             );
 
             return;
@@ -178,13 +181,13 @@ class MeetingRoom extends Module
 
         $time = explode('-', $this->tgRequest->getText());
         $time = str_replace('.', ':', $time);
-        $time = str_replace(' ', ':', $time);
 
         if (!$this->tgPluginCalendar->validateTime($time)) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.incorrect_time_format', ['%exampleRandomTime%' => $this->exampleRandomTime()]),
-                'Markdown'
+                'Markdown',
+                true
             );
 
             return;
@@ -194,7 +197,8 @@ class MeetingRoom extends Module
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.incorrect_time', ['%workTimeStart%' => $this->workTimeStart, '%workTimeEnd%' => $this->workTimeEnd]),
-                'Markdown'
+                'Markdown',
+                true
             );
 
             return;
@@ -204,7 +208,8 @@ class MeetingRoom extends Module
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.past'),
-                'Markdown'
+                'Markdown',
+                true
             );
 
             return;
@@ -226,30 +231,33 @@ class MeetingRoom extends Module
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
                     $text,
-                    'Markdown'
+                    'Markdown',
+                    true
                 );
             }
         } else {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.engaged'),
-                'Markdown'
+                'Markdown',
+                true
             );
         }
     }
 
     public function meetingRoomEventName()
     {
-        $text = substr($this->tgRequest->getText(), 0, (int) $this->eventNameLen);
+        $text = mb_substr($this->tgRequest->getText(), 0, (int) $this->eventNameLen);
 
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-        $meetingRoomUser->setEventName($text);
+        $meetingRoomUser->setEventName(Helper::markDownReplace($text));
         $this->tgDb->insert($meetingRoomUser);
 
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
             $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]),
-            'MarkDown'
+            'Markdown',
+            true
         );
     }
 
@@ -285,7 +293,8 @@ class MeetingRoom extends Module
                             $this->tgRequest->getChatId(),
                             $messageId,
                             null,
-                            'Markdown'
+                            'Markdown',
+                            true
                         );
 
                         return true;
@@ -355,7 +364,7 @@ class MeetingRoom extends Module
                 continue;
             }
 
-            $members = $this->membersList($meetingRoomUserData);
+            $members = $this->membersList($meetingRoomUserData, true);
             $text = $this->translate('meeting_room.event_members.form.head');
 
             if ($members['found']) {
@@ -376,7 +385,7 @@ class MeetingRoom extends Module
                 $messageId,
                 null,
                 'Markdown',
-                false,
+                true,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
 
@@ -420,13 +429,14 @@ class MeetingRoom extends Module
                     $this->tgRequest->getChatId(),
                     $messageId,
                     null,
-                    'Markdown'
+                    'Markdown',
+                    true
                 );
 
                 return true;
             }
         } else {
-            $members = $this->membersList($meetingRoomUserData);
+            $members = $this->membersList($meetingRoomUserData, true);
 
             $keyboard = [];
             $ln = 0;
@@ -453,7 +463,7 @@ class MeetingRoom extends Module
                 $messageId,
                 null,
                 'Markdown',
-                false,
+                true,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
 
@@ -488,7 +498,8 @@ class MeetingRoom extends Module
                     $this->tgRequest->getChatId(),
                     $messageId,
                     null,
-                    'Markdown'
+                    'Markdown',
+                    true
                 );
 
                 return true;
@@ -496,7 +507,7 @@ class MeetingRoom extends Module
         }
 
         $text = $this->translate('meeting_room.event_members.list_formed');
-        $members = $this->membersList($meetingRoomUserData);
+        $members = $this->membersList($meetingRoomUserData, true);
 
         if ($members['found']) {
             $text .= "{$this->translate('event_info.event_members', ['%eventMembers%' => $members['found']])}\n";
@@ -520,7 +531,7 @@ class MeetingRoom extends Module
             $messageId,
             null,
             'Markdown',
-            false,
+            true,
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
 
@@ -542,6 +553,7 @@ class MeetingRoom extends Module
             } else {
                 $members = $this->tgRequest->getText();
                 $members = Helper::rusLetterFix($members);
+                $members = Helper::markDownReplace($members);
                 $members = mb_convert_case(mb_strtolower($members), MB_CASE_TITLE, 'UTF-8');
 
                 $limit = $this->eventMembersLimit;
@@ -551,7 +563,7 @@ class MeetingRoom extends Module
                 $memberLen = (int) $this->eventMembersLen;
                 foreach ($members as $memberKey => $memberValue) {
                     if (strlen($memberValue) > $memberLen) {
-                        $memberValue = substr($memberValue, 0, $memberLen);
+                        $memberValue = mb_substr($memberValue, 0, $memberLen);
                         $members[$memberKey] = $memberValue;
                     }
                 }
@@ -614,7 +626,8 @@ class MeetingRoom extends Module
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
                     $this->translate('meeting_room.event_members.form.head'),
-                    'Markdown'
+                    'Markdown',
+                    true
                 );
 
                 // для редактирование будущего сообщения, единожды
@@ -660,7 +673,8 @@ class MeetingRoom extends Module
     public function meetingRoomConfirm($data = null, $nextMessage = false)
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
-        $members = $this->membersList(json_decode($meetingRoomUser->getEventMembers(), true));
+        $members = json_decode($meetingRoomUser->getEventMembers(), true);
+        $members = $this->membersList($members, true);
         $text = null;
 
         $messageId = $this->tgRequest->getMessageId();
@@ -669,7 +683,8 @@ class MeetingRoom extends Module
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.confirm.data_info'),
-                'Markdown'
+                'Markdown',
+                true
             );
         }
 
@@ -726,6 +741,8 @@ class MeetingRoom extends Module
                         $attendees[] = ['email' => $email];
                     }
                 }
+
+//                $this->tgBot->sendMessage($this->tgRequest->getChatId(), print_r($attendees, true));
 
                 $hashService = new Hash();
                 $hash = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
@@ -792,7 +809,7 @@ class MeetingRoom extends Module
             $messageId,
             null,
             'Markdown',
-            false,
+            true,
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
     }
@@ -875,7 +892,11 @@ class MeetingRoom extends Module
                 }
 
                 $verifyDescription['textOrganizer'] = $this->translate('event_info_string.event_organizer', ['%eventOrganizer%' => $verifyDescription['textOrganizer']]);
-                $textTime = "_{$textName}{$verifyDescription['textMembers']}_ {$verifyDescription['textOrganizer']}";
+                /**
+                 * @todo MarkdownFix
+                 */
+//                $textTime = "_{$textName}{$verifyDescription['textMembers']}_ {$verifyDescription['textOrganizer']}";
+                $textTime = "{$textName}{$verifyDescription['textMembers']} {$verifyDescription['textOrganizer']}";
 
                 // если существует $timeDate, то элемент всегда будет на первом месте
                 if ($timeDate) {
@@ -909,7 +930,8 @@ class MeetingRoom extends Module
             $this->tgRequest->getChatId(),
             $this->tgRequest->getMessageId() + 1,
             null,
-            'Markdown'
+            'Markdown',
+            true
         );
 
         return $text;
@@ -937,7 +959,7 @@ class MeetingRoom extends Module
                         $bitrixUser = $bitrixUser[0];
 
                         $organizer['users']['organizer'][] = $this->membersFormat($bitrixUser);
-                        $organizer = $this->membersList($organizer, false, true);
+                        $organizer = $this->membersList($organizer, true);
 
                         if (isset($organizer['organizer'])) {
                             $event['organizerEmail'] = $organizer['organizer'];
@@ -1037,7 +1059,7 @@ class MeetingRoom extends Module
             return $data;
         }
 
-        return $this->membersList($data, false, true);
+        return $this->membersList($data, true);
     }
 
     public function googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, &$emailList)
@@ -1058,6 +1080,7 @@ class MeetingRoom extends Module
                 $member = $this->membersFormatArray($member);
 
                 if ($member['email']) {
+                    $member['email'] = Helper::markDownEmailEscapeReplaceReverse($member['email']);
                     $emailList[] = $member['email'];
                 }
 
@@ -1129,21 +1152,22 @@ class MeetingRoom extends Module
         $time2TimeStart = str_replace(':', '.', $timeStart);
         $time2TimeEnd = str_replace(':', '.', $timeEnd);
         $time2 = "{$time2TimeStart}-{$time2TimeEnd}";
-        $time3TimeStart = str_replace(':', ' ', $timeStart);
-        $time3TimeEnd = str_replace(':', ' ', $timeEnd);
-        $time3 = "{$time3TimeStart}-{$time3TimeEnd}";
 
 //        return implode(', ', [$time1, $time2, $time3]);
         return $this->translate('meeting_room.google_event.current_day.example_format', [
             '%time1%' => $time1,
-            '%time2%' => $time2,
-            '%time3%' => $time3,
+            '%time2%' => $time2
         ]);
     }
 
     public function membersFormat(BitrixUser $bitrixUser = null): array
     {
-        $email = str_replace('_', "_\__", $bitrixUser->getEmail());
+        /**
+         * @todo MarkdownFix
+         */
+//        $email = str_replace('_', "[_]", $bitrixUser->getEmail());
+//        $email = "[{$bitrixUser->getEmail()}]";
+        $email = Helper::markDownEmailEscapeReplace($bitrixUser->getEmail());
 
         return [
             'bitrix_id' => $bitrixUser->getId(),
@@ -1153,14 +1177,17 @@ class MeetingRoom extends Module
         ];
     }
 
-    public function membersList($meetingRoomUserData, $italic = true, $tgLink = false)
+    public function membersList($meetingRoomUserData, $tgLink = false)
     {
         $result['duplicate'] = null;
         $result['not_found'] = null;
         $result['organizer'] = null;
         $result['found'] = null;
 
-        $italic ? $italic = '_' : $italic = null;
+        /**
+         * @todo MarkdownFix
+         */
+//        $italic ? $italic = '_' : $italic = null;
         $tgLink ? $tgLink = '[#name#](tg://user?id=#id#)' : $tgLink = null;
 
         foreach ($meetingRoomUserData['users'] as $status => $users) {
@@ -1171,7 +1198,7 @@ class MeetingRoom extends Module
             foreach ($users as $user) {
                 $user = $this->membersFormatArray($user);
 
-                if ($tgLink && 'organizer' == $status) {
+                if ($tgLink && $user['bitrix_id']) {
                     $tgUser = $this->tgDb->getTgUsers(['bitrix_id' => $user['bitrix_id']]);
                     if ($tgUser) {
                         $tgUser = $tgUser[0];
@@ -1181,7 +1208,7 @@ class MeetingRoom extends Module
                 }
 
                 if ('duplicate' == $status) {
-                    $result[$status] .= "{$user['name']} ({$italic}{$user['count']} совп.{$italic})";
+                    $result[$status] .= "{$user['name']} ({$user['count']} совп.)";
                 }
 
                 if ('not_found' == $status) {
@@ -1192,7 +1219,7 @@ class MeetingRoom extends Module
                     $contact = implode(', ', array_filter([$user['phone'], $user['email']]));
 
                     if ($user['name'] && $contact) {
-                        $result[$status] .= "{$user['name']} ({$italic}{$contact}{$italic})";
+                        $result[$status] .= "{$user['name']} ({$contact})";
                     } elseif (null !== $user['name']) {
                         $result[$status] .= "{$user['name']}";
                     } else {
@@ -1327,7 +1354,11 @@ class MeetingRoom extends Module
                         $verifyDescription['textMembers'] = $this->translate('event_info_string.event_members', ['%eventMembers%' => $verifyDescription['textMembers']]);
                     }
                     $verifyDescription['textOrganizer'] = $this->translate('event_info_string.event_organizer', ['%eventOrganizer%' => $verifyDescription['textOrganizer']]);
-                    $textTime = "_{$textName}{$verifyDescription['textMembers']}_ {$verifyDescription['textOrganizer']}";
+                    /**
+                     * @todo MarkdownFix
+                     */
+//                    $textTime = "_{$textName}{$verifyDescription['textMembers']}_ {$verifyDescription['textOrganizer']}";
+                    $textTime = "{$textName}{$verifyDescription['textMembers']} {$verifyDescription['textOrganizer']}";
                     $text .= $this->translate('event_list.event_text', ['%timeStart%' => $timeStart, '%timeEnd%' => $timeEnd, '%textTime%' => $textTime]);
 
                     if ($event['attendees'][0] == $bitrixUser->getEmail()) {
@@ -1370,7 +1401,8 @@ class MeetingRoom extends Module
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
             implode('', $textPart),
-            'Markdown'
+            'Markdown',
+            true
         );
     }
 
@@ -1428,7 +1460,8 @@ class MeetingRoom extends Module
                     $this->tgRequest->getChatId(),
                     $this->tgRequest->getMessageId(),
                     null,
-                    'Markdown'
+                    'Markdown',
+                    true
                 );
             } elseif (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.remove.cancel');
@@ -1437,7 +1470,8 @@ class MeetingRoom extends Module
                     $this->tgRequest->getChatId(),
                     $this->tgRequest->getMessageId(),
                     null,
-                    'Markdown'
+                    'Markdown',
+                    true
                 );
             } else {
                 $keyboard = [];
@@ -1452,7 +1486,7 @@ class MeetingRoom extends Module
                     $this->tgRequest->getChatId(),
                     $text,
                     'Markdown',
-                    false,
+                    true,
                     false,
                     null,
                     $this->tgBot->inlineKeyboardMarkup($keyboard)
@@ -1462,7 +1496,8 @@ class MeetingRoom extends Module
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('event_list.event_not_found'),
-                'Markdown'
+                'Markdown',
+                true
             );
         }
     }
@@ -1522,7 +1557,8 @@ class MeetingRoom extends Module
                             $this->tgRequest->getChatId(),
                             $this->tgRequest->getMessageId(),
                             null,
-                            'Markdown'
+                            'Markdown',
+                            true
                         );
 
                         return;
@@ -1535,7 +1571,8 @@ class MeetingRoom extends Module
                             $this->tgRequest->getChatId(),
                             $this->tgRequest->getMessageId(),
                             null,
-                            'Markdown'
+                            'Markdown',
+                            true
                         );
 
                         return;
@@ -1545,11 +1582,12 @@ class MeetingRoom extends Module
                         $this->tgBot->sendMessage(
                             $this->tgRequest->getChatId(),
                             $this->translate('event_list.edit.new_members_list.error'),
-                            'Markdown'
+                            'Markdown',
+                            true
                         );
                     } elseif ('eventName' == $dataMessage) {
-                        $text = substr($this->tgRequest->getText(), 0, (int) $this->eventNameLen);
-                        $meetingRoom->setEventName($text);
+                        $text = mb_substr($this->tgRequest->getText(), 0, (int) $this->eventNameLen);
+                        $meetingRoom->setEventName(Helper::markDownReplace($text));
                         $this->tgDb->insert($meetingRoom);
                         $this->meetingRoomConfirm();
                     }
@@ -1559,7 +1597,7 @@ class MeetingRoom extends Module
 
                 $meetingRoom->setDate($date);
                 $meetingRoom->setTime("{$timeStart}-{$timeEnd}");
-                $meetingRoom->setEventName(substr($event['calendarEventName'], 0, (int) $this->eventNameLen));
+                $meetingRoom->setEventName(mb_substr($event['calendarEventName'], 0, (int) $this->eventNameLen));
                 $meetingRoom->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
                 $meetingRoom->setMeetingRoom($event['calendarName']);
                 $meetingRoom->setStatus('edit');
@@ -1581,7 +1619,7 @@ class MeetingRoom extends Module
                     $this->tgRequest->getChatId(),
                     $text,
                     'Markdown',
-                    false,
+                    true,
                     false,
                     null,
                     $this->tgBot->inlineKeyboardMarkup($keyboard)
@@ -1590,7 +1628,8 @@ class MeetingRoom extends Module
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
                     $this->translate('event_list.event_not_found'),
-                    'Markdown'
+                    'Markdown',
+                    true
                 );
             }
         }

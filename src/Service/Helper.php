@@ -118,7 +118,61 @@ class Helper
         $text = str_replace('\\', '/', $text);
         $text = str_replace('[', '(', $text);
         $text = str_replace(']', ')', $text);
+//        $text = preg_replace('/[^\pL\pM[:ascii:]]+/g', '', $text);
 
         return $text;
     }
+
+    public static function markDownEmailEscapeReplace($text)
+    {
+        $text = str_replace('_', '\\_', $text);
+
+        return $text;
+    }
+
+    public static function markDownEmailEscapeReplaceReverse($text)
+    {
+        $text = str_replace('\\_', '_', $text);
+
+        return $text;
+    }
+
+//    public static function markDownReplace($text)
+//    {
+//        $text = str_replace('[', '', $text);
+//        $text = str_replace(']', '', $text);
+//
+//        $markDownSymbols = [
+//            '`',
+//            '(',
+//            ')',
+//            '*',
+//            '_',
+//            '\\'
+//        ];
+//
+//        foreach ($markDownSymbols as $markDownSymbol) {
+//            $text = str_replace($markDownSymbol, "[{$markDownSymbol}]", $text);
+//        }
+//
+//        return $text;
+//    }
+//
+//    public static function markDownReplaceReverse($text)
+//    {
+//        $markDownSymbols = [
+//            '`',
+//            '(',
+//            ')',
+//            '*',
+//            '_',
+//            '\\'
+//        ];
+//
+//        foreach ($markDownSymbols as $markDownSymbol) {
+//            $text = str_replace("[{$markDownSymbol}]", $markDownSymbol, $text);
+//        }
+//
+//        return $text;
+//    }
 }

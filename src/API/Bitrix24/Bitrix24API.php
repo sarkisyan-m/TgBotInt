@@ -138,7 +138,7 @@ class Bitrix24API
 
         $user = [
             'id' => 1000,
-            'email' => 'test2@example.com',
+            'email' => 'test2_test@example.com',
             'name' => 'Иван Иванов',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
@@ -153,7 +153,7 @@ class Bitrix24API
 
         $user = [
             'id' => 1001,
-            'email' => null,
+            'email' => 'testtestt_te@example.com',
             'name' => 'Иван Иванов',
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
@@ -161,7 +161,7 @@ class Bitrix24API
             'personal_phone' => null,
             'personal_mobile' => null,
             'work_phone' => null,
-            'first_phone' => null,
+            'first_phone' => '+79191889923',
             'active' => true,
         ];
         $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
@@ -184,7 +184,7 @@ class Bitrix24API
 
         $user = [
             'id' => 1003,
-            'email' => 'test4@example.com',
+            'email' => 'test4_test@example.com',
             'name' => 'Петр Петров',
             'first_name' => 'Петр',
             'last_name' => 'Петров',

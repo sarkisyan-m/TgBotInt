@@ -33,13 +33,10 @@ class GoogleCalendarAPI
         $cacheTime,
         $cacheContainer,
         $dateRange,
-        bool $notification,
+        $notification,
         $meetingRoom,
-        bool $meetingRoomAutoAdd
+        $meetingRoomAutoAdd
     ) {
-        $this->notification = $notification;
-        $this->notificationTime = $notificationTime;
-
         $this->cache = $cache;
         $this->cacheTime = $cacheTime;
         $this->cacheContainer = $cacheContainer;
@@ -55,8 +52,10 @@ class GoogleCalendarAPI
 
         $this->dateRange = $dateRange;
 
-        $this->meetingRoom = $meetingRoom;
-        $this->meetingRoomAutoAdd = $meetingRoomAutoAdd;
+        $this->meetingRoom = explode(', ', $meetingRoom);
+        $this->meetingRoomAutoAdd = $meetingRoomAutoAdd === 'true' ? true : false;
+        $this->notification = $notification === 'true' ? true : false;
+        $this->notificationTime = $notificationTime;
     }
 
     public function getFilters($filter)

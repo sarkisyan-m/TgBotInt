@@ -161,9 +161,9 @@ meeting_room:
             event_empty: "Список событий пуст"
             engaged: "День полностью занят"
             late: "Сегодня уже нельзя бронировать!"
-            example_format: "%time1% \n%time2% \n%time3%"
+            example_format: "%time1%, %time2%"
             example: "\U0001F4DD Теперь укажите время.
-            \nПримеры форматов:\n%exampleRandomTime%"
+            \n_Примеры форматов:\n%exampleRandomTime%_"
             available_times: "\n\U000023F0 *Доступные промежутки времени*
             \n%times%
             \n%example%"
@@ -171,14 +171,14 @@ meeting_room:
         selected: "Выбрано время _%time0%-%time1% (%timeDiff%)_\n\n"
         engaged: "*Это время уже занято*"
         incorrect_time_format: "*Некорректно указан формат времени*
-        \nПопробуйте снова! \n\nПримеры форматов:\n%exampleRandomTime%"
+        \nПопробуйте снова! \n\n_Примеры форматов:\n%exampleRandomTime%_"
         incorrect_time: "*Некорректно введено время*
         \n\nНеобходимо указать в промежутке *%workTimeStart%-%workTimeEnd%*"
         past: "*Нельзя указывать прошедшее время!*"
     event_name: "*Введите название события*"
     event_members:
         info: "*Укажите список участников через запятую, например:*
-        \n\n_Иван Иванов, Елена Петрова, Иванов, Елена_
+        \n_Иван Иванов, Елена Петрова, Иванов, Елена_
         \n\nЕсли участников нет, необходимо отправить команду отказа:
         \n*%noCommandList%*.
         \n\n*Больше информации о системе поиска* /helpmore"
@@ -201,8 +201,8 @@ event_list:
     room: "\n\U0001F4AC *%calendarName%*\n"
     date: "\n\U0001F4C6 *%date%*\n"
     event_text: "*%timeStart%-%timeEnd%* %textTime% \n"
-    event_edit: "[[Изм. /e_%eventId%]] "
-    event_remove: "[[Удал. /d_%eventId%]]\n"
+    event_edit: "\\[Изм. /e\\_%eventId%] "
+    event_remove: "\\[Удал. /d\\_%eventId%]\n"
     event_empty: "\nСписок событий пуст\n"
     event_is_big: "\nСписок событий слишком большой\n"
     event_over: "\n*Не отображено событий*: %eventOverCount%"

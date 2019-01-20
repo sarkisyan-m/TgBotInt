@@ -6,6 +6,7 @@ use App\API\Bitrix24\Bitrix24API;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
+use App\Service\Helper;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class Command extends Module
@@ -73,7 +74,7 @@ class Command extends Module
             $this->tgRequest->getChatId(),
             $this->translate('command.help'),
             'Markdown',
-            false,
+            true,
             false,
             null,
             $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
@@ -86,7 +87,7 @@ class Command extends Module
             $this->tgRequest->getChatId(),
             $this->translate('command.helpmore'),
             'Markdown',
-            false,
+            true,
             false,
             null,
             $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
@@ -106,7 +107,7 @@ class Command extends Module
         $text .= $this->translate('myinfo.personal_info', [
             '%name%' => $bitrixUser->getName(),
             '%phone%' => $bitrixUser->getFirstPhone(),
-            '%email%' => $bitrixUser->getEmail(),
+            '%email%' => Helper::markDownEmailEscapeReplace($bitrixUser->getEmail()),
             '%bitrix24Id%' => $bitrixUser->getId(),
             '%status%' => $this->translate('myinfo.personal_info_bitrix24_data_status'),
             '%telegramPhone%' => $tgUser->getPhone(),
@@ -117,7 +118,7 @@ class Command extends Module
             $this->tgRequest->getChatId(),
             $text,
             'Markdown',
-            false,
+            true,
             false,
             null,
             $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
@@ -130,7 +131,7 @@ class Command extends Module
             $this->tgRequest->getChatId(),
             $this->translate('command.exit'),
             null,
-            false,
+            true,
             false,
             null,
             $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
@@ -143,7 +144,7 @@ class Command extends Module
             $this->tgRequest->getChatId(),
             $this->translate('request.error'),
             null,
-            false,
+            true,
             false,
             null,
             $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)

@@ -7,6 +7,7 @@ use App\API\GoogleCalendar\GoogleCalendarAPI;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
+use App\Service\Helper;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Translation\TranslatorInterface;
 
@@ -88,7 +89,7 @@ class Admin extends Module
                     $name = str_replace('#id#', $tgUser->getChatId(), $name);
                 }
 
-                $adminContact = array_filter([$bitrixUser->getFirstPhone(), $bitrixUser->getEmail()]);
+                $adminContact = array_filter([$bitrixUser->getFirstPhone(), Helper::markDownEmailEscapeReplace($bitrixUser->getEmail())]);
                 if ($adminContact) {
                     $adminContact = implode(', ', $adminContact);
                     $adminContact = "({$adminContact})";
@@ -103,7 +104,8 @@ class Admin extends Module
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
             $this->translate('command.contacts.head', ['%adminInfo%' => $text]),
-            'Markdown'
+            'Markdown',
+            true
         );
     }
 
@@ -198,7 +200,7 @@ class Admin extends Module
             $this->tgRequest->getMessageId(),
             null,
             'Markdown',
-            false,
+            true,
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
 
@@ -218,7 +220,8 @@ class Admin extends Module
             $this->tgRequest->getChatId(),
             $this->tgRequest->getMessageId(),
             null,
-            'Markdown'
+            'Markdown',
+            true
         );
 
         $this->commandList();
@@ -246,7 +249,7 @@ class Admin extends Module
             $this->tgRequest->getMessageId(),
             null,
             'Markdown',
-            false,
+            true,
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
 
@@ -267,7 +270,8 @@ class Admin extends Module
             $this->tgRequest->getChatId(),
             $this->tgRequest->getMessageId(),
             null,
-            'Markdown'
+            'Markdown',
+            true
         );
 
         $this->commandList();
@@ -296,7 +300,7 @@ class Admin extends Module
                 $this->tgRequest->getChatId(),
                 $this->translate('admin.head'),
                 'Markdown',
-                false,
+                true,
                 false,
                 null,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
@@ -308,7 +312,7 @@ class Admin extends Module
                 $this->tgRequest->getMessageId(),
                 null,
                 'Markdown',
-                false,
+                true,
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
         }
