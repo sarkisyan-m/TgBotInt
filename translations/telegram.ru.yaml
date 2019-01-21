@@ -171,7 +171,9 @@ meeting_room:
         selected: "Выбрано время _%time0%-%time1% (%timeDiff%)_\n\n"
         engaged: "*Это время уже занято*"
         incorrect_time_format: "*Некорректно указан формат времени*
-        \nПопробуйте снова! \n\n_Примеры форматов:\n%exampleRandomTime%_"
+        \nПопробуйте снова!
+        \n\n_Примеры форматов:\n%exampleRandomTime%_
+        \n\nОбратите внимание на *нолик* в начале!"
         incorrect_time: "*Некорректно введено время*
         \n\nНеобходимо указать в промежутке *%workTimeStart%-%workTimeEnd%*"
         past: "*Нельзя указывать прошедшее время!*"
