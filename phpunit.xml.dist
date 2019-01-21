@@ -24,6 +24,9 @@
         <env name="GOOGLE_APPLICATION_CREDENTIALS" value=""/>
         <!-- ###- google/apiclient ### -->
         <env name="GOOGLE_SERVICE_ACCOUNT_EMAIL" value=""/>
+        <env name="MEETING_ROOM" value=""/>
+        <env name="MEETING_ROOM_AUTO_ADD" value=""/>
+        <env name="NOTIFICATION" value=""/>
 
         <env name="TG_TOKEN" value=""/>
         <env name="TG_ADMIN_LIST" value=""/>

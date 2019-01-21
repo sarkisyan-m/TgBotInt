@@ -37,12 +37,8 @@ class MeetingRoomTest extends WebTestCase
         $ltextToText = $meetingRoom->googleCalendarDescriptionConvertLtextToText($members);
         //try dump($ltextToText)
 
-        $foundCount = 3 == count(explode(', ', $ltextToText['found']));
-        $organizerCount = 1 == count(explode(', ', $ltextToText['organizer']));
-
-        $textExpected = 'TestFirstName TestLastName, TestFirstName2 TestLastName2.';
-        $this->assertTrue(false !== strpos($ltextToText['found'], $textExpected));
-        $this->assertTrue($foundCount && $organizerCount);
+        $this->assertNotEmpty($ltextToText['organizer']);
+        $this->assertTrue(strpos($ltextToText['found'], substr($ltextToText['organizer'], 0, -1)) !== false);
     }
 
     public function testGoogleCalendarDescriptionConvertArrayToLtext()
@@ -115,16 +111,12 @@ class MeetingRoomTest extends WebTestCase
         $meetingRoom = $this->getMeetingRoom();
 
         $randomTimeFormat = $meetingRoom->exampleRandomTime();
-        $randomTimeFormat = array_map('trim', explode("\n", $randomTimeFormat));
+        $randomTimeFormat = explode(', ', $randomTimeFormat);
 
         $randomTime = explode('-', $randomTimeFormat[0]);
         $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
 
         $randomTime = str_replace('.', ':', $randomTimeFormat[1]);
-        $randomTime = explode('-', $randomTime);
-        $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
-
-        $randomTime = str_replace(' ', ':', $randomTimeFormat[2]);
         $randomTime = explode('-', $randomTime);
         $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
     }
@@ -228,7 +220,7 @@ class MeetingRoomTest extends WebTestCase
 
         $membersList = $meetingRoom->membersList($members);
 
-        $membersListExpected = 'TestFirstName TestLastName (_+71231231231, test@exmaple.com_).';
+        $membersListExpected = 'TestFirstName TestLastName (+71231231231, test@exmaple.com).';
         $this->assertTrue(false !== strpos($membersList['organizer'], $membersListExpected));
 
         $membersListExpected = 'TestFirstName2 TestLastName2.';
