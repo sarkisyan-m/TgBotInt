@@ -158,7 +158,7 @@ class Bitrix24API
             'first_name' => 'Иван',
             'last_name' => 'Иванов',
         //            "personal_phone" => "+71231231231",
-            'personal_phone' => null,
+            'personal_phone' => '+79191889923',
             'personal_mobile' => null,
             'work_phone' => null,
             'first_phone' => '+79191889923',

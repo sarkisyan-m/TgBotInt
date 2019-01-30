@@ -173,6 +173,7 @@ class MeetingRoom extends Module
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.date.error'),
+                'Markdown',
                 true
             );
 
@@ -719,6 +720,7 @@ class MeetingRoom extends Module
                 $keyboard = null;
                 $this->tgDb->getMeetingRoomUser(true);
             } elseif ('yes' == $data['data']['ready'] && $validateTime) {
+                $textNotification = $text;
                 $text .= "\n{$this->translate('meeting_room.confirm.data_sent')}";
                 $keyboard = null;
 
@@ -760,6 +762,7 @@ class MeetingRoom extends Module
                     $filter = ['eventIdShort' => $meetingRoomUser->getEventId(), 'attendees' => $bitrixUser->getEmail()];
                     $event = $this->googleCalendar->getList($filter);
 
+                    $textNotification .= $this->translate('meeting_room.confirm.data_notification_edit_event');
                     // Если в том же календаре хотим менять, то редактируем
                     if ($event['calendarName'] == $meetingRoomName) {
                         $this->googleCalendar->editEvent(
@@ -793,8 +796,17 @@ class MeetingRoom extends Module
                         $meetingRoomDateTimeEnd,
                         $attendees
                     );
+                    $textNotification .= $this->translate('meeting_room.confirm.data_notification_add_event');
                 }
                 $this->tgDb->getMeetingRoomUser(true);
+
+                $this->tgBot->sendMessage(
+                    338308809,
+                    $textNotification,
+                    'Markdown',
+                    true
+                );
+
             // Если пользователь нажал на отмену, то стираем все данные
             } elseif ('no' == $data['data']['ready']) {
                 $text .= "\n{$this->translate('meeting_room.confirm.data_cancel')}";
