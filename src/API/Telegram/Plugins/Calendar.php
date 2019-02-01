@@ -33,9 +33,9 @@ class Calendar
         return $this->translator->trans($key, $params, 'telegram', 'ru');
     }
 
-    public function getDays(int $day = 0, int $month = 0, int $year = 0)
+    public function getDays(int $month = 0)
     {
-        return date('t', strtotime("-{$day} day -{$month} month -{$year} year"));
+        return date('t', strtotime("first day of this month -{$month} month"));
     }
 
     public function getDay(int $day = 0, int $month = 0, int $year = 0)
@@ -48,23 +48,27 @@ class Calendar
         return date('m', strtotime("-{$day} day -{$month} month -{$year} year"));
     }
 
-    public function getMonthText(int $day = 0, int $month = 0, int $year = 0)
+    public function getSelectMonth(int $month = 0)
+    {
+        return date('m', strtotime("first day of this month  -{$month} month"));
+    }
+
+    public function getMonthText($month = 0)
     {
         $monthName = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-        $month = date('m', strtotime("-{$day} day -{$month} month -{$year} year"));
+        $month = date('m', strtotime("first day of this month -{$month} month"));
 
         return $monthName[$month - 1];
     }
 
-    public function getWeekText(int $day = 0, int $month = 0, int $year = 0, $returnArrayKeys = false)
+    public function getSelectWeek(int $month = 0)
     {
-        $days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
-
-        if ($returnArrayKeys) {
-            return array_search($days[(date('w', strtotime("-{$day} day -{$month} month -{$year} year")))], $days);
+        $week = date('w', strtotime("first day of this month -{$month} month")) - 1;
+        if ($week < 0) {
+            $week = 6;
         }
 
-        return $days[(date('w', strtotime("-{$day} day -{$month} month -{$year} year"))) - 1];
+        return $week;
     }
 
     public function getYear(int $day = 0, int $month = 0, int $year = 0)
@@ -87,7 +91,7 @@ class Calendar
         $ln = 0;
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'current'], 'data' => ['day' => $day, 'month' => $month, 'year' => $year]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(
-            $this->translate('calendar.current_date', ['%monthText%' => $this->getMonthText($day, $month, $year), '%year%' => $this->getYear($day, $month, $year)]),
+            $this->translate('calendar.current_date', ['%monthText%' => $this->getMonthText($month), '%year%' => $this->getYear($day, $month, $year)]),
             $callback
         );
 
@@ -99,7 +103,7 @@ class Calendar
 
         ++$ln;
         $dWeekCount = 0;
-        for ($i = 0; $i < $this->getDays($day, $month, $year); ++$i) {
+        for ($i = 0; $i < $this->getDays($month); ++$i) {
             // в одной строке 7 кнопок (одна неделя)
             if (0 == $dWeekCount % 7 && 0 != $dWeekCount) {
                 ++$ln;
@@ -110,7 +114,7 @@ class Calendar
 
             // создаем пустые ячейки в начале
             if (1 == $curDay) {
-                $emptyCell = $this->getWeekText($this->getDay($day, $month, $year), $month, $year, true);
+                $emptyCell = $this->getSelectWeek($month);
                 for ($k = 0; $k < $emptyCell; ++$k) {
                     $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(' ', $emptyCallback);
                 }
@@ -118,17 +122,17 @@ class Calendar
             }
 
             // создаем ячейки из чисел
-
-            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'selectDay'], 'data' => ['day' => $curDay, 'month' => $this->getMonth($day, $month, $year), 'year' => $this->getYear($day, $month, $year)]]);
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => [$eventName => 'selectDay'], 'data' => ['day' => $curDay, 'month' => $this->getSelectMonth($month), 'year' => $this->getYear($day, $month, $year)]]);
 
             if ($this->getDate($day, $month, $year) == $this->getDate() && $this->getDay() == $curDay) {
-                $curDay = $this->translate('calendar.day_current', ['%day%' => $curDay]);
+                $curDayText = $this->translate('calendar.day_current', ['%day%' => $curDay]);
+                $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDayText, $callback);
+            } else {
+                $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDay, $callback);
             }
 
-            $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($curDay, $callback);
-
             // создаем пустые ячейки в конце
-            if ($curDay == $this->getDays($day, $month, $year)) {
+            if ($curDay == $this->getDays($month)) {
                 $emptyCell = count($keyboard[$ln]);
                 for ($k = 0; $k < 7 - $emptyCell; ++$k) {
                     $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(' ', $emptyCallback);
@@ -238,11 +242,13 @@ class Calendar
     {
         $workTimeStart = strtotime($workTimeStart);
         $workTimeEnd = strtotime($workTimeEnd);
+        $pastTime = false;
 
         if ($date == $this->getDate()) {
             $workTimeStartNew = strtotime(date('H:i', time()));
             if ($workTimeStartNew > $workTimeStart && $workTimeStartNew < $workTimeEnd) {
                 $workTimeStart = $workTimeStartNew;
+                $pastTime = true;
             }
         }
 
@@ -269,6 +275,8 @@ class Calendar
                     break;
                 } elseif ($time['timeEnd'] >= $workTimeStart && $notEnd) {
                     $tempTime = $time;
+                } elseif ($time['timeEnd'] >= $workTimeStart && $end && $pastTime) {
+                    break;
                 } elseif ($time['timeEnd'] >= $workTimeStart && $end) {
                     $result[] = $this->makeAvailableTime($time['timeEnd'], $workTimeEnd);
                 }
@@ -327,6 +335,10 @@ class Calendar
         // нахохдящиеся не в промежутке workTimeStart - workTimeEnd
         if ($times && !$result) {
             $allDay = false;
+
+            $time['timeStart'] = null;
+            $time['timeEnd'] = null;
+
             foreach ($times as $time) {
                 $time['timeStart'] = strtotime($time['timeStart']);
                 $time['timeEnd'] = strtotime($time['timeEnd']);
@@ -334,10 +346,15 @@ class Calendar
                 if ($time['timeStart'] >= $workTimeStart && $time['timeStart'] < $workTimeEnd
                 || !$time['timeStart'] && !$time['timeEnd']) {
                     $allDay = true;
+                } elseif ($pastTime && $workTimeStart >= $time['timeStart'] && $time['timeEnd'] >= $workTimeEnd
+                || !$time['timeStart'] && !$time['timeEnd']) {
+                    $allDay = true;
                 }
             }
 
-            if (!$allDay) {
+            if (!$allDay && count($times) == 1 && $time['timeEnd']) {
+                $result[] = $this->makeAvailableTime($time['timeEnd'], $workTimeEnd);
+            } elseif (!$allDay) {
                 $result[] = $this->makeAvailableTime($workTimeStart, $workTimeEnd);
             }
         }

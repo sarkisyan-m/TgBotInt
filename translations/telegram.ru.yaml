@@ -139,6 +139,9 @@ keyboard:
     cancel: "Отменить"
     remove: "Удалить"
     clear: "Очистить"
+    refuse: "Отказаться"
+    yes: "Да"
+    no: "Нет"
     event_edit:
         change_room_time: "Изменить комнату и время"
         change_event_name: "Изменить название события"
@@ -172,8 +175,7 @@ meeting_room:
         engaged: "*Это время уже занято*"
         incorrect_time_format: "*Некорректно указан формат времени*
         \nПопробуйте снова!
-        \n\n_Примеры форматов:\n%exampleRandomTime%_
-        \n\nОбратите внимание на *нолик* в начале!"
+        \n\n_Примеры форматов:\n%exampleRandomTime%_"
         incorrect_time: "*Некорректно введено время*
         \n\nНеобходимо указать в промежутке *%workTimeStart%-%workTimeEnd%*"
         past: "*Нельзя указывать прошедшее время!*"
@@ -196,6 +198,9 @@ meeting_room:
     confirm:
         data_info: "*Данные для отправки*"
         data_sent: "*Данные успешно отправлены*"
+        data_notification_add_event: "\n*Событие создано*"
+        data_notification_edit_event: "\n*Событие изменено*"
+        data_notification_remove_event: "\n*Событие удалено*"
         data_cancel: "*Отмена бронирования.* Данные удалены"
         data_failed: "*Ошибка бронирования.* Кто-то опередил вас и занял переговорку в это же время"
 
@@ -203,12 +208,16 @@ event_list:
     room: "\n\U0001F4AC *%calendarName%*\n"
     date: "\n\U0001F4C6 *%date%*\n"
     event_text: "*%timeStart%-%timeEnd%* %textTime% \n"
-    event_edit: "\\[Изм. /e\\_%eventId%] "
-    event_remove: "\\[Удал. /d\\_%eventId%]\n"
+#    event_edit: "\\[Изм. /e\\_%eventId%] "
+#    event_remove: "\\[Удал. /d\\_%eventId%]\n"
+#    event_cancel_participation: "\\[Отменить участие /cp\\_%eventId%]\n"
+    event_edit: "*[Изм. */e\\_%eventId%*]* "
+    event_remove: "*[Удал. */d\\_%eventId%*]*\n"
+    event_cancel_participation: "*[Отменить участие */cp\\_%eventId%*]*\n"
     event_empty: "\nСписок событий пуст\n"
     event_is_big: "\nСписок событий слишком большой\n"
     event_over: "\n*Не отображено событий*: %eventOverCount%"
-    event_show_all: "\n\\[Показать все /eventlist\\_%meetingRoomNumber%]\n"
+    event_show_all: "\n*[Показать все */eventlist\\_%meetingRoomNumber%*]*\n"
     remove:
         confirmation: "*Вы действительно хотите удалить событие?*\n\n"
         success: "\n*Событие успешно удалено*"
@@ -217,10 +226,14 @@ event_list:
         new_event_name: "*Введите название события*\n"
         new_members_list:
             error: "*Необходимо выбрать переговорку из списка*"
+    cancel_participation:
+        confirmation: "*Вы действительно хотите отменить свое участие в этом событии?*\n\n"
+        success: "\n*Вы отказались от участия в этом событии*"
+        refuse: "\n*Действие отменено!*"
     event_not_found: "Событие не найдено"
 
 event_info:
-    room: "*Команата:* %room%\n"
+    room: "*Комната:* %room%\n"
     date: "*Дата:* %date%\n"
     time: "*Время:* %time%\n"
     event_name: "*Название:* %eventName%\n"

@@ -173,6 +173,7 @@ class MeetingRoom extends Module
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.date.error'),
+                'Markdown',
                 true
             );
 
@@ -181,6 +182,12 @@ class MeetingRoom extends Module
 
         $time = explode('-', $this->tgRequest->getText());
         $time = str_replace('.', ':', $time);
+
+        foreach ($time as $key => $item) {
+            if (strlen($item) == 4) {
+                $time[$key] = '0' . $item;
+            }
+        }
 
         if (!$this->tgPluginCalendar->validateTime($time)) {
             $this->tgBot->sendMessage(
@@ -714,11 +721,12 @@ class MeetingRoom extends Module
             $time = explode('-', $meetingRoomUser->getTime());
             $validateTime = isset($time[0]) && isset($time[1]) && $this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1]);
 
-            if ('yes' == $data['data']['ready'] && !$validateTime) {
+            if ('yes' == $data['data']['ready'] && !$validateTime && !$meetingRoomUser->getStatus()) {
                 $text .= "\n{$this->translate('meeting_room.confirm.data_failed')}";
                 $keyboard = null;
                 $this->tgDb->getMeetingRoomUser(true);
-            } elseif ('yes' == $data['data']['ready'] && $validateTime) {
+            } elseif ('yes' == $data['data']['ready'] && ($validateTime || !$validateTime && $meetingRoomUser->getStatus())) {
+                $textNotification = $text;
                 $text .= "\n{$this->translate('meeting_room.confirm.data_sent')}";
                 $keyboard = null;
 
@@ -731,7 +739,7 @@ class MeetingRoom extends Module
                 $meetingRoomName = $meetingRoomUser->getMeetingRoom();
                 $calendarId = $this->googleCalendar->getCalendarId($meetingRoomName);
 
-                $textMembers = $this->googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, $emailList);
+                $textMembers = $this->googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, $emailList, $tgUsersId);
 
                 $attendees = [];
                 foreach ($emailList as $key => $email) {
@@ -742,16 +750,14 @@ class MeetingRoom extends Module
                     }
                 }
 
-//                $this->tgBot->sendMessage($this->tgRequest->getChatId(), print_r($attendees, true));
-
                 $hashService = new Hash();
                 $hash = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
                 $this->tgDb->setHash($hash, (new \DateTime($meetingRoomDateTimeStart)));
 
-                if ($meetingRoomUser->getEventId() && 'edit' == $meetingRoomUser->getStatus()) {
-                    $tgUser = $this->tgDb->getTgUser();
-                    $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
+                $tgUser = $this->tgDb->getTgUser();
+                $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
 
+                if ($meetingRoomUser->getEventId() && 'edit' == $meetingRoomUser->getStatus()) {
                     if (!$bitrixUser) {
                         return;
                     }
@@ -771,6 +777,8 @@ class MeetingRoom extends Module
                             $meetingRoomDateTimeEnd,
                             $attendees
                         );
+
+                        $textNotification .= $this->translate('meeting_room.confirm.data_notification_edit_event');
                     // Если хотим в другом календаре, то придется пересоздать событие (удалить и добавить заново)
                     } else {
                         $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
@@ -782,6 +790,8 @@ class MeetingRoom extends Module
                             $meetingRoomDateTimeEnd,
                             $attendees
                         );
+
+                        $textNotification .= $this->translate('meeting_room.confirm.data_notification_edit_event');
                     }
                     // Если просто хотим добавить новое событие
                 } else {
@@ -793,8 +803,28 @@ class MeetingRoom extends Module
                         $meetingRoomDateTimeEnd,
                         $attendees
                     );
+
+                    $textNotification .= $this->translate('meeting_room.confirm.data_notification_add_event');
                 }
+
                 $this->tgDb->getMeetingRoomUser(true);
+
+                $curId = array_search($tgUser->getChatId(), $tgUsersId);
+                if ($curId !== false) {
+                    unset($tgUsersId[$curId]);
+                }
+
+                foreach ($tgUsersId as $tgUserId) {
+                    $this->tgBot->sendMessage(
+                        $tgUserId,
+                        $textNotification,
+                        'Markdown',
+                        true
+                    );
+
+                    sleep(0.1);
+                }
+
             // Если пользователь нажал на отмену, то стираем все данные
             } elseif ('no' == $data['data']['ready']) {
                 $text .= "\n{$this->translate('meeting_room.confirm.data_cancel')}";
@@ -1062,14 +1092,16 @@ class MeetingRoom extends Module
         return $this->membersList($data, true);
     }
 
-    public function googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, &$emailList)
+    public function googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, &$emailList, &$tgUsersId)
     {
         $textMembers = null;
         $emailList = [];
+        $tgUsersId = [];
         $textMembersFound = null;
         $textMembersOrganizer = null;
         $textMembers = null;
         $organizerEmail = [];
+        $bitrixUsersId = [];
 
         foreach ($meetingRoomMembers['users'] as $memberType => $memberList) {
             if ('none' == $memberType) {
@@ -1102,12 +1134,25 @@ class MeetingRoom extends Module
                     $organizerEmail[] = $member['email'];
                     $textMembersOrganizer .= "\n- {$member['name']} id#{$member['bitrix_id']}{$contact}";
                 }
+
+                if (isset($member['bitrix_id'])) {
+                    $bitrixUsersId[] = $member['bitrix_id'];
+                }
             }
         }
 
         // email организатора всегда должен быть первым
         $emailList = array_merge($organizerEmail, $emailList);
         $emailList = array_unique($emailList);
+
+        foreach ($bitrixUsersId as $bitrixUserId) {
+            $tgUser = $this->tgDb->getTgUsers(['bitrix_id' => $bitrixUserId]);
+            if ($tgUser) {
+                $tgUsersId[] = $tgUser[0]->getChatId();
+            }
+        }
+
+        $tgUsersId = array_unique($tgUsersId);
 
         if (isset($meetingRoomMembers['users']['found'])) {
             $textMembers .= $this->translate('members.type.members');
@@ -1365,6 +1410,9 @@ class MeetingRoom extends Module
                         $eventId = substr($event['eventId'], 0, 4);
                         $text .= $this->translate('event_list.event_edit', ['%eventId%' => $eventId]);
                         $text .= $this->translate('event_list.event_remove', ['%eventId%' => $eventId]);
+                    } else {
+                        $eventId = substr($event['eventId'], 0, 4);
+                        $text .= $this->translate('event_list.event_cancel_participation', ['%eventId%' => $eventId]);
                     }
 
                     $dateTemp = $date;
@@ -1424,6 +1472,165 @@ class MeetingRoom extends Module
         );
     }
 
+
+    public function eventCancelParticipation($data = null)
+    {
+        $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+
+        $args = Helper::getArgs($this->tgRequest->getText());
+
+        if (isset($data['data']['args'])) {
+            $args = $data['data']['args'];
+        }
+
+        $tgUser = $this->tgDb->getTgUser();
+        $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()])[0];
+        $filter = ['eventIdShort' => $args, 'attendees_member' => $bitrixUser->getEmail()];
+
+        $event = $this->googleCalendar->getList($filter);
+
+        if (isset($event['eventId']) && $event['attendees'] && $event['attendees'][0] != $bitrixUser->getEmail()) {
+
+            $date = date('d.m.Y', strtotime($event['dateTimeStart']));
+            $timeStart = date('H:i', strtotime($event['dateTimeStart']));
+            $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
+
+            $meetingRoomUser->setDate($date);
+            $meetingRoomUser->setTime("{$timeStart}-{$timeEnd}");
+            $meetingRoomUser->setEventName(mb_substr($event['calendarEventName'], 0, (int) $this->eventNameLen));
+            $meetingRoomUser->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
+            $meetingRoomUser->setMeetingRoom($event['calendarName']);
+            $meetingRoomUser->setStatus('edit');
+            $meetingRoomUser->setCreated(new \DateTime());
+            $this->tgDb->insert($meetingRoomUser);
+
+            $text = null;
+            $text .= $this->googleEventFormat($event);
+
+            if (isset($data['callback_event']['event']) && 'cancel_participation' == $data['callback_event']['event'] && 'yes' == $data['data']['ready']) {
+
+                $meetingRoomMembers = json_decode($meetingRoomUser->getEventMembers(), true);
+
+                $tgUser = $this->tgDb->getTgUser();
+                $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()])[0];
+
+                foreach ($meetingRoomMembers['users']['found'] as $id => $meetingRoomMember) {
+                    if ($meetingRoomMember['bitrix_id'] == $bitrixUser->getId()) {
+                        unset($meetingRoomMembers['users']['found'][$id]);
+                        if (!$meetingRoomMembers['users']['found']) {
+                            unset($meetingRoomMembers['users']['found']);
+                        }
+                        $meetingRoomUser->setEventMembers(json_encode($meetingRoomMembers));
+                        $this->tgDb->insert($meetingRoomUser);
+                        break;
+                    }
+                }
+
+                $meetingRoomDate = $meetingRoomUser->getDate();
+                $meetingRoomTime = explode('-', $meetingRoomUser->getTime());
+                $meetingRoomDateTimeStart = (new \DateTime("{$meetingRoomDate} {$meetingRoomTime[0]}"))->format(\DateTime::RFC3339);
+                $meetingRoomDateTimeEnd = (new \DateTime("{$meetingRoomDate} {$meetingRoomTime[1]}"))->format(\DateTime::RFC3339);
+                $meetingRoomEventName = $meetingRoomUser->getEventName();
+                $textMembers = $this->googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, $emailList, $tgUsersId);
+
+                $attendees = [];
+                foreach ($emailList as $key => $email) {
+                    if (0 == $key) {
+                        $attendees[] = ['comment' => 'Организатор', 'email' => $email];
+                    } else {
+                        $attendees[] = ['email' => $email];
+                    }
+                }
+
+                $hashService = new Hash();
+                $hash = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
+                $this->tgDb->setHash($hash, (new \DateTime($meetingRoomDateTimeStart)));
+
+                $this->googleCalendar->editEvent(
+                    $event['calendarId'],
+                    $event['eventId'],
+                    $meetingRoomEventName,
+                    $textMembers,
+                    $meetingRoomDateTimeStart,
+                    $meetingRoomDateTimeEnd,
+                    $attendees
+                );
+
+
+                $text .= $this->translate('event_list.cancel_participation.success');
+
+                $event['description'] = $textMembers;
+                $textNotification = $this->googleEventFormat($event);
+                $textNotification .= $this->translate('meeting_room.confirm.data_notification_edit_event');
+
+                $this->googleCalendarDescriptionConvertArrayToLtext(json_decode($meetingRoomUser->getEventMembers(), true), $emailList, $tgUsersId);
+
+                $this->tgBot->editMessageText(
+                    $text,
+                    $this->tgRequest->getChatId(),
+                    $this->tgRequest->getMessageId(),
+                    null,
+                    'Markdown',
+                    true
+                );
+
+                $curId = array_search($tgUser->getChatId(), $tgUsersId);
+                if ($curId !== false) {
+                    unset($tgUsersId[$curId]);
+                }
+
+                foreach ($tgUsersId as $tgUserId) {
+                    $this->tgBot->sendMessage(
+                        $tgUserId,
+                        $textNotification,
+                        'Markdown',
+                        true
+                    );
+
+                    sleep(0.1);
+                }
+
+            } elseif (isset($data['callback_event']['event']) && 'cancel_participation' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
+                $text .= $this->translate('event_list.cancel_participation.refuse');
+                $this->tgBot->editMessageText(
+                    $text,
+                    $this->tgRequest->getChatId(),
+                    $this->tgRequest->getMessageId(),
+                    null,
+                    'Markdown',
+                    true
+                );
+            } else {
+                $keyboard = [];
+                $ln = 0;
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'cancel_participation'], 'data' => ['ready' => 'yes', 'args' => $args]]);
+                $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.yes'), $callback);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'cancel_participation'], 'data' => ['ready' => 'no', 'args' => $args]]);
+                $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.no'), $callback);
+                $this->tgDb->setCallbackQuery();
+
+                $text = $this->translate('event_list.cancel_participation.confirmation') . $text;
+
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $text,
+                    'Markdown',
+                    true,
+                    false,
+                    null,
+                    $this->tgBot->inlineKeyboardMarkup($keyboard)
+                );
+            }
+        } else {
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('event_list.event_not_found'),
+                'Markdown',
+                true
+            );
+        };
+    }
+
     public function eventDelete($data = null)
     {
         $args = Helper::getArgs($this->tgRequest->getText());
@@ -1444,6 +1651,21 @@ class MeetingRoom extends Module
         $event = $this->googleCalendar->getList($filter);
 
         if (isset($event['eventId'])) {
+
+            $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+            $date = date('d.m.Y', strtotime($event['dateTimeStart']));
+            $timeStart = date('H:i', strtotime($event['dateTimeStart']));
+            $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
+
+            $meetingRoomUser->setDate($date);
+            $meetingRoomUser->setTime("{$timeStart}-{$timeEnd}");
+            $meetingRoomUser->setEventName(mb_substr($event['calendarEventName'], 0, (int) $this->eventNameLen));
+            $meetingRoomUser->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
+            $meetingRoomUser->setMeetingRoom($event['calendarName']);
+            $meetingRoomUser->setStatus('delete');
+            $meetingRoomUser->setCreated(new \DateTime());
+            $this->tgDb->insert($meetingRoomUser);
+
             $text = null;
 
             if (!isset($data['callback_event']['event'])) {
@@ -1453,8 +1675,15 @@ class MeetingRoom extends Module
             $text .= $this->googleEventFormat($event);
 
             if (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'yes' == $data['data']['ready']) {
-                $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
+                $textNotification = $text;
+                $textNotification .= $this->translate('meeting_room.confirm.data_notification_remove_event');
+
                 $text .= $this->translate('event_list.remove.success');
+
+                $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
+
+                $this->googleCalendarDescriptionConvertArrayToLtext(json_decode($meetingRoomUser->getEventMembers(), true), $emailList, $tgUsersId);
+
                 $this->tgBot->editMessageText(
                     $text,
                     $this->tgRequest->getChatId(),
@@ -1463,6 +1692,23 @@ class MeetingRoom extends Module
                     'Markdown',
                     true
                 );
+
+                $curId = array_search($tgUser->getChatId(), $tgUsersId);
+                if ($curId !== false) {
+                    unset($tgUsersId[$curId]);
+                }
+
+                foreach ($tgUsersId as $tgUserId) {
+                    $this->tgBot->sendMessage(
+                        $tgUserId,
+                        $textNotification,
+                        'Markdown',
+                        true
+                    );
+
+                    sleep(0.1);
+                }
+
             } elseif (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.remove.cancel');
                 $this->tgBot->editMessageText(

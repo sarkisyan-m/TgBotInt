@@ -44,6 +44,7 @@ class Command extends Module
             '/admin' => '',
             '/e' => '',
             '/d' => '',
+            '/cp' => '',
             '/start' => '',
         ];
     }

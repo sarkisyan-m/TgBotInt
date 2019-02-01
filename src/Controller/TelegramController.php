@@ -126,8 +126,18 @@ class TelegramController extends Controller
             return new Response();
         }
 
+        $bitrixUser = [];
+
+        if ($tgUser) {
+            $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
+        }
+
+        if ($tgUser && !$bitrixUser) {
+            $this->tgDb->userDelete();
+        }
+
         // Если пользователь найден, то не предлагаем ему регистрацию.
-        if ($tgUser && !is_null($bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]))) {
+        if ($tgUser && $bitrixUser) {
             $bitrixUser = $bitrixUser[0];
 
             $verifyPhone = $this->bitrix24->getUsers(['phone' => $tgUser->getPhone()]);
@@ -264,6 +274,12 @@ class TelegramController extends Controller
 
         if ($this->tgModuleCommand->isBotCommand('/e')) {
             $this->tgModuleMeetingRoom->eventEdit();
+
+            return true;
+        }
+
+        if ($this->tgModuleCommand->isBotCommand('/cp')) {
+            $this->tgModuleMeetingRoom->eventCancelParticipation();
 
             return true;
         }
@@ -419,6 +435,12 @@ class TelegramController extends Controller
 
             if ('edit' == $data['callback_event']['event']) {
                 $this->tgModuleMeetingRoom->eventEdit($data);
+
+                return true;
+            }
+
+            if ('cancel_participation' == $data['callback_event']['event']) {
+                $this->tgModuleMeetingRoom->eventCancelParticipation($data);
 
                 return true;
             }

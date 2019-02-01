@@ -190,9 +190,12 @@ class CalendarTest extends WebTestCase
         $getMonthText = $tgPluginCalendar->getMonthText();
         $this->assertEquals($resultExpected, $getMonthText);
 
-        $days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
-        $resultExpected = $days[(date('w', time())) - 1];
-        $getWeekText = $tgPluginCalendar->getWeekText();
+        $week = date('w', strtotime("first day of this month -0 month")) - 1;
+        if ($week < 0) {
+            $week = 6;
+        }
+        $resultExpected = $week;
+        $getWeekText = $tgPluginCalendar->getSelectWeek(0);
         $this->assertEquals($resultExpected, $getWeekText);
 
         $resultExpected = date('Y', time());

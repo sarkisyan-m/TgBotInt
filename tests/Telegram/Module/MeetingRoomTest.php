@@ -57,7 +57,7 @@ class MeetingRoomTest extends WebTestCase
                 'name' => 'TestFirstName2 TestLastName2',
             ]],
         ];
-        $members = $meetingRoom->googleCalendarDescriptionConvertArrayToLtext($members, $emailList);
+        $members = $meetingRoom->googleCalendarDescriptionConvertArrayToLtext($members, $emailList, $tgUsersId);
         // try dump($members);
         // try dump($emailList);
 
@@ -186,7 +186,7 @@ class MeetingRoomTest extends WebTestCase
         ];
 
         $googleEventFormat = $meetingRoom->googleEventFormat($event);
-        $googleEventFormatExpected = "*Команата:* 1\n*Дата:* 01.01.1970\n*Время:* 03:00-03:00\n*Название:* 1\n*Организатор:* 1\n";
+        $googleEventFormatExpected = "*Комната:* 1\n*Дата:* 01.01.1970\n*Время:* 03:00-03:00\n*Название:* 1\n*Организатор:* 1\n";
 
         $this->assertEquals($googleEventFormatExpected, $googleEventFormat);
     }
@@ -197,7 +197,7 @@ class MeetingRoomTest extends WebTestCase
 
         $eventInfoFormat = $meetingRoom->eventInfoFormat(1, 1, 1, 1, 1, 1);
 
-        $eventInfoFormatExpected = "*Команата:* 1\n*Дата:* 1\n*Время:* 1\n*Название:* 1\n*Участники:* 1\n*Организатор:* 1\n";
+        $eventInfoFormatExpected = "*Комната:* 1\n*Дата:* 1\n*Время:* 1\n*Название:* 1\n*Участники:* 1\n*Организатор:* 1\n";
 
         $this->assertEquals($eventInfoFormatExpected, $eventInfoFormat);
     }
