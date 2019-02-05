@@ -116,7 +116,7 @@ class Calendar
             if (1 == $curDay) {
                 $emptyCell = $this->getSelectWeek($month);
                 for ($k = 0; $k < $emptyCell; ++$k) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(' ', $emptyCallback);
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_empty'), $emptyCallback);
                 }
                 $dWeekCount += $emptyCell;
             }
@@ -135,7 +135,7 @@ class Calendar
             if ($curDay == $this->getDays($month)) {
                 $emptyCell = count($keyboard[$ln]);
                 for ($k = 0; $k < 7 - $emptyCell; ++$k) {
-                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton(' ', $emptyCallback);
+                    $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_empty'), $emptyCallback);
                 }
             }
 
@@ -244,11 +244,13 @@ class Calendar
         $workTimeEnd = strtotime($workTimeEnd);
         $pastTime = false;
 
-        if ($date == $this->getDate()) {
-            $workTimeStartNew = strtotime(date('H:i', time()));
-            if ($workTimeStartNew > $workTimeStart && $workTimeStartNew < $workTimeEnd) {
-                $workTimeStart = $workTimeStartNew;
-                $pastTime = true;
+        if ($returnString) {
+            if ($date == $this->getDate()) {
+                $workTimeStartNew = strtotime(date('H:i', time()));
+                if ($workTimeStartNew > $workTimeStart && $workTimeStartNew < $workTimeEnd) {
+                    $workTimeStart = $workTimeStartNew;
+                    $pastTime = true;
+                }
             }
         }
 

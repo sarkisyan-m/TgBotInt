@@ -211,7 +211,7 @@ class MeetingRoom extends Module
             return;
         }
 
-        if (strtotime($time[0]) < strtotime(Helper::getTime(time())) && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
+        if (strtotime($time[1]) < strtotime(Helper::getTime(time())) && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
                 $this->translate('meeting_room.time.past'),
@@ -721,11 +721,16 @@ class MeetingRoom extends Module
             $time = explode('-', $meetingRoomUser->getTime());
             $validateTime = isset($time[0]) && isset($time[1]) && $this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1]);
 
-            if ('yes' == $data['data']['ready'] && !$validateTime && !$meetingRoomUser->getStatus()) {
+            if ('yes' == $data['data']['ready'] && strtotime($time[1]) < strtotime(Helper::getTime(time())) && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
+                $text .= "\n{$this->translate('meeting_room.time.expired')}";
+                $keyboard = null;
+                $this->tgDb->getMeetingRoomUser(true);
+            } elseif ('yes' == $data['data']['ready'] && !$validateTime && !$meetingRoomUser->getStatus()) {
                 $text .= "\n{$this->translate('meeting_room.confirm.data_failed')}";
                 $keyboard = null;
                 $this->tgDb->getMeetingRoomUser(true);
-            } elseif ('yes' == $data['data']['ready'] && ($validateTime || !$validateTime && $meetingRoomUser->getStatus())) {
+//            } elseif ('yes' == $data['data']['ready'] && ($validateTime || !$validateTime && $meetingRoomUser->getStatus())) {
+            } elseif ('yes' == $data['data']['ready'] && $validateTime) {
                 $textNotification = $text;
                 $text .= "\n{$this->translate('meeting_room.confirm.data_sent')}";
                 $keyboard = null;
@@ -899,12 +904,6 @@ class MeetingRoom extends Module
                 $timeStart = Helper::getTimeStr($event['dateTimeStart']);
                 $timeEnd = Helper::getTimeStr($event['dateTimeEnd']);
 
-                if (substr($event['eventId'], 0, strlen($meetingRoomUser->getEventId())) == $meetingRoomUser->getEventId() &&
-                    'edit' == $meetingRoomUser->getStatus()) {
-                    $text .= "*{$timeStart}-{$timeEnd}* {$this->translate('meeting_room.google_event.current_day.event_editing')}\n";
-                    continue;
-                }
-
                 // если забронировали сразу на несколько дней, но при этом они неполные (1 день с 10:22 до 3 дня 17:15)
                 // то считаем, что это кривое бронирование и просто игнорируем
                 if (Helper::getDateStr($event['dateTimeStart']) != Helper::getDateStr($event['dateTimeEnd'])) {
@@ -939,6 +938,13 @@ class MeetingRoom extends Module
                 }
 
                 $text .= "*{$timeStart}-{$timeEnd}* {$textTime}\n";
+
+                if (substr($event['eventId'], 0, strlen($meetingRoomUser->getEventId())) == $meetingRoomUser->getEventId() &&
+                    'edit' == $meetingRoomUser->getStatus()) {
+                    $text .= "{$this->translate('meeting_room.google_event.current_day.event_editing')}\n";
+
+                    continue;
+                }
             }
         } else {
             $text .= "{$this->translate('meeting_room.google_event.current_day.event_empty')}\n";
