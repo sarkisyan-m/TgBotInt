@@ -1004,6 +1004,126 @@ class MeetingRoom extends Module
         return $text;
     }
 
+    public function googleEventsCurDay($data = null)
+    {
+        $days = 0;
+        $daysBack = -1;
+        $daysForward = 1;
+
+        if ($data) {
+            $days = $data['data']['days'];
+            if ($days == 0) {
+                $daysBack = -1;
+                $daysForward = 1;
+            } else {
+                $daysBack = $days - 1;
+                $daysForward = $days + 1;
+            }
+        }
+
+        $dateCurrent = date('d.m.Y', time());
+        $date = date('d.m.Y', strtotime("{$days} days"));
+
+        if (strtotime($dateCurrent) > strtotime($date)) {
+            $date = $dateCurrent;
+            $daysBack = -1;
+            $daysForward = 1;
+        }
+
+        $filter = ['startDateTime' => $date, 'endDateTime' => $date];
+        $calendarList = $this->googleCalendar->getList($filter);
+
+        $text = $this->translate('event_list.date', ['%date%' => "{$date} - все события"]);
+        $times = [];
+
+        foreach ($calendarList as $calendar){
+            $text .= $this->translate('event_list.room', ['%calendarName%' => $calendar['calendarName']]);
+
+            if (!$calendar['listEvents']) {
+                $text .= $this->translate('event_list.event_empty');
+
+                continue;
+            }
+
+            foreach ($calendar['listEvents'] as $event) {
+                $timeStart = Helper::getTimeStr($event['dateTimeStart']);
+                $timeEnd = Helper::getTimeStr($event['dateTimeEnd']);
+
+                // если забронировали сразу на несколько дней, но при этом они неполные (1 день с 10:22 до 3 дня 17:15)
+                // то считаем, что это кривое бронирование и просто игнорируем
+                if (Helper::getDateStr($event['dateTimeStart']) != Helper::getDateStr($event['dateTimeEnd'])) {
+                    continue;
+                }
+
+                $timeDate = Helper::getDateStr($event['dateStart']);
+                $times[] = ['timeStart' => $timeStart, 'timeEnd' => $timeEnd, 'dateStart' => $timeDate];
+
+                $textName = $this->translate('event_info_string.event_name', ['%eventName%' => $event['calendarEventName']]);
+                $verifyDescription = $this->googleVerifyDescription($event);
+
+                if ($verifyDescription['textMembers']) {
+                    $verifyDescription['textMembers'] = $this->translate('event_info_string.event_members', ['%eventMembers%' => $verifyDescription['textMembers']]);
+                }
+
+                $verifyDescription['textOrganizer'] = $this->translate('event_info_string.event_organizer', ['%eventOrganizer%' => $verifyDescription['textOrganizer']]);
+
+                $textTime = "{$textName}{$verifyDescription['textMembers']} {$verifyDescription['textOrganizer']}";
+
+                // если существует $timeDate, то элемент всегда будет на первом месте
+                if ($timeDate) {
+                    $text .= "*{$this->workTimeStart}-{$this->workTimeEnd}* {$textTime}\n";
+                    break;
+                }
+
+                if (strlen($text) > 5000) {
+                    break;
+                }
+
+                $text .= "*{$timeStart}-{$timeEnd}* {$textTime}\n";
+            }
+        }
+
+        $keyboard = [];
+        $ln = 0;
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'back'], 'data' => ['days' => $daysBack]]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('calendar.back'), $callback);
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => $daysForward]]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('calendar.forward'), $callback);
+        ++$ln;
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 0]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.today'), $callback);
+
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 1]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.tomorrow'), $callback);
+
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 2]]);
+        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_after_tomorrow'), $callback);
+
+        $this->tgDb->setCallbackQuery();
+
+        $text .= "\n\u{000026A0} *Данный функционал находится на стадии тестирования*\n";
+
+        if ($data) {
+            $this->tgBot->editMessageText($text, $this->tgRequest->getChatId(),
+                $this->tgRequest->getMessageId(),
+                null,
+                'Markdown',
+                true,
+                $this->tgBot->inlineKeyboardMarkup($keyboard)
+            );
+        } else {
+            $this->tgBot->sendMessage($this->tgRequest->getChatId(),
+                $text,
+                'Markdown',
+                true,
+                false,
+                null,
+                $this->tgBot->inlineKeyboardMarkup($keyboard)
+            );
+        }
+
+    }
+
     public function googleVerifyDescription($event, $tgLink = true, &$goodHash = null)
     {
         $textOrganizer = null;
@@ -1421,6 +1541,15 @@ class MeetingRoom extends Module
         $text .= $this->translate('event_info_text.event_organizer', ['%eventOrganizer%' => $organizer]);
 
         return $text;
+    }
+
+    public function usersMeetingRoomList()
+    {
+        $this->googleEventsCurDay();
+
+
+
+        return;
     }
 
     public function userMeetingRoomList()

@@ -268,6 +268,12 @@ class TelegramController extends Controller
             return true;
         }
 
+        if ($this->tgModuleCommand->isBotCommand('/eventslist')) {
+            $this->tgModuleMeetingRoom->googleEventsCurDay();
+
+            return true;
+        }
+
         if ($this->tgModuleCommand->isBotCommand('/eventlist')) {
             $this->tgModuleMeetingRoom->userMeetingRoomList();
 
@@ -455,6 +461,20 @@ class TelegramController extends Controller
 
             if ('cancel_participation' == $data['callback_event']['event']) {
                 $this->tgModuleMeetingRoom->eventCancelParticipation($data);
+
+                return true;
+            }
+        }
+
+        if (isset($data['callback_event']['events'])) {
+            if ('back' == $data['callback_event']['events']) {
+                $this->tgModuleMeetingRoom->googleEventsCurDay($data);
+
+                return true;
+            }
+
+            if ('forward' == $data['callback_event']['events']) {
+                $this->tgModuleMeetingRoom->googleEventsCurDay($data);
 
                 return true;
             }

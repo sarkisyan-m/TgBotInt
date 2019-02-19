@@ -36,6 +36,7 @@ class Command extends Module
         $this->botCommands = [
             '/meetingroomlist' => $this->translate('bot_command.meeting_room_list'),
             '/eventlist' => $this->translate('bot_command.event_list'),
+            '/eventslist' => $this->translate('bot_command.events_list'),
             '/help' => $this->translate('bot_command.help'),
             '/exit' => $this->translate('bot_command.exit'),
             '/myinfo' => '',
@@ -162,12 +163,12 @@ class Command extends Module
             $result[$ln][] = $button;
 
             // Объединияем кнопки
-            if (0 == $key || 1 == $key) {
-                if (1 == $key) {
+            if (1 == $key || 2 == $key) {
+                if (2 == $key) {
                     ++$ln;
                 }
-            } elseif (2 == $key || 3 == $key) {
-                if (3 == $key) {
+            } elseif (3 == $key || 4 == $key) {
+                if (4 == $key) {
                     ++$ln;
                 }
             } else {

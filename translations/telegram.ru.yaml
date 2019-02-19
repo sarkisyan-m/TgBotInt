@@ -13,7 +13,8 @@ anti_flood:
 
 bot_command:
     meeting_room_list: "\U0001F525 Забронировать переговорку"
-    event_list: "\U0001F4CB Мои события"
+    events_list: "\U0001F4CB Все события"
+    event_list: "\U0001F4C4 Мои события"
     help: "\U00002049 Помощь"
     exit: "\U0001F680 Завершить сеанс"
 
