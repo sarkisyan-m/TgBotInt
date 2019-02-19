@@ -71,6 +71,22 @@ class Helper
         return (int) "{$sing}{$dateDiff->d}";
     }
 
+    public static function getDateDiffHoursDateTime(\DateTimeInterface $dateStart, \DateTimeInterface $dateEnd)
+    {
+        $dateDiff = $dateStart->diff($dateEnd);
+        $sing = $dateDiff->format('%R');
+
+        return (int) "{$sing}{$dateDiff->h}";
+    }
+
+    public static function getDateDiffMinutesDateTime(\DateTimeInterface $dateStart, \DateTimeInterface $dateEnd)
+    {
+        $dateDiff = $dateStart->diff($dateEnd);
+        $sing = $dateDiff->format('%R');
+
+        return (int) "{$sing}{$dateDiff->i}";
+    }
+
     public static function getArgs($text, &$command = null)
     {
         $delimiter = strpos($text, '_');
@@ -137,42 +153,139 @@ class Helper
         return $text;
     }
 
-//    public static function markDownReplace($text)
-//    {
-//        $text = str_replace('[', '', $text);
-//        $text = str_replace(']', '', $text);
-//
-//        $markDownSymbols = [
-//            '`',
-//            '(',
-//            ')',
-//            '*',
-//            '_',
-//            '\\'
-//        ];
-//
-//        foreach ($markDownSymbols as $markDownSymbol) {
-//            $text = str_replace($markDownSymbol, "[{$markDownSymbol}]", $text);
-//        }
-//
-//        return $text;
-//    }
-//
-//    public static function markDownReplaceReverse($text)
-//    {
-//        $markDownSymbols = [
-//            '`',
-//            '(',
-//            ')',
-//            '*',
-//            '_',
-//            '\\'
-//        ];
-//
-//        foreach ($markDownSymbols as $markDownSymbol) {
-//            $text = str_replace("[{$markDownSymbol}]", $markDownSymbol, $text);
-//        }
-//
-//        return $text;
-//    }
+    public static function timeReplacer($time)
+    {
+        $time = str_replace('.', ':', $time);
+
+        return $time;
+    }
+
+    public static function timeExploder($time, &$timeValidate = null)
+    {
+        $delimiterList = [' ', '-'];
+
+        foreach ($delimiterList as $delimiter) {
+            $timeTemp = explode($delimiter, $time);
+
+            if (count($timeTemp) == 2) {
+                $time = $timeTemp;
+                break;
+            }
+        }
+
+        if (count($time) != 2) {
+            return [];
+        }
+
+        return $time;
+    }
+
+    public static function HoursAndMinutesExploder($time)
+    {
+        $delimiterList = ['.', ':'];
+
+        foreach ($delimiterList as $delimiter) {
+            $timeTemp = explode($delimiter, $time);
+
+            if (count($timeTemp) == 2) {
+                $time = $timeTemp;
+                break;
+            }
+        }
+
+        if (count($time) != 2 || $time[0] >= 24 || $time[1] >= 60) {
+            return [];
+        }
+
+        return $time;
+    }
+
+    public static function timeCurrentMultipleFive() {
+        $x = 5;
+        $n = date('i', time());
+//        $n = 39;
+
+        if ($n % 5 == 0) {
+            $result = $n;
+        } else {
+            $result = (int) round(($n + $x / 2) / $x) * $x;
+        }
+
+        $result = sprintf('%02d', $result);
+
+        if ($result == 60) {
+            return date('H', strtotime('+1 hours')) . ':00';
+        }
+
+        return date('H', time()) . ":{$result}";
+    }
+
+    public static function timeToGoodFormat($time, $timeOldValues)
+    {
+        if (strpos($time, '+') === 0) {
+            $timeHoursAndMinutes = substr($time, strpos($time, '+') + 1);
+            if (strlen($timeHoursAndMinutes) <= 2) {
+                $timeHoursAndMinutes .= '.00';
+            }
+
+            $timeHoursAndMinutes = Helper::HoursAndMinutesExploder($timeHoursAndMinutes);
+
+            if ($timeHoursAndMinutes && $timeOldValues) {
+                $timeOldValues = Helper::timeExploder($timeOldValues);
+
+                $isTodayTime = date('d.m.Y', time()) == date('d.m.Y', strtotime("{$timeOldValues[1]} +{$timeHoursAndMinutes[0]} hours +{$timeHoursAndMinutes[1]} minutes"));
+                if ($isTodayTime) {
+                    $timeOldValues[1] = date('H:i', strtotime("{$timeOldValues[1]} +{$timeHoursAndMinutes[0]} hours +{$timeHoursAndMinutes[1]} minutes"));
+                    $time = $timeOldValues;
+                }
+            } elseif ($timeHoursAndMinutes) {
+                $timeCurrent = self::timeCurrentMultipleFive();
+                $isTodayTime = date('d.m.Y', time()) == date('d.m.Y', strtotime("{$timeCurrent} +{$timeHoursAndMinutes[0]} hours +{$timeHoursAndMinutes[1]} minutes"));
+
+                if ($isTodayTime) {
+                    $time = [];
+                    $time[0] = $timeCurrent;
+                    $time[1] = date('H:i', strtotime("{$timeCurrent} +{$timeHoursAndMinutes[0]} hours +{$timeHoursAndMinutes[1]} minutes"));
+                    return $time;
+                }
+            }
+        }
+
+        if (count($time) != 2) {
+            $time = self::timeExploder($time, $timeValidate);
+        }
+
+        $time = self::timeReplacer($time);
+
+        if (!$time) {
+            return [];
+        }
+
+        foreach ($time as $key => $item) {
+
+            if (strlen($item) == 1) {
+                $time[$key] = "0{$item}:00";
+            }
+
+            if (strlen($item) == 2) {
+                $time[$key] = "{$item}:00";
+            }
+
+            if (strlen($item) == 4) {
+                $time[$key] = '0' . $item;
+            }
+        }
+
+        return $time;
+    }
+
+    public static function objectToJsonEncodeSerialize($value)
+    {
+        return json_encode(serialize($value));
+    }
+
+    public static function jsonEncodeSerializeToObject($value)
+    {
+        return unserialize(json_decode($value));
+    }
 }

@@ -27,6 +27,11 @@ class Verification
     private $date;
 
     /**
+     * @ORM\Column(type="boolean", nullable=true)
+     */
+    private $notification;
+
+    /**
      * @ORM\Column(type="datetime")
      */
     private $created;
@@ -56,6 +61,18 @@ class Verification
     public function setDate(\DateTimeInterface $date): self
     {
         $this->date = $date;
+
+        return $this;
+    }
+
+    public function getNotification(): ?bool
+    {
+        return $this->notification;
+    }
+
+    public function setNotification(bool $notification): self
+    {
+        $this->notification = $notification;
 
         return $this;
     }

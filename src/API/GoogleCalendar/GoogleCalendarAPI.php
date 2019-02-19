@@ -13,7 +13,7 @@ use Google_Service_Calendar_EventAttendee;
 
 class GoogleCalendarAPI
 {
-    private $notification;
+    private $notificationGoogle;
     private $notificationTime;
 
     private $cache;
@@ -33,7 +33,7 @@ class GoogleCalendarAPI
         $cacheTime,
         $cacheContainer,
         $dateRange,
-        $notification,
+        $notificationGoogle,
         $meetingRoom,
         $meetingRoomAutoAdd
     ) {
@@ -54,7 +54,7 @@ class GoogleCalendarAPI
 
         $this->meetingRoom = explode(', ', $meetingRoom);
         $this->meetingRoomAutoAdd = $meetingRoomAutoAdd === 'true' ? true : false;
-        $this->notification = $notification === 'true' ? true : false;
+        $this->notificationGoogle = $notificationGoogle === 'true' ? true : false;
         $this->notificationTime = $notificationTime;
     }
 
@@ -366,7 +366,7 @@ class GoogleCalendarAPI
 
         $params = [];
 
-        if ($this->notification) {
+        if ($this->notificationGoogle) {
             $params['sendUpdates'] = 'all';
         }
     }
@@ -402,7 +402,6 @@ class GoogleCalendarAPI
     {
         $this->eventBuilder($summary, $description, $startDateTime, $endDateTime, $attendees, $event, $params);
         $event = new Google_Service_Calendar_Event($event);
-        $this->googleClient->addScope(Google_Service_Calendar::CALENDAR);
 
         $service = new Google_Service_Calendar($this->googleClient);
         $service->events->update($calendarId, $eventId, $event, $params);

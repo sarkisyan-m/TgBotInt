@@ -29,18 +29,6 @@ class MeetingRoomTest extends WebTestCase
         $this->assertTrue($meetingRoom->isGoogleCalendarBotEmail($googleServiceAccountEmail));
     }
 
-    public function testGoogleCalendarDescriptionConvertLtextToText()
-    {
-        $meetingRoom = $this->getMeetingRoom();
-        // $members - текст из описания гугл-события. На нужны только id, остальное все найдется в битриксе
-        $members = "Участники\n- Test id#1, +71231231231, test@example.com\n- TestFirstName TestLastName id#none\n- TestFirstName2 TestLastName2 id#none\n\nОрганизатор\n- TestFirstName TestLastName id#1, +71231231231, test@example.com";
-        $ltextToText = $meetingRoom->googleCalendarDescriptionConvertLtextToText($members);
-        //try dump($ltextToText)
-
-        $this->assertNotEmpty($ltextToText['organizer']);
-        $this->assertTrue(strpos($ltextToText['found'], substr($ltextToText['organizer'], 0, -1)) !== false);
-    }
-
     public function testGoogleCalendarDescriptionConvertArrayToLtext()
     {
         $meetingRoom = $this->getMeetingRoom();
@@ -104,21 +92,6 @@ class MeetingRoomTest extends WebTestCase
             array_key_exists('textMembers', $googleVerifyDescription) &&
             array_key_exists('textOrganizer', $googleVerifyDescription)
         );
-    }
-
-    public function testExampleRandomTime()
-    {
-        $meetingRoom = $this->getMeetingRoom();
-
-        $randomTimeFormat = $meetingRoom->exampleRandomTime();
-        $randomTimeFormat = explode(', ', $randomTimeFormat);
-
-        $randomTime = explode('-', $randomTimeFormat[0]);
-        $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
-
-        $randomTime = str_replace('.', ':', $randomTimeFormat[1]);
-        $randomTime = explode('-', $randomTime);
-        $this->assertTrue(Validator::time($randomTime[0]) && Validator::time($randomTime[1]));
     }
 
     public function testMembersFormat()
@@ -245,6 +218,12 @@ class MeetingRoomTest extends WebTestCase
         $eventNameLen = $container->getParameter('meeting_room_event_name_len');
         $eventMembersLimit = $container->getParameter('meeting_room_event_members_limit');
         $eventMembersLen = $container->getParameter('meeting_room_event_members_len');
+        $mailerFrom = $container->getParameter('mailer_from');
+        $mailerFromName = $container->getParameter('mailer_from_name');
+        $templating = new \Twig_Environment((new \Twig_Loader_Array()));
+        $mailer = new \Swift_Mailer((new \Swift_Transport_NullTransport((new \Swift_Events_SimpleEventDispatcher()))));
+        $notificationMail = $container->getParameter('notification_mail');
+        $notificationTelegram = $container->getParameter('notification_telegram');
 
         $meetingRoom = new MeetingRoom(
             $tgBot,
@@ -253,12 +232,18 @@ class MeetingRoomTest extends WebTestCase
             $bitrix24,
             $googleCalendar,
             $translator,
+            $mailer,
+            $templating,
             $dateRange,
             $workTimeStart,
             $workTimeEnd,
             $eventNameLen,
             $eventMembersLimit,
-            $eventMembersLen
+            $eventMembersLen,
+            $mailerFrom,
+            $mailerFromName,
+            $notificationMail,
+            $notificationTelegram
         );
 
         return $meetingRoom;
@@ -298,7 +283,12 @@ class MeetingRoomTest extends WebTestCase
 
     public function getTgDb()
     {
-        $tgDb = new TelegramDb($this->getTgRequest());
+        self::bootKernel();
+
+        $container = self::$kernel->getContainer();
+        $entityManager = $container->get('doctrine')->getManager();
+
+        $tgDb = new TelegramDb($this->getTgRequest(), $entityManager);
 
         return $tgDb;
     }
@@ -358,7 +348,7 @@ class MeetingRoomTest extends WebTestCase
         $cacheTime = $container->getParameter('cache_time_google_calendar');
         $cacheContainer = $container->getParameter('cache_google_calendar');
         $dateRange = $container->getParameter('date_range');
-        $notification = $container->getParameter('notification');
+        $notificationGoogle = $container->getParameter('notification_google');
         $meetingRoom = $container->getParameter('meeting_room');
         $meetingRoomAutoAdd = $container->getParameter('meeting_room_auto_add');
 
@@ -368,7 +358,7 @@ class MeetingRoomTest extends WebTestCase
             $cacheTime,
             $cacheContainer,
             $dateRange,
-            $notification,
+            $notificationGoogle,
             $meetingRoom,
             $meetingRoomAutoAdd
         );

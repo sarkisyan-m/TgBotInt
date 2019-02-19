@@ -4,10 +4,8 @@ namespace App\Service;
 
 class Hash
 {
-    protected $method = 'sha256';
-
-    public function hash($text, $salt)
+    public static function sha256($text, $salt)
     {
-        return hash($this->method, $text.$salt);
+        return hash('sha256', $text.$salt);
     }
 }

@@ -27,6 +27,8 @@ class TelegramController extends Controller
     private $tgRequest;
     private $isTg;
 
+    private $isCronNotification;
+
     private $tgModuleMeetingRoom;
     private $tgModuleBitrix24Users;
     private $tgModuleAdmin;
@@ -79,6 +81,11 @@ class TelegramController extends Controller
         }
     }
 
+    public function dumpLogger($data, Logger $dumpLogger)
+    {
+        $dumpLogger->notice(print_r($data, true));
+    }
+
     public function translate($key, array $params = [])
     {
         return $this->translator->trans($key, $params, 'telegram', 'ru');
@@ -94,6 +101,7 @@ class TelegramController extends Controller
     public function telegram(Request $request)
     {
         $this->isTg = $request->query->has($this->container->getParameter('tg_token'));
+        $this->isCronNotification = $request->query->get('cron') == 'notification';
         $this->tgRequest->request($request);
         $this->tgDb->request($this->tgRequest);
         $this->tgModuleMeetingRoom->request($this->tgRequest);
@@ -102,6 +110,12 @@ class TelegramController extends Controller
         $this->tgModuleCommand->request($this->tgRequest);
         $this->tgModuleAntiFlood->request($this->tgRequest);
         $this->tgLogger($this->tgRequest->getRequestContent(), $this->get('monolog.logger.telegram_request_in'));
+
+        if ($this->isCronNotification) {
+            $this->tgModuleMeetingRoom->cronNotification();
+
+            return new Response();
+        }
 
         if (!$this->isTg) {
             return new Response('', Response::HTTP_FORBIDDEN);

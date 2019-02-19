@@ -1,0 +1,121 @@
+<html>
+
+<div class="email-container" style="
+    /*email-container*/
+    margin: 0 auto;
+    width: 550px;
+    height: auto;
+    display: block;
+    overflow: visible;
+">
+    <table style="
+            /*email-table-main*/
+            border-spacing: 9px;
+            background: url({{ absolute_url(asset('templates/email/img/intaro_bg.png')) }}) no-repeat;
+            overflow: visible;
+            /*border-radius: 25px;*/
+            /*border: 8px solid #961b1e;*/
+            border: 1px solid #b8b8b8;
+            /*background-size: contain;*/
+
+            ">
+        <tbody>
+        <tr>
+            <td>
+                <table class="email-table-body" style="
+                    /*email-table-body*/
+                    border-spacing: 9px;
+                    ">
+                    <tbody>
+                    <tr>
+                        <td>
+                            <div style="
+                                /*intaro-logo-container*/
+                                display: block;
+                                ">
+                                <img src="{{ absolute_url(asset('templates/email/img/intaro_logo.png')) }}" alt="intaro.ru" style="
+                                /*intaro-logo*/
+                                width: 100%;
+                                max-width: 550px;
+                                /*float: left;*/
+                                ">
+                                {#<span style="#}
+                                    {#margin-top: 25px;#}
+                                    {#margin-left: 10px;#}
+                                    {#font-size: 34px;#}
+                                    {#color: #902226;#}
+                                    {#font-family: cursive;#}
+                                    {#font-weight: bold;#}
+                                    {#float: right;#}
+                                    {#">#}
+                                    {#Переговорка-бот#}
+                                {#</span>#}
+                                {#<div style="clear:both"></div>#}
+                            </div>
+
+                        </td>
+                    </tr>
+                        <tr>
+                            <td>
+                                <div style="
+                                /*email-title*/
+                                /*color: #000000;*/
+                                color: #464646;
+                                line-height: 1.3;
+                                border-color: transparent;
+                                margin: 0;
+                                padding: 8px;
+                                font-size: 20px;
+                                font-weight: bold;
+                                ">
+                                    {% set state = state|trim %}
+                                    <span>Событие</span>
+                                    {% if state == 'Событие создано' %}
+                                        <span style="color:#22902c">создано</span>
+                                    {% elseif state == 'Событие изменено' %}
+                                        <span style="color:#efa74c">изменено</span>
+                                    {% elseif state == 'Событие удалено' %}
+                                        <span style="color:#bd0c12">удалено</span>
+                                    {% elseif state == 'Событие скоро начнется' %}
+                                        <span style="color:#007fe0">скоро начнется</span>
+                                    {% endif %}
+                                </div>
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div style="
+                                    /*email-text-body*/
+                                    border: 1px solid #949494ad;
+                                    background: #ffffffbd center center;
+                                    /*background-color: #ffffff91;*/
+                                    /*background-position: center center;*/
+                                    margin: 0;
+                                    padding: 0;
+                                    border-radius: 5px;
+                                    ">
+                                    <p style="
+                                        /*email-text*/
+                                        /*color: #000000;*/
+                                        line-height: 1.4;
+                                        border-color: transparent;
+                                        margin: 0;
+                                        padding: 8px;
+                                        font-size: 16px;
+                                        word-break: break-word;
+                                        color: #464646;
+                                        ">
+                                        <span>{{ text|raw }}</span>
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</html>

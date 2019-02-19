@@ -23,3 +23,11 @@ monolog:
             bubble: true
             max_files: 10
             channels: ['telegram_request_out']
+
+        dump:
+            type: rotating_file
+            path: '%kernel.logs_dir%/dump/dump-%kernel.environment%.log'
+            level: debug
+            bubble: true
+            max_files: 10
+            channels: ['dump']

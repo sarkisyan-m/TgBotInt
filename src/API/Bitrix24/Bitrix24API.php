@@ -15,13 +15,7 @@ class Bitrix24API
     protected $cache;
     protected $cacheTime;
     protected $cacheContainer;
-
-    /**
-     * @var BitrixUser[]
-     */
-    protected $users;
     protected $data;
-
     protected $serializer;
 
     public function __construct(
@@ -42,8 +36,6 @@ class Bitrix24API
         $this->cacheContainer = $cacheContainer;
 
         $this->serializer = $serializer;
-
-        $this->users = $this->loadData();
     }
 
     public function loadData()
@@ -157,11 +149,10 @@ class Bitrix24API
 //            'name' => 'Иван Иванов',
 //            'first_name' => 'Иван',
 //            'last_name' => 'Иванов',
-//        //            "personal_phone" => "+71231231231",
-//            'personal_phone' => null,
+//            "personal_phone" => "+71231231231",
 //            'personal_mobile' => null,
 //            'work_phone' => null,
-//            'first_phone' => '+79191889923',
+//            'first_phone' => '+71231231231',
 //            'active' => true,
 //        ];
 //        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
@@ -274,9 +265,18 @@ class Bitrix24API
     {
         $filter = $this->getFilters($filter);
 
+        /**
+         * @var $bitrixUsers BitrixUser[]
+         */
+        $bitrixUsers = $this->loadData();
+
+        if (!$bitrixUsers) {
+            return null;
+        }
+
         $users = [];
         if ($filter) {
-            foreach ($this->users as $user) {
+            foreach ($bitrixUsers as $user) {
                 foreach ($filter as $filterKey => $filterValue) {
                     if ('active' == $filterKey) {
                         if (1 == count($filter)) {

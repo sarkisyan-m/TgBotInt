@@ -12,6 +12,9 @@
         <env name="KERNEL_CLASS" value="App\Kernel" />
         <env name="APP_ENV" value="test" />
         <env name="APP_DEBUG" value="1" />
+        <env name="BASE_URL" value="example.com" />
+        <env name="MAILER_FROM" value="" />
+        <env name="MAILER_FROM_NAME" value="" />
         <env name="APP_SECRET" value="s$cretf0rt3st" />
         <env name="SHELL_VERBOSITY" value="-1" />
         <env name="SYMFONY_DEPRECATIONS_HELPER" value="disabled" />
@@ -26,7 +29,10 @@
         <env name="GOOGLE_SERVICE_ACCOUNT_EMAIL" value=""/>
         <env name="MEETING_ROOM" value=""/>
         <env name="MEETING_ROOM_AUTO_ADD" value=""/>
-        <env name="NOTIFICATION" value=""/>
+
+        <env name="NOTIFICATION_GOOGLE" value="false"/>
+        <env name="NOTIFICATION_MAIL" value="false"/>
+        <env name="NOTIFICATION_TELEGRAM" value="false"/>
 
         <env name="TG_TOKEN" value=""/>
         <env name="TG_ADMIN_LIST" value=""/>

@@ -206,15 +206,31 @@ class TelegramDb
         return $hashList;
     }
 
-    public function setHash($hashVal, $salt)
+    public function setHash($hashVal, \DateTimeInterface $salt)
     {
         if (!$this->entityManager) {
             return null;
         }
 
+        $hashCheck = $this->getHash(['hash' => $hashVal]);
+
+        if ($hashCheck) {
+            $this->delete($hashCheck);
+        }
+
         $this->autoRemoveHash();
 
         $hash = new Verification();
+
+        $diffHours = Helper::getDateDiffHoursDateTime((new \DateTime()), $salt);
+//        $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $salt);
+//        || $diffMinutes >= 5 - 1
+        if (strtotime($salt->format('d.m.Y')) > strtotime(date('d.m.Y')) || $diffHours >= 2 - 1) {
+            $hash->setNotification(true);
+        } else {
+            $hash->setNotification(false);
+        }
+
         $hash->setHash($hashVal);
         $hash->setDate($salt);
         $hash->setCreated(new \DateTime());

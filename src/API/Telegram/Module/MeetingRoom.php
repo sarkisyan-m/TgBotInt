@@ -9,9 +9,12 @@ use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
 use App\API\Telegram\Plugins\Calendar as TelegramPluginCalendar;
+use App\Entity\Verification;
 use App\Service\Hash;
 use App\Service\Helper;
 use Symfony\Component\Translation\TranslatorInterface;
+use Swift_Mailer;
+use Twig_Environment;
 
 class MeetingRoom extends Module
 {
@@ -32,6 +35,12 @@ class MeetingRoom extends Module
     private $eventNameLen;
     private $eventMembersLimit;
     private $eventMembersLen;
+    private $mailer;
+    private $templating;
+    private $mailerFrom;
+    private $mailerFromName;
+    private $notificationMail;
+    private $notificationTelegram;
 
     public function __construct(
         TelegramAPI $tgBot,
@@ -40,12 +49,18 @@ class MeetingRoom extends Module
         Bitrix24API $bitrix24,
         GoogleCalendarAPI $googleCalendar,
         TranslatorInterface $translator,
+        Swift_Mailer $mailer,
+        Twig_Environment $templating,
         $dateRange,
         $workTimeStart,
         $workTimeEnd,
         $eventNameLen,
         $eventMembersLimit,
-        $eventMembersLen
+        $eventMembersLen,
+        $mailerFrom,
+        $mailerFromName,
+        $notificationMail,
+        $notificationTelegram
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
@@ -59,6 +74,12 @@ class MeetingRoom extends Module
         $this->eventNameLen = $eventNameLen;
         $this->eventMembersLimit = $eventMembersLimit;
         $this->eventMembersLen = $eventMembersLen;
+        $this->mailer = $mailer;
+        $this->templating = $templating;
+        $this->mailerFrom = $mailerFrom;
+        $this->mailerFromName = $mailerFromName;
+        $this->notificationMail = $notificationMail === 'true' ? true : false;
+        $this->notificationTelegram = $notificationTelegram === 'true' ? true : false;
     }
 
     public function request(TelegramRequest $request)
@@ -168,6 +189,14 @@ class MeetingRoom extends Module
     public function meetingRoomTime()
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
+        $meetingRoomUserOldValues = Helper::jsonEncodeSerializeToObject($meetingRoomUser->getOldValues());
+
+        $meetingRoomUserOldValuesTime = null;
+        if ($meetingRoomUserOldValues &&
+            $meetingRoomUserOldValues->getDate() == $meetingRoomUser->getDate() &&
+            $meetingRoomUser->getMeetingRoom() == $meetingRoomUserOldValues->getMeetingRoom()) {
+            $meetingRoomUserOldValuesTime = $meetingRoomUserOldValues->getTime();
+        }
 
         if (!$meetingRoomUser->getDate()) {
             $this->tgBot->sendMessage(
@@ -180,14 +209,7 @@ class MeetingRoom extends Module
             return;
         }
 
-        $time = explode('-', $this->tgRequest->getText());
-        $time = str_replace('.', ':', $time);
-
-        foreach ($time as $key => $item) {
-            if (strlen($item) == 4) {
-                $time[$key] = '0' . $item;
-            }
-        }
+        $time = Helper::timeToGoodFormat($this->tgRequest->getText(), $meetingRoomUserOldValuesTime);
 
         if (!$this->tgPluginCalendar->validateTime($time)) {
             $this->tgBot->sendMessage(
@@ -681,6 +703,7 @@ class MeetingRoom extends Module
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $members = json_decode($meetingRoomUser->getEventMembers(), true);
+        $membersHtml = $this->membersList($members);
         $members = $this->membersList($members, true);
         $text = null;
 
@@ -708,6 +731,24 @@ class MeetingRoom extends Module
             $members['found']
         );
 
+        $textHtml = $this->eventInfoFormatHtml(
+            $meetingRoomUser->getMeetingRoom(),
+            $meetingRoomUser->getDate(),
+            $meetingRoomUser->getTime(),
+            $meetingRoomUser->getEventName(),
+            Helper::markDownEmailEscapeReplaceReverse($membersHtml['organizer']),
+            Helper::markDownEmailEscapeReplaceReverse($membersHtml['found'])
+        );
+
+        $textPlain = $this->eventInfoFormatText(
+            $meetingRoomUser->getMeetingRoom(),
+            $meetingRoomUser->getDate(),
+            $meetingRoomUser->getTime(),
+            $meetingRoomUser->getEventName(),
+            Helper::markDownEmailEscapeReplaceReverse($membersHtml['organizer']),
+            Helper::markDownEmailEscapeReplaceReverse($membersHtml['found'])
+        );
+
         $keyboard = [];
         $ln = 0;
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['confirm' => 'end'], 'data' => ['ready' => 'yes']]);
@@ -732,6 +773,7 @@ class MeetingRoom extends Module
 //            } elseif ('yes' == $data['data']['ready'] && ($validateTime || !$validateTime && $meetingRoomUser->getStatus())) {
             } elseif ('yes' == $data['data']['ready'] && $validateTime) {
                 $textNotification = $text;
+                $textNotificationState = null;
                 $text .= "\n{$this->translate('meeting_room.confirm.data_sent')}";
                 $keyboard = null;
 
@@ -755,8 +797,7 @@ class MeetingRoom extends Module
                     }
                 }
 
-                $hashService = new Hash();
-                $hash = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
+                $hash = Hash::sha256($textMembers, $meetingRoomDateTimeStart);
                 $this->tgDb->setHash($hash, (new \DateTime($meetingRoomDateTimeStart)));
 
                 $tgUser = $this->tgDb->getTgUser();
@@ -783,7 +824,8 @@ class MeetingRoom extends Module
                             $attendees
                         );
 
-                        $textNotification .= $this->translate('meeting_room.confirm.data_notification_edit_event');
+                        $textNotificationState = $this->translate('meeting_room.confirm.data_notification_edit_event');
+                        $textNotification .= $textNotificationState;
                     // Если хотим в другом календаре, то придется пересоздать событие (удалить и добавить заново)
                     } else {
                         $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
@@ -796,7 +838,8 @@ class MeetingRoom extends Module
                             $attendees
                         );
 
-                        $textNotification .= $this->translate('meeting_room.confirm.data_notification_edit_event');
+                        $textNotificationState = $this->translate('meeting_room.confirm.data_notification_edit_event');
+                        $textNotification .= $textNotificationState;
                     }
                     // Если просто хотим добавить новое событие
                 } else {
@@ -809,26 +852,14 @@ class MeetingRoom extends Module
                         $attendees
                     );
 
-                    $textNotification .= $this->translate('meeting_room.confirm.data_notification_add_event');
+                    $textNotificationState = $this->translate('meeting_room.confirm.data_notification_add_event');
+                    $textNotification .= $textNotificationState;
                 }
 
                 $this->tgDb->getMeetingRoomUser(true);
 
-                $curId = array_search($tgUser->getChatId(), $tgUsersId);
-                if ($curId !== false) {
-                    unset($tgUsersId[$curId]);
-                }
-
-                foreach ($tgUsersId as $tgUserId) {
-                    $this->tgBot->sendMessage(
-                        $tgUserId,
-                        $textNotification,
-                        'Markdown',
-                        true
-                    );
-
-                    sleep(0.1);
-                }
+                $this->sendTgNotification($tgUsersId, $textNotification);
+                $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
 
             // Если пользователь нажал на отмену, то стираем все данные
             } elseif ('no' == $data['data']['ready']) {
@@ -973,13 +1004,13 @@ class MeetingRoom extends Module
         return $text;
     }
 
-    public function googleVerifyDescription($event)
+    public function googleVerifyDescription($event, $tgLink = true, &$goodHash = null)
     {
         $textOrganizer = null;
         $textMembers = null;
 
         if ($this->verifyHash($event['description'], $event['dateTimeStart'])) {
-            $description = $this->googleCalendarDescriptionConvertLtextToText($event['description']);
+            $description = $this->googleCalendarDescriptionConvertLtextToText($event['description'], false, $tgLink);
             if ($description['found']) {
                 $textMembers = $description['found'];
             }
@@ -995,7 +1026,7 @@ class MeetingRoom extends Module
                         $bitrixUser = $bitrixUser[0];
 
                         $organizer['users']['organizer'][] = $this->membersFormat($bitrixUser);
-                        $organizer = $this->membersList($organizer, true);
+                        $organizer = $this->membersList($organizer, $tgLink);
 
                         if (isset($organizer['organizer'])) {
                             $event['organizerEmail'] = $organizer['organizer'];
@@ -1017,10 +1048,15 @@ class MeetingRoom extends Module
         ];
     }
 
-    public function verifyHash($text, $salt)
+    /**
+     * @param $text
+     * @param $salt
+     * @param null $hash
+     * @return bool
+     */
+    public function verifyHash($text, $salt, &$hash = null)
     {
-        $hashService = new Hash();
-        $hash = $hashService->hash($text, $salt);
+        $hash = Hash::sha256($text, $salt);
         $hash = $this->tgDb->getHash(['hash' => $hash]);
 
         if ($hash) {
@@ -1030,7 +1066,7 @@ class MeetingRoom extends Module
         return false;
     }
 
-    public function googleCalendarDescriptionConvertLtextToText($membersText, $returnArray = false)
+    public function googleCalendarDescriptionConvertLtextToText($membersText, $returnArray = false, $tgLink = true)
     {
         $membersText = explode("\n", $membersText);
         $membersText = array_filter($membersText);
@@ -1095,7 +1131,7 @@ class MeetingRoom extends Module
             return $data;
         }
 
-        return $this->membersList($data, true);
+        return $this->membersList($data, $tgLink);
     }
 
     public function googleCalendarDescriptionConvertArrayToLtext($meetingRoomMembers, &$emailList, &$tgUsersId)
@@ -1200,14 +1236,28 @@ class MeetingRoom extends Module
         ), $timeStartM);
 
         $time1 = "{$timeStart}-{$timeEnd}";
-        $time2TimeStart = str_replace(':', '.', $timeStart);
-        $time2TimeEnd = str_replace(':', '.', $timeEnd);
-        $time2 = "{$time2TimeStart}-{$time2TimeEnd}";
+
+        $time2 = date('H.i', strtotime($timeStart)) . "-" . date('H.i', strtotime($timeEnd));
+
+        $time3TimeStart = sprintf('%1d', date('H', strtotime($timeStart)));
+        $time3TimeEnd = date('H.i', strtotime($timeEnd));
+        $time3 = $time3TimeStart . "-" . $time3TimeEnd;
+
+        $time4TimeStart = sprintf('%1d', date('H', strtotime($timeStart)));
+        $time4TimeEnd = sprintf('%1d', date('H', strtotime($timeEnd)));
+        $time4 = $time4TimeStart . "-" . $time4TimeEnd;
+
+        $time5TimeStart = sprintf('%1d', date('H', strtotime($timeStart)));
+        $time5TimeEnd = sprintf('%1d', date('H', strtotime($timeEnd)));
+        $time5 = $time5TimeStart . " " . $time5TimeEnd;
 
 //        return implode(', ', [$time1, $time2, $time3]);
         return $this->translate('meeting_room.google_event.current_day.example_format', [
             '%time1%' => $time1,
-            '%time2%' => $time2
+            '%time2%' => $time2,
+            '%time3%' => $time3,
+            '%time4%' => $time4,
+            '%time5%' => $time5,
         ]);
     }
 
@@ -1345,6 +1395,34 @@ class MeetingRoom extends Module
         return $text;
     }
 
+    public function eventInfoFormatHtml($meetingRoom, $date, $time, $eventName, $organizer, $members = null)
+    {
+        $text = $this->translate('event_info_html.room', ['%room%' => $meetingRoom]);
+        $text .= $this->translate('event_info_html.date', ['%date%' => $date]);
+        $text .= $this->translate('event_info_html.time', ['%time%' => $time]);
+        $text .= $this->translate('event_info_html.event_name', ['%eventName%' => $eventName]);
+        if ($members) {
+            $text .= $this->translate('event_info_html.event_members', ['%eventMembers%' => $members]);
+        }
+        $text .= $this->translate('event_info_html.event_organizer', ['%eventOrganizer%' => $organizer]);
+
+        return $text;
+    }
+
+    public function eventInfoFormatText($meetingRoom, $date, $time, $eventName, $organizer, $members = null)
+    {
+        $text = $this->translate('event_info_text.room', ['%room%' => $meetingRoom]);
+        $text .= $this->translate('event_info_text.date', ['%date%' => $date]);
+        $text .= $this->translate('event_info_text.time', ['%time%' => $time]);
+        $text .= $this->translate('event_info_text.event_name', ['%eventName%' => $eventName]);
+        if ($members) {
+            $text .= $this->translate('event_info_text.event_members', ['%eventMembers%' => $members]);
+        }
+        $text .= $this->translate('event_info_text.event_organizer', ['%eventOrganizer%' => $organizer]);
+
+        return $text;
+    }
+
     public function userMeetingRoomList()
     {
         $tgUser = $this->tgDb->getTgUser();
@@ -1460,11 +1538,37 @@ class MeetingRoom extends Module
         );
     }
 
-    public function googleEventFormat($event)
+    public function googleEventFormat($event, $type = 'Markdown')
     {
         $date = date('d.m.Y', strtotime($event['dateTimeStart']));
         $timeStart = date('H:i', strtotime($event['dateTimeStart']));
         $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
+
+        if ($type == 'HTML') {
+            $verifyDescription = $this->googleVerifyDescription($event, false);
+
+            return $this->eventInfoFormatHtml(
+                $event['calendarName'],
+                $date,
+                "{$timeStart}-{$timeEnd}",
+                $event['calendarEventName'],
+                Helper::markDownEmailEscapeReplaceReverse($verifyDescription['textOrganizer']),
+                Helper::markDownEmailEscapeReplaceReverse($verifyDescription['textMembers'])
+            );
+        }
+
+        if ($type == 'TEXT') {
+            $verifyDescription = $this->googleVerifyDescription($event, false);
+
+            return $this->eventInfoFormatText(
+                $event['calendarName'],
+                $date,
+                "{$timeStart}-{$timeEnd}",
+                $event['calendarEventName'],
+                Helper::markDownEmailEscapeReplaceReverse($verifyDescription['textOrganizer']),
+                Helper::markDownEmailEscapeReplaceReverse($verifyDescription['textMembers'])
+            );
+        }
 
         $verifyDescription = $this->googleVerifyDescription($event);
 
@@ -1548,8 +1652,7 @@ class MeetingRoom extends Module
                     }
                 }
 
-                $hashService = new Hash();
-                $hash = $hashService->hash($textMembers, $meetingRoomDateTimeStart);
+                $hash = Hash::sha256($textMembers, $meetingRoomDateTimeStart);
                 $this->tgDb->setHash($hash, (new \DateTime($meetingRoomDateTimeStart)));
 
                 $this->googleCalendar->editEvent(
@@ -1562,12 +1665,14 @@ class MeetingRoom extends Module
                     $attendees
                 );
 
-
                 $text .= $this->translate('event_list.cancel_participation.success');
 
                 $event['description'] = $textMembers;
                 $textNotification = $this->googleEventFormat($event);
-                $textNotification .= $this->translate('meeting_room.confirm.data_notification_edit_event');
+                $textHtml = $this->googleEventFormat($event, 'HTML');
+                $textPlain = $this->googleEventFormat($event, 'TEXT');
+                $textNotificationState = $this->translate('meeting_room.confirm.data_notification_edit_event');
+                $textNotification .= $textNotificationState;
 
                 $this->googleCalendarDescriptionConvertArrayToLtext(json_decode($meetingRoomUser->getEventMembers(), true), $emailList, $tgUsersId);
 
@@ -1580,21 +1685,8 @@ class MeetingRoom extends Module
                     true
                 );
 
-                $curId = array_search($tgUser->getChatId(), $tgUsersId);
-                if ($curId !== false) {
-                    unset($tgUsersId[$curId]);
-                }
-
-                foreach ($tgUsersId as $tgUserId) {
-                    $this->tgBot->sendMessage(
-                        $tgUserId,
-                        $textNotification,
-                        'Markdown',
-                        true
-                    );
-
-                    sleep(0.1);
-                }
+                $this->sendTgNotification($tgUsersId, $textNotification);
+                $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
 
             } elseif (isset($data['callback_event']['event']) && 'cancel_participation' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.cancel_participation.refuse');
@@ -1669,6 +1761,7 @@ class MeetingRoom extends Module
             $meetingRoomUser->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
             $meetingRoomUser->setMeetingRoom($event['calendarName']);
             $meetingRoomUser->setStatus('delete');
+            $meetingRoomUser->setOldValues(Helper::objectToJsonEncodeSerialize($meetingRoomUser));
             $meetingRoomUser->setCreated(new \DateTime());
             $this->tgDb->insert($meetingRoomUser);
 
@@ -1679,10 +1772,13 @@ class MeetingRoom extends Module
             }
 
             $text .= $this->googleEventFormat($event);
+            $textHtml = $this->googleEventFormat($event, 'HTML');
+            $textPlain = $this->googleEventFormat($event, 'TEXT');
 
             if (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'yes' == $data['data']['ready']) {
                 $textNotification = $text;
-                $textNotification .= $this->translate('meeting_room.confirm.data_notification_remove_event');
+                $textNotificationState = $this->translate('meeting_room.confirm.data_notification_remove_event');
+                $textNotification .= $textNotificationState;
 
                 $text .= $this->translate('event_list.remove.success');
 
@@ -1699,21 +1795,8 @@ class MeetingRoom extends Module
                     true
                 );
 
-                $curId = array_search($tgUser->getChatId(), $tgUsersId);
-                if ($curId !== false) {
-                    unset($tgUsersId[$curId]);
-                }
-
-                foreach ($tgUsersId as $tgUserId) {
-                    $this->tgBot->sendMessage(
-                        $tgUserId,
-                        $textNotification,
-                        'Markdown',
-                        true
-                    );
-
-                    sleep(0.1);
-                }
+                $this->sendTgNotification($tgUsersId, $textNotification);
+                $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
 
             } elseif (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.remove.cancel');
@@ -1853,6 +1936,7 @@ class MeetingRoom extends Module
                 $meetingRoom->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
                 $meetingRoom->setMeetingRoom($event['calendarName']);
                 $meetingRoom->setStatus('edit');
+                $meetingRoom->setOldValues(Helper::objectToJsonEncodeSerialize($meetingRoom));
                 $meetingRoom->setCreated(new \DateTime());
                 $this->tgDb->insert($meetingRoom);
 
@@ -1885,5 +1969,117 @@ class MeetingRoom extends Module
                 );
             }
         }
+    }
+
+    public function sendTgNotification($tgUsersId, $text)
+    {
+        if (!$this->notificationTelegram) {
+            return;
+        }
+
+        $curId = array_search($this->tgRequest->getChatId(), $tgUsersId);
+        if ($curId !== false) {
+            unset($tgUsersId[$curId]);
+        }
+
+        foreach ($tgUsersId as $tgUserId) {
+            $this->tgBot->sendMessage(
+                $tgUserId,
+                $text,
+                'Markdown',
+                true
+            );
+
+            sleep(0.1);
+        }
+    }
+
+    public function sendMailNotification($state, $textPlain, $textHtml, $emailList, \App\Entity\MeetingRoom $meetingRoom)
+    {
+        if (!$this->notificationMail) {
+            return;
+        }
+
+        $state = str_replace('*', '', $state);
+        $textPlain = str_replace('*', '', $textPlain);
+        $message = new \Swift_Message();
+
+        $subject = "{$state}: {$meetingRoom->getEventName()} - {$meetingRoom->getDate()}, {$meetingRoom->getTime()} ({$meetingRoom->getMeetingRoom()})";
+        $message
+            ->setSubject($subject)
+            ->setFrom([$this->mailerFrom => $this->mailerFromName])
+            ->setTo($emailList)
+            ->setBody(
+                $this->templating->render(
+                    'emails/event.html.twig', [
+                        'state' => $state,
+                        'text' => $textHtml
+                    ]),
+                'text/html'
+            )
+            ->addPart(
+                $this->templating->render(
+                    'emails/event.txt.twig', [
+                    'state' => $state,
+                    'text' => $textPlain
+                ]),
+                'text/plain'
+            )
+        ;
+
+        $this->mailer->send($message);
+    }
+
+    public function cronNotification()
+    {
+        $filter = ['startDateTime' => date('d.m.Y', time()), 'endDateTime' => date('d.m.Y', time())];
+        $calendars = $this->googleCalendar->getList($filter);
+
+        $meetingRoomUser = new \App\Entity\MeetingRoom();
+
+        foreach ($calendars as $calendar) {
+            foreach ($calendar['listEvents'] as $event) {
+
+                if ($this->verifyHash($event['description'], $event['dateTimeStart'], $hash)) {
+                    /**
+                     * @var $hash Verification
+                     */
+                    $hash = $hash[0];
+                    $diffHours = Helper::getDateDiffHoursDateTime((new \DateTime()), $hash->getDate());
+                    $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $hash->getDate());
+
+                    if ($hash->getNotification() && strtotime($hash->getDate()->format('d.m.Y')) == strtotime(date('d.m.Y')) &&
+                        $diffHours == 0 && $diffMinutes <= 30 - 1) {
+
+                        $this->googleCalendarDescriptionConvertArrayToLtext($this->googleCalendarDescriptionConvertLtextToText($event['description'], true), $emailList, $tgUsersId);
+
+                        $date = date('d.m.Y', strtotime($event['dateTimeStart']));
+                        $timeStart = date('H:i', strtotime($event['dateTimeStart']));
+                        $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
+                        $meetingRoomUser->setDate($date);
+                        $meetingRoomUser->setTime("{$timeStart}-{$timeEnd}");
+                        $meetingRoomUser->setEventName(mb_substr($event['calendarEventName'], 0, (int) $this->eventNameLen));
+                        $meetingRoomUser->setMeetingRoom($event['calendarName']);
+
+                        $text = $this->googleEventFormat($event);
+                        $textHtml = $this->googleEventFormat($event, 'HTML');
+                        $textPlain = $this->googleEventFormat($event, 'TEXT');
+
+                        $textNotificationState = $this->translate('meeting_room.confirm.data_notification_before_beginning');
+                        $text .= $textNotificationState;
+
+                        $this->sendTgNotification($tgUsersId, $text);
+                        $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
+
+                        $hash->setNotification(false);
+                        $this->tgDb->insert($hash);
+                    }
+                }
+            }
+        }
+
+
+
+        return;
     }
 }

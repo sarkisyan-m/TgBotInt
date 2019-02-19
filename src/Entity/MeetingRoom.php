@@ -58,6 +58,11 @@ class MeetingRoom
     private $status;
 
     /**
+     * @ORM\Column(type="string", length=16384, nullable=true)
+     */
+    private $oldValues;
+
+    /**
      * @ORM\Column(type="datetime")
      */
     private $created;
@@ -159,6 +164,18 @@ class MeetingRoom
     public function setStatus(?string $status): self
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getOldValues(): ?string
+    {
+        return $this->oldValues;
+    }
+
+    public function setOldValues(?string $oldValues): self
+    {
+        $this->oldValues = $oldValues;
 
         return $this;
     }

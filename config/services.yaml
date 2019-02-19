@@ -11,6 +11,10 @@ parameters:
     server_version: '%env(SERVER_VERSION)%'
 
     root_path: '%kernel.project_dir%/public'
+    base_url: '%env(BASE_URL)%'
+
+    mailer_from: '%env(MAILER_FROM)%'
+    mailer_from_name: '%env(MAILER_FROM_NAME)%'
 
     # telegram
     tg_token: '%env(TG_TOKEN)%'
@@ -57,7 +61,10 @@ parameters:
     meeting_room_event_members_len: 50
 
     # вклчюить / выключить оповещения
-    notification: '%env(NOTIFICATION)%'
+    notification_google: '%env(NOTIFICATION_GOOGLE)%'
+    notification_mail: '%env(NOTIFICATION_MAIL)%'
+    notification_telegram: '%env(NOTIFICATION_TELEGRAM)%'
+
     # Оповещение за хх мин. до начала события
     # Работает только для гугл-ящиков
     notification_time: 30
@@ -106,6 +113,11 @@ services:
             $eventNameLen: '%meeting_room_event_name_len%'
             $eventMembersLimit: '%meeting_room_event_members_limit%'
             $eventMembersLen: '%meeting_room_event_members_len%'
+            $mailerFrom: '%mailer_from%'
+            $mailerFromName: '%mailer_from_name%'
+            $notificationMail: '%notification_mail%'
+            $notificationTelegram: '%notification_telegram%'
+
 
     App\API\Telegram\TelegramAPI:
         arguments:
@@ -128,6 +140,6 @@ services:
             $cacheTime: '%cache_time_google_calendar%'
             $cacheContainer: '%cache_google_calendar%'
             $dateRange: '%date_range%'
-            $notification: '%notification%'
+            $notificationGoogle: '%notification_google%'
             $meetingRoom: '%meeting_room%'
             $meetingRoomAutoAdd: '%meeting_room_auto_add%'
