@@ -42,6 +42,8 @@ class MeetingRoom extends Module
     private $notificationMail;
     private $notificationTelegram;
 
+    const LIMIT_BYTES_MAX = 5500;
+
     public function __construct(
         TelegramAPI $tgBot,
         TelegramDb $tgDb,
@@ -78,8 +80,8 @@ class MeetingRoom extends Module
         $this->templating = $templating;
         $this->mailerFrom = $mailerFrom;
         $this->mailerFromName = $mailerFromName;
-        $this->notificationMail = $notificationMail === 'true' ? true : false;
-        $this->notificationTelegram = $notificationTelegram === 'true' ? true : false;
+        $this->notificationMail = 'true' === $notificationMail ? true : false;
+        $this->notificationTelegram = 'true' === $notificationTelegram ? true : false;
     }
 
     public function request(TelegramRequest $request)
@@ -930,6 +932,8 @@ class MeetingRoom extends Module
         $text = $this->translate('meeting_room.google_event.current_day.info', ['%meetingRoomName%' => $meetingRoomName, '%date%' => $date]);
         $times = [];
 
+        $limitBytes = $this->getLimitBytes();
+
         if ($eventListCurDay['listEvents']) {
             foreach ($eventListCurDay['listEvents'] as $event) {
                 $timeStart = Helper::getTimeStr($event['dateTimeStart']);
@@ -964,7 +968,7 @@ class MeetingRoom extends Module
                     break;
                 }
 
-                if (strlen($text) > 5000) {
+                if (strlen($text) > $limitBytes) {
                     break;
                 }
 
@@ -1012,7 +1016,7 @@ class MeetingRoom extends Module
 
         if ($data) {
             $days = $data['data']['days'];
-            if ($days == 0) {
+            if (0 == $days) {
                 $daysBack = -1;
                 $daysForward = 1;
             } else {
@@ -1036,13 +1040,17 @@ class MeetingRoom extends Module
         $text = $this->translate('event_list.date', ['%date%' => "{$date} - все события"]);
         $times = [];
 
-        foreach ($calendarList as $calendar){
+        $limitBytes = $this->getLimitBytes();
+
+        foreach ($calendarList as $calendar) {
             $text .= $this->translate('event_list.room', ['%calendarName%' => $calendar['calendarName']]);
 
             if (!$calendar['listEvents']) {
                 $text .= $this->translate('event_list.event_empty');
 
                 continue;
+            } else {
+                $text .= "\n";
             }
 
             foreach ($calendar['listEvents'] as $event) {
@@ -1075,7 +1083,7 @@ class MeetingRoom extends Module
                     break;
                 }
 
-                if (strlen($text) > 5000) {
+                if (strlen($text) > $limitBytes) {
                     break;
                 }
 
@@ -1121,7 +1129,6 @@ class MeetingRoom extends Module
                 $this->tgBot->inlineKeyboardMarkup($keyboard)
             );
         }
-
     }
 
     public function googleVerifyDescription($event, $tgLink = true, &$goodHash = null)
@@ -1172,6 +1179,7 @@ class MeetingRoom extends Module
      * @param $text
      * @param $salt
      * @param null $hash
+     *
      * @return bool
      */
     public function verifyHash($text, $salt, &$hash = null)
@@ -1357,19 +1365,19 @@ class MeetingRoom extends Module
 
         $time1 = "{$timeStart}-{$timeEnd}";
 
-        $time2 = date('H.i', strtotime($timeStart)) . "-" . date('H.i', strtotime($timeEnd));
+        $time2 = date('H.i', strtotime($timeStart)).'-'.date('H.i', strtotime($timeEnd));
 
         $time3TimeStart = sprintf('%1d', date('H', strtotime($timeStart)));
         $time3TimeEnd = date('H.i', strtotime($timeEnd));
-        $time3 = $time3TimeStart . "-" . $time3TimeEnd;
+        $time3 = $time3TimeStart.'-'.$time3TimeEnd;
 
         $time4TimeStart = sprintf('%1d', date('H', strtotime($timeStart)));
         $time4TimeEnd = sprintf('%1d', date('H', strtotime($timeEnd)));
-        $time4 = $time4TimeStart . "-" . $time4TimeEnd;
+        $time4 = $time4TimeStart.'-'.$time4TimeEnd;
 
         $time5TimeStart = sprintf('%1d', date('H', strtotime($timeStart)));
         $time5TimeEnd = sprintf('%1d', date('H', strtotime($timeEnd)));
-        $time5 = $time5TimeStart . " " . $time5TimeEnd;
+        $time5 = $time5TimeStart.' '.$time5TimeEnd;
 
 //        return implode(', ', [$time1, $time2, $time3]);
         return $this->translate('meeting_room.google_event.current_day.example_format', [
@@ -1405,7 +1413,7 @@ class MeetingRoom extends Module
         $result['organizer'] = null;
         $result['found'] = null;
 
-        /**
+        /*
          * @todo MarkdownFix
          */
 //        $italic ? $italic = '_' : $italic = null;
@@ -1547,8 +1555,6 @@ class MeetingRoom extends Module
     {
         $this->googleEventsCurDay();
 
-
-
         return;
     }
 
@@ -1562,21 +1568,19 @@ class MeetingRoom extends Module
         }
 
         $bitrixUser = $bitrixUser[0];
-        $limitBytesMax = 5500;
-        $reserveByte = 100;
+
+        $limitBytes = $this->getLimitBytes();
+
         $dateToday = date('d.m.Y', strtotime('today'));
         $filter = ['startDateTime' => $dateToday, 'attendees_member' => $bitrixUser->getEmail()];
 
         $args = (int) Helper::getArgs($this->tgRequest->getText()) - 1;
         $meetingRoomList = $this->googleCalendar->getCalendarNameList();
 
-        $calendarCount = count($this->googleCalendar->getCalendarNameList());
-        $limitBytes = ($limitBytesMax - ($calendarCount * $reserveByte)) / $calendarCount;
-
         $isSpecificMeetingRoom = isset($meetingRoomList[$args]);
         if ($isSpecificMeetingRoom) {
             $filter['calendarName'] = $meetingRoomList[$args];
-            $limitBytes = $limitBytesMax - $reserveByte;
+            $limitBytes = $this->getLimitBytes(true);
         }
 
         $eventListCurDay = $this->googleCalendar->getList($filter);
@@ -1673,7 +1677,7 @@ class MeetingRoom extends Module
         $timeStart = date('H:i', strtotime($event['dateTimeStart']));
         $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
 
-        if ($type == 'HTML') {
+        if ('HTML' == $type) {
             $verifyDescription = $this->googleVerifyDescription($event, false);
 
             return $this->eventInfoFormatHtml(
@@ -1686,7 +1690,7 @@ class MeetingRoom extends Module
             );
         }
 
-        if ($type == 'TEXT') {
+        if ('TEXT' == $type) {
             $verifyDescription = $this->googleVerifyDescription($event, false);
 
             return $this->eventInfoFormatText(
@@ -1711,7 +1715,6 @@ class MeetingRoom extends Module
         );
     }
 
-
     public function eventCancelParticipation($data = null)
     {
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
@@ -1729,7 +1732,6 @@ class MeetingRoom extends Module
         $event = $this->googleCalendar->getList($filter);
 
         if (isset($event['eventId']) && $event['attendees'] && $event['attendees'][0] != $bitrixUser->getEmail()) {
-
             $date = date('d.m.Y', strtotime($event['dateTimeStart']));
             $timeStart = date('H:i', strtotime($event['dateTimeStart']));
             $timeEnd = date('H:i', strtotime($event['dateTimeEnd']));
@@ -1747,7 +1749,6 @@ class MeetingRoom extends Module
             $text .= $this->googleEventFormat($event);
 
             if (isset($data['callback_event']['event']) && 'cancel_participation' == $data['callback_event']['event'] && 'yes' == $data['data']['ready']) {
-
                 $meetingRoomMembers = json_decode($meetingRoomUser->getEventMembers(), true);
 
                 $tgUser = $this->tgDb->getTgUser();
@@ -1816,7 +1817,6 @@ class MeetingRoom extends Module
 
                 $this->sendTgNotification($tgUsersId, $textNotification);
                 $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
-
             } elseif (isset($data['callback_event']['event']) && 'cancel_participation' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.cancel_participation.refuse');
                 $this->tgBot->editMessageText(
@@ -1836,7 +1836,7 @@ class MeetingRoom extends Module
                 $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.no'), $callback);
                 $this->tgDb->setCallbackQuery();
 
-                $text = $this->translate('event_list.cancel_participation.confirmation') . $text;
+                $text = $this->translate('event_list.cancel_participation.confirmation').$text;
 
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
@@ -1855,7 +1855,7 @@ class MeetingRoom extends Module
                 'Markdown',
                 true
             );
-        };
+        }
     }
 
     public function eventDelete($data = null)
@@ -1878,7 +1878,6 @@ class MeetingRoom extends Module
         $event = $this->googleCalendar->getList($filter);
 
         if (isset($event['eventId'])) {
-
             $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
             $date = date('d.m.Y', strtotime($event['dateTimeStart']));
             $timeStart = date('H:i', strtotime($event['dateTimeStart']));
@@ -1926,7 +1925,6 @@ class MeetingRoom extends Module
 
                 $this->sendTgNotification($tgUsersId, $textNotification);
                 $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
-
             } elseif (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.remove.cancel');
                 $this->tgBot->editMessageText(
@@ -2107,7 +2105,7 @@ class MeetingRoom extends Module
         }
 
         $curId = array_search($this->tgRequest->getChatId(), $tgUsersId);
-        if ($curId !== false) {
+        if (false !== $curId) {
             unset($tgUsersId[$curId]);
         }
 
@@ -2142,7 +2140,7 @@ class MeetingRoom extends Module
                 $this->templating->render(
                     'emails/event.html.twig', [
                         'state' => $state,
-                        'text' => $textHtml
+                        'text' => $textHtml,
                     ]),
                 'text/html'
             )
@@ -2150,7 +2148,7 @@ class MeetingRoom extends Module
                 $this->templating->render(
                     'emails/event.txt.twig', [
                     'state' => $state,
-                    'text' => $textPlain
+                    'text' => $textPlain,
                 ]),
                 'text/plain'
             )
@@ -2168,18 +2166,16 @@ class MeetingRoom extends Module
 
         foreach ($calendars as $calendar) {
             foreach ($calendar['listEvents'] as $event) {
-
                 if ($this->verifyHash($event['description'], $event['dateTimeStart'], $hash)) {
                     /**
-                     * @var $hash Verification
+                     * @var Verification
                      */
                     $hash = $hash[0];
                     $diffHours = Helper::getDateDiffHoursDateTime((new \DateTime()), $hash->getDate());
                     $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $hash->getDate());
 
                     if ($hash->getNotification() && strtotime($hash->getDate()->format('d.m.Y')) == strtotime(date('d.m.Y')) &&
-                        $diffHours == 0 && $diffMinutes <= 30 - 1) {
-
+                        0 == $diffHours && $diffMinutes <= 30 - 1) {
                         $this->googleCalendarDescriptionConvertArrayToLtext($this->googleCalendarDescriptionConvertLtextToText($event['description'], true), $emailList, $tgUsersId);
 
                         $date = date('d.m.Y', strtotime($event['dateTimeStart']));
@@ -2207,8 +2203,22 @@ class MeetingRoom extends Module
             }
         }
 
-
-
         return;
+    }
+
+    public function getLimitBytes($diffMaxBytesReserve = false)
+    {
+        $reserveByte = 100;
+
+        if ($diffMaxBytesReserve) {
+            $limitBytes = self::LIMIT_BYTES_MAX - $reserveByte;
+
+            return $limitBytes;
+        }
+
+        $calendarCount = count($this->googleCalendar->getCalendarNameList());
+        $limitBytes = (self::LIMIT_BYTES_MAX - ($calendarCount * $reserveByte)) / $calendarCount;
+
+        return $limitBytes;
     }
 }

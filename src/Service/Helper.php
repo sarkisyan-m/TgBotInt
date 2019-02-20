@@ -167,13 +167,13 @@ class Helper
         foreach ($delimiterList as $delimiter) {
             $timeTemp = explode($delimiter, $time);
 
-            if (count($timeTemp) == 2) {
+            if (2 == count($timeTemp)) {
                 $time = $timeTemp;
                 break;
             }
         }
 
-        if (count($time) != 2) {
+        if (2 != count($time)) {
             return [];
         }
 
@@ -187,25 +187,26 @@ class Helper
         foreach ($delimiterList as $delimiter) {
             $timeTemp = explode($delimiter, $time);
 
-            if (count($timeTemp) == 2) {
+            if (2 == count($timeTemp)) {
                 $time = $timeTemp;
                 break;
             }
         }
 
-        if (count($time) != 2 || $time[0] >= 24 || $time[1] >= 60) {
+        if (2 != count($time) || $time[0] >= 24 || $time[1] >= 60) {
             return [];
         }
 
         return $time;
     }
 
-    public static function timeCurrentMultipleFive() {
+    public static function timeCurrentMultipleFive()
+    {
         $x = 5;
         $n = date('i', time());
 //        $n = 39;
 
-        if ($n % 5 == 0) {
+        if (0 == $n % 5) {
             $result = $n;
         } else {
             $result = (int) round(($n + $x / 2) / $x) * $x;
@@ -213,16 +214,16 @@ class Helper
 
         $result = sprintf('%02d', $result);
 
-        if ($result == 60) {
-            return date('H', strtotime('+1 hours')) . ':00';
+        if (60 == $result) {
+            return date('H', strtotime('+1 hours')).':00';
         }
 
-        return date('H', time()) . ":{$result}";
+        return date('H', time()).":{$result}";
     }
 
     public static function timeToGoodFormat($time, $timeOldValues)
     {
-        if (strpos($time, '+') === 0) {
+        if (0 === strpos($time, '+')) {
             $timeHoursAndMinutes = substr($time, strpos($time, '+') + 1);
             if (strlen($timeHoursAndMinutes) <= 2) {
                 $timeHoursAndMinutes .= '.00';
@@ -246,12 +247,13 @@ class Helper
                     $time = [];
                     $time[0] = $timeCurrent;
                     $time[1] = date('H:i', strtotime("{$timeCurrent} +{$timeHoursAndMinutes[0]} hours +{$timeHoursAndMinutes[1]} minutes"));
+
                     return $time;
                 }
             }
         }
 
-        if (count($time) != 2) {
+        if (2 != count($time)) {
             $time = self::timeExploder($time, $timeValidate);
         }
 
@@ -262,17 +264,16 @@ class Helper
         }
 
         foreach ($time as $key => $item) {
-
-            if (strlen($item) == 1) {
+            if (1 == strlen($item)) {
                 $time[$key] = "0{$item}:00";
             }
 
-            if (strlen($item) == 2) {
+            if (2 == strlen($item)) {
                 $time[$key] = "{$item}:00";
             }
 
-            if (strlen($item) == 4) {
-                $time[$key] = '0' . $item;
+            if (4 == strlen($item)) {
+                $time[$key] = '0'.$item;
             }
         }
 

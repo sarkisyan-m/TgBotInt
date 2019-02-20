@@ -53,8 +53,8 @@ class GoogleCalendarAPI
         $this->dateRange = $dateRange;
 
         $this->meetingRoom = explode(', ', $meetingRoom);
-        $this->meetingRoomAutoAdd = $meetingRoomAutoAdd === 'true' ? true : false;
-        $this->notificationGoogle = $notificationGoogle === 'true' ? true : false;
+        $this->meetingRoomAutoAdd = 'true' === $meetingRoomAutoAdd ? true : false;
+        $this->notificationGoogle = 'true' === $notificationGoogle ? true : false;
         $this->notificationTime = $notificationTime;
     }
 

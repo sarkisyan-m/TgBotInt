@@ -47,9 +47,10 @@ class CommandTest extends WebTestCase
         }
 
         $this->assertTrue(strpos($globalButtons[0][0], $botCommands['/meetingroomlist']) !== false);
-        $this->assertTrue(strpos($globalButtons[0][1], $botCommands['/eventlist']) !== false);
-        $this->assertTrue(strpos($globalButtons[1][0], $botCommands['/help']) !== false);
-        $this->assertTrue(strpos($globalButtons[1][1], $botCommands['/exit']) !== false);
+        $this->assertTrue(strpos($globalButtons[1][0], $botCommands['/eventlist']) !== false);
+        $this->assertTrue(strpos($globalButtons[1][1], $botCommands['/eventslist']) !== false);
+        $this->assertTrue(strpos($globalButtons[2][0], $botCommands['/help']) !== false);
+        $this->assertTrue(strpos($globalButtons[2][1], $botCommands['/exit']) !== false);
     }
 
     public function getCommand()
@@ -182,7 +183,8 @@ class CommandTest extends WebTestCase
     {
         return [
             '/meetingroomlist' => "\U0001F525 Забронировать переговорку",
-            '/eventlist' => "\U0001F4CB Мои события",
+            '/eventlist' => "\U0001F4C4 Мои события",
+            '/eventslist' => "\U0001F4CB Все события",
             '/help' => "\U00002049 Помощь",
             '/exit' => "\U0001F680 Завершить сеанс",
             '/myinfo' => '',

@@ -354,7 +354,7 @@ class Calendar
                 }
             }
 
-            if (!$allDay && count($times) == 1 && $time['timeEnd']) {
+            if (!$allDay && 1 == count($times) && $time['timeEnd']) {
                 $result[] = $this->makeAvailableTime($time['timeEnd'], $workTimeEnd);
             } elseif (!$allDay) {
                 $result[] = $this->makeAvailableTime($workTimeStart, $workTimeEnd);

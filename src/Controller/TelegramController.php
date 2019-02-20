@@ -101,7 +101,7 @@ class TelegramController extends Controller
     public function telegram(Request $request)
     {
         $this->isTg = $request->query->has($this->container->getParameter('tg_token'));
-        $this->isCronNotification = $request->query->get('cron') == 'notification';
+        $this->isCronNotification = 'notification' == $request->query->get('cron');
         $this->tgRequest->request($request);
         $this->tgDb->request($this->tgRequest);
         $this->tgModuleMeetingRoom->request($this->tgRequest);

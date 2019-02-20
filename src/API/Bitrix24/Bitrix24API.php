@@ -266,7 +266,7 @@ class Bitrix24API
         $filter = $this->getFilters($filter);
 
         /**
-         * @var $bitrixUsers BitrixUser[]
+         * @var BitrixUser[]
          */
         $bitrixUsers = $this->loadData();
 

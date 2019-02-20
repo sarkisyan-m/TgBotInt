@@ -186,7 +186,7 @@ class Command extends Module
     {
         $tgText = $this->tgRequest->getText();
 
-        if ($tgText{0} == '_') {
+        if ('_' == $tgText[0]) {
             return false;
         }
 
