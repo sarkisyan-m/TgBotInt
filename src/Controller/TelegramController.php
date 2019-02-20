@@ -112,6 +112,9 @@ class TelegramController extends Controller
         $this->tgLogger($this->tgRequest->getRequestContent(), $this->get('monolog.logger.telegram_request_in'));
 
         if ($this->isCronNotification) {
+            $this->bitrix24->loadData();
+            $this->googleCalendar->loadData();
+
             $this->tgModuleMeetingRoom->cronNotification();
 
             return new Response();
