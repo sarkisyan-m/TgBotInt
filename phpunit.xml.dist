@@ -12,13 +12,14 @@
         <env name="KERNEL_CLASS" value="App\Kernel" />
         <env name="APP_ENV" value="test" />
         <env name="APP_DEBUG" value="1" />
-        <env name="BASE_URL" value="example.com" />
-        <env name="MAILER_FROM" value="" />
-        <env name="MAILER_FROM_NAME" value="" />
         <env name="APP_SECRET" value="s$cretf0rt3st" />
         <env name="SHELL_VERBOSITY" value="-1" />
         <env name="SYMFONY_DEPRECATIONS_HELPER" value="disabled" />
         <!-- define your env variables for the test env here -->
+
+        <env name="BASE_URL" value="example.com" />
+        <env name="MAILER_FROM" value="" />
+        <env name="MAILER_FROM_NAME" value="" />
 
         <!-- ###+ google/apiclient ### -->
         <env name="GOOGLE_API_KEY" value=""/>
@@ -27,6 +28,7 @@
         <env name="GOOGLE_APPLICATION_CREDENTIALS" value=""/>
         <!-- ###- google/apiclient ### -->
         <env name="GOOGLE_SERVICE_ACCOUNT_EMAIL" value=""/>
+
         <env name="MEETING_ROOM" value=""/>
         <env name="MEETING_ROOM_AUTO_ADD" value=""/>
 

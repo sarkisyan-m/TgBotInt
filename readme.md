@@ -8,7 +8,9 @@
   - [Рекомендуемые требования](#Рекомендуемые-требования)
   - [Конфигурация](#Конфигурация)
   - [Установка](#Установка)
+  - [Cron](#Cron)
   - [Тесты](#Тесты)
+  - [BotFather](#BotFather)
   - [Telegram Webhook](#Telegram-Webhook)
   - [Bitrix24 Webhook](#Bitrix24-Webhook)
   - [Google Calendar API](#Google-Calendar-API)
@@ -54,16 +56,18 @@
 
 **.env**
 - Доступ к БД
+- Настройки SMTP для отправки почты
+- Настройки для авторизации Google Service Account
+- Настройки уведомлений по почте и по телеграму 
 - Данные для установки вебхука Bitrix24
 - Список админов по BitrixID
 - Данные для установки вебхука Telegram
-- Секретный файл json для работы сервис-аккаунта Google
 - Данные прокси для работы с телеграм-ботом
 
 **config/services.yaml**
 - Диапазон начала и конца рабочего дня
 - На сколько дней вперед можно бронировать
-- За сколько минут до начала события оповещать участников, если почта от Google
+- За сколько минут до начала события оповещать участников
 - Время кеширование данных Google и Bitrix24
 - Анти-флуд: сколько сообщений в минуту можно отправлять одному пользователю
 - Добавление и сортировка переговорок (1 переговорка - 1 календарь в Google)
@@ -77,8 +81,15 @@
 php7.1 composer.phar install
 yarn install
 yarn encore dev
-php7.1 bin/console doctrine:migrations:diff
+php7.1 bin/console make:migration
 php7.1 bin/console doctrine:migrations:migrate
+```
+
+Cron
+------
+
+```bash
+* * * * * php7.1 /www/tgbot.skillum.ru/web/bin/console cron_notification
 ```
 
 Тесты
@@ -86,6 +97,10 @@ php7.1 bin/console doctrine:migrations:migrate
 ```bash
 php7.1 bin/phpunit tests/
 ```
+
+BotFather
+------
+Сгенерировать API-ключ и настроить бота через @BotFather.
 
 Telegram Webhook
 ------
@@ -95,8 +110,7 @@ Telegram Webhook
     Рекомендуется использовать url вместе с токеном для дополнителньой безопасности:
     https://example.com/?<token>
     
-    Стоит учитывать, что через опцию set или через контроллер токен сам пропишется.
-    В результате получим: https://example.com/?<token>
+    Стоит учесть, что через опцию set или через контроллер токен сам пропишется.
     
 - Через консоль с помощью готовых команд
 ```bash
