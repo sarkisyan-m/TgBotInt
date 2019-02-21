@@ -345,7 +345,28 @@ class MeetingRoom extends Module
                             }
                         }
 
-                        $meetingRoomUserData['users']['found'][] = $this->membersFormat($bitrixUser);
+                        $tgUser = $this->tgDb->getTgUser();
+                        if ($bitrixUser->getId() != $tgUser->getBitrixId()) {
+                            $meetingRoomUserData['users']['found'][] = $this->membersFormat($bitrixUser);
+                        } else {
+                            unset($meetingRoomUserData['users']['duplicate'][$id]);
+
+                            if (!$meetingRoomUserData['users']['duplicate']) {
+                                unset($meetingRoomUserData['users']['duplicate']);
+
+                                $meetingRoomUserDataTemp = $meetingRoomUserData;
+                                unset($meetingRoomUserDataTemp['users']['organizer']);
+
+                                if (!$meetingRoomUserDataTemp['users']) {
+                                    $meetingRoomUserData['users']['none'] = 'none';
+                                }
+
+                                $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
+                                $this->tgDb->insert($meetingRoomUser);
+
+                                return false;
+                            }
+                        }
                     } elseif ('none' == $data['data']['bitrix_id']) {
                         $meetingRoomUserData['users']['not_found'][] = [
                             'name' => $memberDuplicate['name'],
@@ -624,7 +645,10 @@ class MeetingRoom extends Module
                                         }
                                     }
                                 }
-                                $meetingRoomUserData['users']['found'][] = $this->membersFormat($bitrixUser[0]);
+                                $tgUser = $this->tgDb->getTgUser();
+                                if ($tgUser->getBitrixId() != $bitrixUser[0]->getId()) {
+                                    $meetingRoomUserData['users']['found'][] = $this->membersFormat($bitrixUser[0]);
+                                }
                             } else {
                                 $membersDuplicate[] = ['data' => $bitrixUser, 'name' => $member, 'count' => count($bitrixUser)];
                             }
@@ -640,6 +664,10 @@ class MeetingRoom extends Module
 
                 foreach ($membersNotFound as $memberNotFound) {
                     $meetingRoomUserData['users']['not_found'][] = ['name' => $memberNotFound];
+                }
+
+                if (!$meetingRoomUserData) {
+                    $meetingRoomUserData['users']['none'] = 'none';
                 }
             }
 
@@ -1108,8 +1136,6 @@ class MeetingRoom extends Module
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_after_tomorrow'), $callback);
 
         $this->tgDb->setCallbackQuery();
-
-        $text .= "\n\u{000026A0} *Данный функционал находится на стадии тестирования*\n";
 
         if ($data) {
             $this->tgBot->editMessageText($text, $this->tgRequest->getChatId(),
