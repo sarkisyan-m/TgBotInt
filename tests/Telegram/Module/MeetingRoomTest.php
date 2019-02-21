@@ -224,6 +224,7 @@ class MeetingRoomTest extends WebTestCase
         $mailer = new \Swift_Mailer((new \Swift_Transport_NullTransport((new \Swift_Events_SimpleEventDispatcher()))));
         $notificationMail = $container->getParameter('notification_mail');
         $notificationTelegram = $container->getParameter('notification_telegram');
+        $notificationTime = $container->getParameter('notification_time');
 
         $meetingRoom = new MeetingRoom(
             $tgBot,
@@ -243,7 +244,8 @@ class MeetingRoomTest extends WebTestCase
             $mailerFrom,
             $mailerFromName,
             $notificationMail,
-            $notificationTelegram
+            $notificationTelegram,
+            $notificationTime
         );
 
         return $meetingRoom;

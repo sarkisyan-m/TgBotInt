@@ -41,6 +41,7 @@ class MeetingRoom extends Module
     private $mailerFromName;
     private $notificationMail;
     private $notificationTelegram;
+    private $notificationTime;
 
     const LIMIT_BYTES_MAX = 5500;
 
@@ -62,7 +63,8 @@ class MeetingRoom extends Module
         $mailerFrom,
         $mailerFromName,
         $notificationMail,
-        $notificationTelegram
+        $notificationTelegram,
+        $notificationTime
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
@@ -82,6 +84,7 @@ class MeetingRoom extends Module
         $this->mailerFromName = $mailerFromName;
         $this->notificationMail = 'true' === $notificationMail ? true : false;
         $this->notificationTelegram = 'true' === $notificationTelegram ? true : false;
+        $this->notificationTime = $notificationTime;
     }
 
     public function request(TelegramRequest $request)
@@ -2201,7 +2204,7 @@ class MeetingRoom extends Module
                     $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $hash->getDate());
 
                     if ($hash->getNotification() && strtotime($hash->getDate()->format('d.m.Y')) == strtotime(date('d.m.Y')) &&
-                        0 == $diffHours && $diffMinutes <= 30 - 1) {
+                        0 == $diffHours && $diffMinutes <= $this->notificationTime - 1) {
                         $this->googleCalendarDescriptionConvertArrayToLtext($this->googleCalendarDescriptionConvertLtextToText($event['description'], true), $emailList, $tgUsersId);
 
                         $date = date('d.m.Y', strtotime($event['dateTimeStart']));

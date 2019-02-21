@@ -117,6 +117,7 @@ services:
             $mailerFromName: '%mailer_from_name%'
             $notificationMail: '%notification_mail%'
             $notificationTelegram: '%notification_telegram%'
+            $notificationTime: '%notification_time%'
 
 
     App\API\Telegram\TelegramAPI:
