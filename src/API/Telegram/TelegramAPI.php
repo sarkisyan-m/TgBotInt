@@ -289,6 +289,32 @@ class TelegramAPI
     }
 
     /**
+     * @param $chat_id
+     * @param string $photo
+     * @param string|null $caption
+     * @param string|null $parse_mode
+     * @param bool $disable_notification
+     * @param int|null $reply_to_message_id
+     * @param null $reply_markup
+     *
+     * @return mixed
+     */
+    public function sendPhoto($chat_id, string $photo, string $caption = null, string $parse_mode  = null, bool $disable_notification = false, int $reply_to_message_id = null, $reply_markup = null)
+    {
+        $args = [
+            'chat_id' => $chat_id,
+            'photo' => $photo,
+            'caption' => $caption,
+            'parse_mode' => $parse_mode,
+            'disable_notification' => $disable_notification,
+            'reply_to_message_id' => $reply_to_message_id,
+            'reply_markup' => $reply_markup,
+        ];
+
+        return $this->curlTgProxy(__FUNCTION__, $args);
+    }
+
+    /**
      * @param string      $callback_query_id
      * @param string|null $text
      * @param bool        $show_alert
