@@ -261,7 +261,7 @@ class MeetingRoom extends Module
                 return;
             } else {
                 $text = $this->translate('meeting_room.time.selected', ['%time0%' => $time[0], '%time1%' => $time[1], '%timeDiff%' => $timeDiff]);
-                $text .= $this->translate('meeting_room.event_name');
+                $text .= $this->translate('meeting_room.event_name.text');
                 $this->tgBot->sendMessage(
                     $this->tgRequest->getChatId(),
                     $text,
@@ -287,11 +287,20 @@ class MeetingRoom extends Module
         $meetingRoomUser->setEventName(Helper::markDownReplace($text));
         $this->tgDb->insert($meetingRoomUser);
 
+        $keyboard = [];
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'none']]);
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.no_members'), $callback);
+        $this->tgDb->setCallbackQuery();
+
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
+            $this->translate('meeting_room.event_name.selected', ['%eventName%' => $meetingRoomUser->getEventName()]) .
             $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]),
             'Markdown',
-            true
+            true,
+            false,
+            null,
+            $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
     }
 
@@ -322,13 +331,19 @@ class MeetingRoom extends Module
                         $text = $this->translate('meeting_room.event_members.cancel_info');
                         $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
 
+                        $keyboard = [];
+                        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'none']]);
+                        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.no_members'), $callback);
+                        $this->tgDb->setCallbackQuery();
+
                         $this->tgBot->editMessageText(
                             $text,
                             $this->tgRequest->getChatId(),
                             $messageId,
                             null,
                             'Markdown',
-                            true
+                            true,
+                            $this->tgBot->inlineKeyboardMarkup($keyboard)
                         );
 
                         return true;
@@ -479,13 +494,19 @@ class MeetingRoom extends Module
                 $text = $this->translate('meeting_room.event_members.cancel_info');
                 $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
 
+                $keyboard = [];
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'none']]);
+                $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.no_members'), $callback);
+                $this->tgDb->setCallbackQuery();
+
                 $this->tgBot->editMessageText(
                     $text,
                     $this->tgRequest->getChatId(),
                     $messageId,
                     null,
                     'Markdown',
-                    true
+                    true,
+                    $this->tgBot->inlineKeyboardMarkup($keyboard)
                 );
 
                 return true;
@@ -548,13 +569,20 @@ class MeetingRoom extends Module
 
                 $text = $this->translate('meeting_room.event_members.cancel_info');
                 $text .= $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]);
+
+                $keyboard = [];
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'none']]);
+                $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.no_members'), $callback);
+                $this->tgDb->setCallbackQuery();
+
                 $this->tgBot->editMessageText(
                     $text,
                     $this->tgRequest->getChatId(),
                     $messageId,
                     null,
                     'Markdown',
-                    true
+                    true,
+                    $this->tgBot->inlineKeyboardMarkup($keyboard)
                 );
 
                 return true;
@@ -603,7 +631,8 @@ class MeetingRoom extends Module
         $members = null;
 
         if (!$meetingRoomUser->getEventMembers()) {
-            if ($this->noCommandList($this->tgRequest->getText())) {
+            if (isset($data['callback_event']['members']) && $data['callback_event']['members'] == 'none') {
+//            if ($this->noCommandList($this->tgRequest->getText())) {
                 $meetingRoomUserData['users']['none'] = 'none';
             } else {
                 $members = $this->tgRequest->getText();
@@ -685,15 +714,17 @@ class MeetingRoom extends Module
                 $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
                 $this->tgDb->insert($meetingRoomUser);
 
-                $this->tgBot->sendMessage(
-                    $this->tgRequest->getChatId(),
-                    $this->translate('meeting_room.event_members.form.head'),
-                    'Markdown',
-                    true
-                );
+                if (!isset($data['callback_event']['members']) || !$data['callback_event']['members'] == 'none') {
+                    $this->tgBot->sendMessage(
+                        $this->tgRequest->getChatId(),
+                        $this->translate('meeting_room.event_members.form.head'),
+                        'Markdown',
+                        true
+                    );
 
-                // для редактирование будущего сообщения, единожды
-                $preMessage = 1;
+                    // для редактирование будущего сообщения, единожды
+                    $preMessage = 1;
+                }
             }
         }
 
@@ -2057,13 +2088,20 @@ class MeetingRoom extends Module
                         $meetingRoom->setEventMembers('');
                         $meetingRoom->setEventId($args);
                         $this->tgDb->insert($meetingRoom);
+
+                        $keyboard = [];
+                        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'none']]);
+                        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.no_members'), $callback);
+                        $this->tgDb->setCallbackQuery();
+
                         $this->tgBot->editMessageText(
                             $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]),
                             $this->tgRequest->getChatId(),
                             $this->tgRequest->getMessageId(),
                             null,
                             'Markdown',
-                            true
+                            true,
+                            $this->tgBot->inlineKeyboardMarkup($keyboard)
                         );
 
                         return;
@@ -2160,7 +2198,9 @@ class MeetingRoom extends Module
         $textPlain = str_replace('*', '', $textPlain);
         $message = new \Swift_Message();
 
-        $subject = "{$state}: {$meetingRoom->getEventName()} - {$meetingRoom->getDate()}, {$meetingRoom->getTime()} ({$meetingRoom->getMeetingRoom()})";
+        $organizer = json_decode($meetingRoom->getEventMembers(), true)['users']['organizer'][0];
+
+        $subject = "{$state}: {$organizer['name']} - {$meetingRoom->getEventName()} - {$meetingRoom->getDate()}, {$meetingRoom->getTime()} ({$meetingRoom->getMeetingRoom()})";
         $message
             ->setSubject($subject)
             ->setFrom([$this->mailerFrom => $this->mailerFromName])
@@ -2214,6 +2254,7 @@ class MeetingRoom extends Module
                         $meetingRoomUser->setTime("{$timeStart}-{$timeEnd}");
                         $meetingRoomUser->setEventName(mb_substr($event['calendarEventName'], 0, (int) $this->eventNameLen));
                         $meetingRoomUser->setMeetingRoom($event['calendarName']);
+                        $meetingRoomUser->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
 
                         $text = $this->googleEventFormat($event);
                         $textHtml = $this->googleEventFormat($event, 'HTML');

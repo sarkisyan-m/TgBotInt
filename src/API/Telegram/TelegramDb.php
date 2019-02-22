@@ -223,7 +223,7 @@ class TelegramDb
         $hash = new Verification();
 
         $diffHours = Helper::getDateDiffHoursDateTime((new \DateTime()), $salt);
-//        $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $salt);
+        $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $salt);
 //        || $diffMinutes >= 5 - 1
         if (strtotime($salt->format('d.m.Y')) > strtotime(date('d.m.Y')) || $diffHours >= 2 - 1) {
             $hash->setNotification(true);
