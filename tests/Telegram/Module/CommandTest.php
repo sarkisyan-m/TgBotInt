@@ -183,16 +183,17 @@ class CommandTest extends WebTestCase
     {
         return [
             '/meetingroomlist' => "\U0001F525 Забронировать переговорку",
+            '/profile' => "\U0001F510 Мой профиль",
             '/eventlist' => "\U0001F4C4 Мои события",
             '/eventslist' => "\U0001F4CB Все события",
             '/help' => "\U00002049 Помощь",
             '/exit' => "\U0001F680 Завершить сеанс",
-            '/myinfo' => '',
             '/helpmore' => '',
             '/contacts' => '',
             '/admin' => '',
             '/e' => '',
             '/d' => '',
+            '/cp' => '',
             '/start' => '',
         ];
     }

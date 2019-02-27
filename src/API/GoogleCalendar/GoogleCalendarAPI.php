@@ -233,7 +233,7 @@ class GoogleCalendarAPI
                     $attendeesEmail = [];
 
                     foreach ($event->getAttendees() as $member) {
-                        $organizerText = 'Организатор';
+                        $organizerText = \App\API\Telegram\Module\MeetingRoom::ORGANIZER;
 
                         if (substr($member->comment, 0, strlen($organizerText)) == $organizerText) {
                             array_unshift($attendeesEmail, $member->getEmail());

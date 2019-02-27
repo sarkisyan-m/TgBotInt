@@ -15,6 +15,7 @@ class DefaultController extends Controller
      */
     public function index()
     {
-        return $this->render('index.html.twig');
+        return new Response('', Response::HTTP_FORBIDDEN);
+//        return $this->render('index.html.twig');
     }
 }

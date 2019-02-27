@@ -35,11 +35,11 @@ class Command extends Module
 
         $this->botCommands = [
             '/meetingroomlist' => $this->translate('bot_command.meeting_room_list'),
+            '/profile' => $this->translate('bot_command.profile'),
             '/eventlist' => $this->translate('bot_command.event_list'),
             '/eventslist' => $this->translate('bot_command.events_list'),
             '/help' => $this->translate('bot_command.help'),
             '/exit' => $this->translate('bot_command.exit'),
-            '/myinfo' => '',
             '/helpmore' => '',
             '/contacts' => '',
             '/admin' => '',
@@ -96,37 +96,6 @@ class Command extends Module
         );
     }
 
-    public function commandMyInfo()
-    {
-        $tgUser = $this->tgDb->getTgUser();
-        if ($tgUser && !is_null($bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]))) {
-            $bitrixUser = $bitrixUser[0];
-        } else {
-            return;
-        }
-
-        $text = $this->translate('command.myinfo');
-        $text .= $this->translate('myinfo.personal_info', [
-            '%name%' => $bitrixUser->getName(),
-            '%phone%' => $bitrixUser->getFirstPhone(),
-            '%email%' => Helper::markDownEmailEscapeReplace($bitrixUser->getEmail()),
-            '%bitrix24Id%' => $bitrixUser->getId(),
-            '%status%' => $this->translate('myinfo.personal_info_bitrix24_data_status'),
-            '%telegramPhone%' => $tgUser->getPhone(),
-            '%telegramId%' => $tgUser->getChatId(),
-        ]);
-
-        $this->tgBot->sendMessage(
-            $this->tgRequest->getChatId(),
-            $text,
-            'Markdown',
-            true,
-            false,
-            null,
-            $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
-        );
-    }
-
     public function commandExit()
     {
         $this->tgBot->sendMessage(
@@ -163,12 +132,16 @@ class Command extends Module
             $result[$ln][] = $button;
 
             // Объединияем кнопки
-            if (1 == $key || 2 == $key) {
-                if (2 == $key) {
+            if (0 == $key || 1 == $key) {
+                if (1 == $key) {
                     ++$ln;
                 }
-            } elseif (3 == $key || 4 == $key) {
-                if (4 == $key) {
+            } elseif (2 == $key || 3 == $key) {
+                if (3 == $key) {
+                    ++$ln;
+                }
+            } elseif (4 == $key || 5 == $key) {
+                if (5 == $key) {
                     ++$ln;
                 }
             } else {

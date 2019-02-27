@@ -118,6 +118,7 @@ services:
             $notificationMail: '%notification_mail%'
             $notificationTelegram: '%notification_telegram%'
             $notificationTime: '%notification_time%'
+            $baseUrl: '%base_url%'
 
 
     App\API\Telegram\TelegramAPI:

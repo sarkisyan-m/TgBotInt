@@ -225,6 +225,7 @@ class MeetingRoomTest extends WebTestCase
         $notificationMail = $container->getParameter('notification_mail');
         $notificationTelegram = $container->getParameter('notification_telegram');
         $notificationTime = $container->getParameter('notification_time');
+        $baseUrl = $container->getParameter('base_url');
 
         $meetingRoom = new MeetingRoom(
             $tgBot,
@@ -245,7 +246,8 @@ class MeetingRoomTest extends WebTestCase
             $mailerFromName,
             $notificationMail,
             $notificationTelegram,
-            $notificationTime
+            $notificationTime,
+            $baseUrl
         );
 
         return $meetingRoom;

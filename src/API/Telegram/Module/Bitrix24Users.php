@@ -77,6 +77,8 @@ class Bitrix24Users extends Module
                     null
                 );
 
+                $this->tgDb->getSubscription($this->tgDb->getTgUser(), $bitrixUser->getEmail());
+
                 return true;
             }
         }

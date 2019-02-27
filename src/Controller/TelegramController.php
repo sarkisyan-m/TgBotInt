@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\API\Telegram\Module\MeetingRoom as TelegramModuleMeetingRoom;
+use App\API\Telegram\Module\Profile as TelegramModuleProfile;
 use App\API\Telegram\Module\Bitrix24Users as TelegramModuleBitrix24Users;
 use App\API\Telegram\Module\Admin as TelegramModuleAdmin;
 use App\API\Telegram\Module\Command as TelegramModuleCommand;
@@ -34,6 +35,7 @@ class TelegramController extends Controller
     private $tgModuleAdmin;
     private $tgModuleCommand;
     private $tgModuleAntiFlood;
+    private $tgModuleProfile;
 
     private $tgPluginCalendar;
 
@@ -47,6 +49,7 @@ class TelegramController extends Controller
         TelegramDb $tgDb,
         TelegramRequest $tgRequest,
         TelegramModuleMeetingRoom $tgModuleMeetingRoom,
+        TelegramModuleProfile $tgModuleProfile,
         TelegramModuleBitrix24Users $tgModuleBitrix24Users,
         TelegramModuleAdmin $tgModuleAdmin,
         TelegramModuleCommand $tgModuleCommand,
@@ -61,6 +64,7 @@ class TelegramController extends Controller
         $this->tgRequest = $tgRequest;
 
         $this->tgModuleMeetingRoom = $tgModuleMeetingRoom;
+        $this->tgModuleProfile = $tgModuleProfile;
         $this->tgModuleBitrix24Users = $tgModuleBitrix24Users;
         $this->tgModuleAdmin = $tgModuleAdmin;
         $this->tgModuleCommand = $tgModuleCommand;
@@ -104,6 +108,7 @@ class TelegramController extends Controller
         $this->isCronNotification = 'notification' == $request->query->get('cron');
         $this->tgRequest->request($request);
         $this->tgDb->request($this->tgRequest);
+        $this->tgModuleProfile->request($this->tgRequest);
         $this->tgModuleMeetingRoom->request($this->tgRequest);
         $this->tgModuleBitrix24Users->request($this->tgRequest);
         $this->tgModuleAdmin->request($this->tgRequest);
@@ -231,6 +236,41 @@ class TelegramController extends Controller
         return new Response();
     }
 
+    /**
+     * @Route("/unsubscribe/{uuid}", name="unsubscribe")
+     *
+     * @param $uuid
+     *
+     * @return Response
+     */
+    public function unsubcribe($uuid)
+    {
+        $subscription = $this->tgDb->getSubscription(null, null, $uuid);
+
+        if ($subscription && $subscription->getEmail()) {
+            $bitrixUser = $this->bitrix24->getUsers(['email' => $subscription->getEmail(), 'active' => true]);
+
+            if ($bitrixUser) {
+                if ($subscription->getNotificationEmail()) {
+                    $subscription->setNotificationEmail(false);
+                    $this->tgDb->insert($subscription);
+
+                    return $this->render(
+                        'emails/event_unsubscribe.html.twig', [
+                        'text' => $this->translate('subscription.unsubscribed.success', ['%email%' => $subscription->getEmail()])
+                    ]);
+                } else {
+                    return $this->render(
+                        'emails/event_unsubscribe.html.twig', [
+                        'text' => $this->translate('subscription.unsubscribed.failed', ['%email%' => $subscription->getEmail()])
+                    ]);
+                }
+            }
+        }
+
+        return new Response('', Response::HTTP_FORBIDDEN);
+    }
+
     // Если тип ответа message
     public function handlerRequestMessage()
     {
@@ -271,6 +311,12 @@ class TelegramController extends Controller
             return true;
         }
 
+        if ($this->tgModuleCommand->isBotCommand('/profile')) {
+            $this->tgModuleProfile->index();
+
+            return true;
+        }
+
         if ($this->tgModuleCommand->isBotCommand('/eventslist')) {
             $this->tgModuleMeetingRoom->googleEventsCurDay();
 
@@ -279,12 +325,6 @@ class TelegramController extends Controller
 
         if ($this->tgModuleCommand->isBotCommand('/eventlist')) {
             $this->tgModuleMeetingRoom->userMeetingRoomList();
-
-            return true;
-        }
-
-        if ($this->tgModuleCommand->isBotCommand('/myinfo')) {
-            $this->tgModuleCommand->commandMyInfo();
 
             return true;
         }
@@ -539,6 +579,45 @@ class TelegramController extends Controller
 
                     return true;
                 }
+            }
+        }
+
+        if (isset($data['callback_event']['profile'])) {
+            if ($data['callback_event']['profile'] == 'come_back') {
+                $this->tgModuleProfile->index($data);
+
+                return true;
+            }
+
+            if ($data['callback_event']['profile'] == 'personal_info') {
+                $this->tgModuleProfile->personalInfo();
+
+                return true;
+            }
+
+            if ($data['callback_event']['profile'] == 'notification' ||
+                $data['callback_event']['profile'] == 'notification_come_back') {
+                $this->tgModuleProfile->settingNotification();
+
+                return true;
+            }
+
+            if ($data['callback_event']['profile'] == 'notification_default') {
+                $this->tgModuleProfile->settingNotificationDefault();
+
+                return true;
+            }
+
+            if ($data['callback_event']['profile'] == 'notification_telegram') {
+                $this->tgModuleProfile->settingNotificationTelegram($data);
+
+                return true;
+            }
+
+            if ($data['callback_event']['profile'] == 'notification_email') {
+                $this->tgModuleProfile->settingNotificationEmail($data);
+
+                return true;
             }
         }
 

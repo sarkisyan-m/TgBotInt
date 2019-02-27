@@ -5,6 +5,7 @@ namespace App\API\Telegram;
 use App\Entity\AntiFlood;
 use App\Entity\CallbackQuery;
 use App\Entity\MeetingRoom;
+use App\Entity\Subscription;
 use App\Entity\TgUsers;
 use App\Entity\Verification;
 use App\Service\Helper;
@@ -293,5 +294,70 @@ class TelegramDb
         }
 
         return $antiFlood;
+    }
+
+    /**
+     * @param TgUsers|null $tgUser
+     * @param string|null $email
+     * @param string|null $emailToken
+     *
+     * @return Subscription|Subscription[]|array|null|object[]
+     */
+    public function getSubscription(TgUsers $tgUser = null, string $email = null, string $emailToken = null)
+    {
+        if (!$this->entityManager) {
+            return null;
+        }
+
+        if ($tgUser) {
+            $repository = $this->entityManager->getRepository(Subscription::class);
+
+            $oldValues = $repository->findBy(['email' => $email]);
+
+            foreach ($oldValues as $oldValue) {
+                if (!$oldValue->getTgUser()) {
+                    $this->delete($oldValue);
+                }
+            }
+
+            $subscription = $repository->findBy(['tg_user' => $tgUser]);
+
+            if ($subscription) {
+                return $subscription[0];
+            } else {
+                $subscription = new Subscription();
+                $subscription->setTgUser($tgUser);
+                $this->insert($subscription);
+
+                return $subscription;
+            }
+        }
+
+        if ($email) {
+            $repository = $this->entityManager->getRepository(Subscription::class);
+            $subscription = $repository->findBy(['email' => $email]);
+
+            if ($subscription) {
+                return $subscription[0];
+            } else {
+                $subscription = new Subscription();
+                $subscription->setEmail($email);
+                $subscription->setEmailToken(Uuid::uuid4()->toString());
+                $this->insert($subscription);
+
+                return $subscription;
+            }
+        }
+
+        if ($emailToken) {
+            $repository = $this->entityManager->getRepository(Subscription::class);
+            $subscription = $repository->findBy(['email_token' => $emailToken]);
+
+            if ($subscription) {
+                return $subscription[0];
+            }
+        }
+
+        return [];
     }
 }

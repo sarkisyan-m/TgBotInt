@@ -42,8 +42,14 @@ class MeetingRoom extends Module
     private $notificationMail;
     private $notificationTelegram;
     private $notificationTime;
+    private $baseUrl;
 
     const LIMIT_BYTES_MAX = 5500;
+    const EVENT_CREATED = 'Событие создано';
+    const EVENT_CHANGED = 'Событие изменено';
+    const EVENT_DELETED = 'Событие удалено';
+    const EVENT_REMINDER = 'Событие скоро начнется';
+    const ORGANIZER = 'Организатор';
 
     public function __construct(
         TelegramAPI $tgBot,
@@ -64,7 +70,8 @@ class MeetingRoom extends Module
         $mailerFromName,
         $notificationMail,
         $notificationTelegram,
-        $notificationTime
+        $notificationTime,
+        $baseUrl
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
@@ -85,6 +92,7 @@ class MeetingRoom extends Module
         $this->notificationMail = 'true' === $notificationMail ? true : false;
         $this->notificationTelegram = 'true' === $notificationTelegram ? true : false;
         $this->notificationTime = $notificationTime;
+        $this->baseUrl = $baseUrl;
     }
 
     public function request(TelegramRequest $request)
@@ -834,7 +842,6 @@ class MeetingRoom extends Module
                 $text .= "\n{$this->translate('meeting_room.confirm.data_failed')}";
                 $keyboard = null;
                 $this->tgDb->getMeetingRoomUser(true);
-//            } elseif ('yes' == $data['data']['ready'] && ($validateTime || !$validateTime && $meetingRoomUser->getStatus())) {
             } elseif ('yes' == $data['data']['ready'] && $validateTime) {
                 $textNotification = $text;
                 $textNotificationState = null;
@@ -855,7 +862,7 @@ class MeetingRoom extends Module
                 $attendees = [];
                 foreach ($emailList as $key => $email) {
                     if (0 == $key) {
-                        $attendees[] = ['comment' => 'Организатор', 'email' => $email];
+                        $attendees[] = ['comment' => self::ORGANIZER, 'email' => $email];
                     } else {
                         $attendees[] = ['email' => $email];
                     }
@@ -922,7 +929,7 @@ class MeetingRoom extends Module
 
                 $this->tgDb->getMeetingRoomUser(true);
 
-                $this->sendTgNotification($tgUsersId, $textNotification);
+                $this->sendTgNotification($textNotificationState, $tgUsersId, $textNotification);
                 $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
 
             // Если пользователь нажал на отмену, то стираем все данные
@@ -1611,13 +1618,6 @@ class MeetingRoom extends Module
         return $text;
     }
 
-    public function usersMeetingRoomList()
-    {
-        $this->googleEventsCurDay();
-
-        return;
-    }
-
     public function userMeetingRoomList()
     {
         $tgUser = $this->tgDb->getTgUser();
@@ -1875,7 +1875,7 @@ class MeetingRoom extends Module
                     true
                 );
 
-                $this->sendTgNotification($tgUsersId, $textNotification);
+                $this->sendTgNotification($textNotificationState, $tgUsersId, $textNotification);
                 $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
             } elseif (isset($data['callback_event']['event']) && 'cancel_participation' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.cancel_participation.refuse');
@@ -1983,7 +1983,7 @@ class MeetingRoom extends Module
                     true
                 );
 
-                $this->sendTgNotification($tgUsersId, $textNotification);
+                $this->sendTgNotification($textNotificationState, $tgUsersId, $textNotification);
                 $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
             } elseif (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.remove.cancel');
@@ -2165,18 +2165,53 @@ class MeetingRoom extends Module
         }
     }
 
-    public function sendTgNotification($tgUsersId, $text)
+    public function sendTgNotification($state, $tgUsersId, $text)
     {
         if (!$this->notificationTelegram) {
             return;
         }
 
         $curId = array_search($this->tgRequest->getChatId(), $tgUsersId);
+
         if (false !== $curId) {
             unset($tgUsersId[$curId]);
         }
 
         foreach ($tgUsersId as $tgUserId) {
+            $tgUser = $this->tgDb->getTgUsers(['chat_id' => $tgUserId]);
+            if (!$tgUser) {
+                continue;
+            }
+            $tgUser = $tgUser[0];
+
+            $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
+            if (!$bitrixUser) {
+                continue;
+            }
+            $bitrixUser = $bitrixUser[0];
+
+            $subscription = $this->tgDb->getSubscription($tgUser, $bitrixUser->getEmail());
+
+            if (!$subscription->getNotificationTelegram()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_CREATED) !== false && !$subscription->getNotificationTelegramAdd()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_CHANGED) !== false && !$subscription->getNotificationTelegramEdit()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_DELETED) !== false && !$subscription->getNotificationTelegramDelete()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_REMINDER) !== false && !$subscription->getNotificationTelegramReminder()) {
+                continue;
+            }
+
             $this->tgBot->sendMessage(
                 $tgUserId,
                 $text,
@@ -2198,32 +2233,79 @@ class MeetingRoom extends Module
         $textPlain = str_replace('*', '', $textPlain);
         $message = new \Swift_Message();
 
-        $organizer = json_decode($meetingRoom->getEventMembers(), true)['users']['organizer'][0];
+        foreach ($emailList as $email) {
+            $bitrixUser = $this->bitrix24->getUsers(['email' => $email]);
 
-        $subject = "{$state}: {$organizer['name']} - {$meetingRoom->getEventName()} - {$meetingRoom->getDate()}, {$meetingRoom->getTime()} ({$meetingRoom->getMeetingRoom()})";
-        $message
-            ->setSubject($subject)
-            ->setFrom([$this->mailerFrom => $this->mailerFromName])
-            ->setTo($emailList)
-            ->setBody(
-                $this->templating->render(
-                    'emails/event.html.twig', [
+            if (!$bitrixUser) {
+                continue;
+            } else {
+                $bitrixUser = $bitrixUser[0];
+            }
+
+            $tgUser = $this->tgDb->getTgUsers(['bitrix_id' => $bitrixUser->getId()]);
+            $unsubscribeUrl = null;
+
+            if ($tgUser) {
+                $subscriptionTextHtml = $this->translate('subscription.tg_text_html', ['%email%' => $email]);
+                $subscriptionTextPlain = $this->translate('subscription.tg_text_plain', ['%email%' => $email]);
+                $tgUser = $tgUser[0];
+                $subscription = $this->tgDb->getSubscription($tgUser, $email);
+            } else {
+                $subscription = $this->tgDb->getSubscription(null, $email);
+                $unsubscribeUrl = "https://{$this->baseUrl}/unsubscribe/{$subscription->getEmailToken()}";
+                $subscriptionTextHtml = $this->translate('subscription.text_html', ['%email%' => $email, '%unsubscribeUrl%' => $unsubscribeUrl]);
+                $subscriptionTextPlain = $this->translate('subscription.text_plain', ['%email%' => $email, '%unsubscribeUrl%' => $unsubscribeUrl]);
+            }
+
+            if (!$subscription->getNotificationEmail()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_CREATED) !== false && !$subscription->getNotificationEmailAdd()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_CHANGED) !== false && !$subscription->getNotificationEmailEdit()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_DELETED) !== false && !$subscription->getNotificationEmailDelete()) {
+                continue;
+            }
+
+            if (strpos($state, self::EVENT_REMINDER) !== false && !$subscription->getNotificationEmailReminder()) {
+                continue;
+            }
+
+            $organizer = json_decode($meetingRoom->getEventMembers(), true)['users']['organizer'][0];
+
+            $subject = "{$state}: {$organizer['name']} - {$meetingRoom->getEventName()} - {$meetingRoom->getDate()}, {$meetingRoom->getTime()} ({$meetingRoom->getMeetingRoom()})";
+            $message
+                ->setSubject($subject)
+                ->setFrom([$this->mailerFrom => $this->mailerFromName])
+                ->setTo($email)
+                ->setBody(
+                    $this->templating->render(
+                        'emails/event.html.twig', [
                         'state' => $state,
                         'text' => $textHtml,
+                        'subscription_text_html' =>  $subscriptionTextHtml
                     ]),
-                'text/html'
-            )
-            ->addPart(
-                $this->templating->render(
-                    'emails/event.txt.twig', [
-                    'state' => $state,
-                    'text' => $textPlain,
-                ]),
-                'text/plain'
-            )
-        ;
+                    'text/html'
+                )
+                ->addPart(
+                    $this->templating->render(
+                        'emails/event.txt.twig', [
+                        'state' => $state,
+                        'text' => $textPlain,
+                        'subscription_text_plain' =>  $subscriptionTextPlain
+                    ]),
+                    'text/plain'
+                )
+            ;
 
-        $this->mailer->send($message);
+            $this->mailer->send($message);
+        }
     }
 
     public function cronNotification()
@@ -2263,7 +2345,7 @@ class MeetingRoom extends Module
                         $textNotificationState = $this->translate('meeting_room.confirm.data_notification_before_beginning');
                         $text .= $textNotificationState;
 
-                        $this->sendTgNotification($tgUsersId, $text);
+                        $this->sendTgNotification($textNotificationState, $tgUsersId, $text);
                         $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
 
                         $hash->setNotification(false);
