@@ -47,15 +47,15 @@ max-width: 600px;
                                                     /*email-title*/
                                                     /*color: #000000;*/
                                                     color: #464646;
-                                                    line-height: 1.3;
+                                                    line-height: 0;
                                                     border-color: transparent;
                                                     margin: 0;
                                                     padding: 8px;
-                                                    font-size: 20px;
+                                                    font-size: 18px;
                                                     font-weight: bold;
                                                     ">
                                                         {% set state = state|trim %}
-                                                        <span>Событие</span>
+                                                        Событие
                                                         {% if state == 'Событие создано' %}
                                                             <span style="color:#22902c">создано</span>
                                                         {% elseif state == 'Событие изменено' %}
@@ -75,24 +75,20 @@ max-width: 600px;
                                                     /*email-text-body*/
                                                     border: 1px solid #949494ad;
                                                     background: #ffffffbd center center;
-                                                    /*background-color: #ffffff91;*/
-                                                    /*background-position: center center;*/
+                                                    line-height: 1.4;
+                                                    font-size: 16px;
+                                                    word-break: break-word;
+                                                    color: #464646;
                                                     margin: 0;
                                                     padding: 0;
                                                     ">
                                                         <p style="
-                                                        /*email-text*/
-                                                        /*color: #000000;*/
-                                                        line-height: 1.4;
-                                                        border-color: transparent;
-                                                        margin: 0;
-                                                        padding: 8px;
-                                                        font-size: 16px;
-                                                        word-break: break-word;
-                                                        color: #464646;
-                                                        ">
-                                                            <span>{{ text|raw }}</span>
+                                                        margin-bottom: auto;
+                                                        margin-top: auto;
+                                                        padding: 8px;">
+                                                            {{ text|raw }}
                                                         </p>
+
                                                     </div>
                                                 </td>
                                             </tr>
@@ -108,13 +104,31 @@ max-width: 600px;
                                                         font-size: 11px;
                                                         margin-bottom: auto;
                                                         margin-top: auto;
+                                                        padding: 8px;
+                                                        border: 1px solid #b8b8b8;
+                                                        border-left: none;
+                                                        border-right: none;
                                                         ">
-                                                            <span>{{ subscription_text_html|raw }}</span>
+                                                            {{ subscription_text_html|raw }}
                                                         </p>
                                                     </div>
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <td>
+                                                    <div style="
+                                                    display: block;
+                                                    ">
+                                                        <img src="{{ absolute_url(asset('templates/email/img/intaro_logo_1.png')) }}" alt="intaro.ru" style="
+                                                        /*intaro-logo*/
+                                                        width: 100%;
+                                                        max-width: 550px;
+                                                        /*float: left;*/
+                                                        ">
+                                                    </div>
 
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </td>
