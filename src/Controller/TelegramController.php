@@ -305,6 +305,12 @@ class TelegramController extends Controller
             }
         }
 
+        if ($this->tgModuleCommand->isBotCommand('/reload')) {
+            $this->tgModuleCommand->commandReload();
+
+            return true;
+        }
+
         if ($this->tgModuleCommand->isBotCommand('/meetingroomlist')) {
             $this->tgModuleMeetingRoom->meetingRoomList();
 

@@ -6,7 +6,6 @@ use App\API\Bitrix24\Bitrix24API;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
-use App\Service\Helper;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class Command extends Module
@@ -40,6 +39,7 @@ class Command extends Module
             '/eventslist' => $this->translate('bot_command.events_list'),
             '/help' => $this->translate('bot_command.help'),
             '/exit' => $this->translate('bot_command.exit'),
+            '/reload' => '',
             '/helpmore' => '',
             '/contacts' => '',
             '/admin' => '',
@@ -68,6 +68,19 @@ class Command extends Module
         $this->tgDb->getMeetingRoomUser(true);
         // .. еще какая-то функция, которая обнуляет уже другую таблицу
         // и т.д.
+    }
+
+    public function commandReload()
+    {
+        $this->tgBot->sendMessage(
+            $this->tgRequest->getChatId(),
+            $this->translate('command.reload'),
+            'Markdown',
+            true,
+            false,
+            null,
+            $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
+        );
     }
 
     public function commandHelp()
