@@ -1106,7 +1106,9 @@ class MeetingRoom extends Module
         $filter = ['startDateTime' => $date, 'endDateTime' => $date];
         $calendarList = $this->googleCalendar->getList($filter);
 
-        $text = $this->translate('event_list.date', ['%date%' => "{$date} - все события"]);
+        $dateText = $this->tgPluginCalendar->getDateRus($date);
+
+        $text = $this->translate('event_list.date', ['%date%' => $dateText]);
         $times = [];
 
         $limitBytes = $this->getLimitBytes();
@@ -1162,24 +1164,35 @@ class MeetingRoom extends Module
 
         $keyboard = [];
         $ln = 0;
+
+        // Предыдущий день <<
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'back'], 'data' => ['days' => $daysBack]]);
         $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('calendar.back'), $callback);
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => $daysForward]]);
-        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('calendar.forward'), $callback);
-        ++$ln;
+
+        // Сегодня
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 0]]);
         $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.today'), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 1]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.tomorrow'), $callback);
+//        // Завтра
+//        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 1]]);
+//        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.tomorrow'), $callback);
+//
+//        // Послезавтра
+//        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 2]]);
+//        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_after_tomorrow'), $callback);
 
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => 2]]);
-        $keyboard[$ln][] = $this->tgBot->InlineKeyboardButton($this->translate('calendar.day_after_tomorrow'), $callback);
+        // Следующий день >>
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['events' => 'forward'], 'data' => ['days' => $daysForward]]);
+        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('calendar.forward'), $callback);
 
         $this->tgDb->setCallbackQuery();
 
+        $text .= $this->translate('event_list.date', ['%date%' => $dateText]);
+
         if ($data) {
-            $this->tgBot->editMessageText($text, $this->tgRequest->getChatId(),
+            $this->tgBot->editMessageText(
+                $text,
+                $this->tgRequest->getChatId(),
                 $this->tgRequest->getMessageId(),
                 null,
                 'Markdown',
@@ -1664,7 +1677,8 @@ class MeetingRoom extends Module
 
                     $date = (new \DateTime($event['dateTimeStart']))->format('d.m.Y');
                     if ($date != $dateTemp) {
-                        $text .= $this->translate('event_list.date', ['%date%' => $date]);
+                        $dateText = $this->tgPluginCalendar->getDateRus($date);
+                        $text .= $this->translate('event_list.date', ['%date%' => $dateText]);
                     }
 
                     $timeStart = (new \DateTime($event['dateTimeStart']))->format('H:i');

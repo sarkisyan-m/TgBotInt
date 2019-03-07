@@ -71,6 +71,43 @@ class Calendar
         return $week;
     }
 
+    public function getDateRus($date)
+    {
+        $monthRus = [
+            '',
+            'января',
+            'февраля',
+            'марта',
+            'апреля',
+            'мая',
+            'июня',
+            'июля',
+            'августа',
+            'сентября',
+            'октября',
+            'ноября',
+            'декабря',
+        ];
+
+        $weekRus = [
+            'Воскресенье',
+            'Понедельник',
+            'Вторник',
+            'Среда',
+            'Четверг',
+            'Пятница',
+            'Суббота',
+        ];
+
+        $week = (int) date('w', strtotime($date));
+        $month = (int) date('m', strtotime($date));
+        $day = (int) date('d', strtotime($date));
+
+        $format = "{$weekRus[$week]}, {$day} {$monthRus[$month]}";
+
+        return $format;
+    }
+
     public function getYear(int $day = 0, int $month = 0, int $year = 0)
     {
         return date('Y', strtotime("-{$day} day -{$month} month -{$year} year"));
