@@ -15,6 +15,7 @@ monolog:
             bubble: true
             max_files: 10
             channels: ['telegram_request_in']
+            formatter: Monolog\Formatter\JsonFormatter
 
         telegram_request_out:
             type: rotating_file
@@ -23,6 +24,7 @@ monolog:
             bubble: true
             max_files: 10
             channels: ['telegram_request_out']
+            formatter: Monolog\Formatter\JsonFormatter
 
         dump:
             type: rotating_file
@@ -31,3 +33,4 @@ monolog:
             bubble: true
             max_files: 10
             channels: ['dump']
+            formatter: Monolog\Formatter\JsonFormatter

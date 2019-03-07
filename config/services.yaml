@@ -95,6 +95,8 @@ services:
         resource: '../src/Controller'
         tags: ['controller.service_arguments']
 
+    Monolog\Formatter\JsonFormatter: ~
+
     App\API\Telegram\Module\Admin:
         arguments:
             $tgAdminList: '%tg_admin_list%'
