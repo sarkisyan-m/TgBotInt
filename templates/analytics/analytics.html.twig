@@ -2,20 +2,25 @@
 
 {% block body %}
     <script src="//cdn.datatables.net/plug-ins/1.10.19/sorting/date-euro.js"></script>
+    <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
 
     <script>
         function format ( d ) {
-            // `d` is the original data object for the row
             return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
                 '<tr>'+
-                '<td>'+d.date+'</td>'+
+                '<td>'+d.data+'</td>'+
                 '</tr>'+
                 '</table>';
         }
 
         $(document).ready(function() {
-            let table = $('#example').DataTable({
+            let table = $('#table-one').DataTable({
                 'processing': true,
+                "ajax": {
+                    "url": "/analytics/data",
+                    dataSrc:""
+                },
                 'language': {
                     'url': '//cdn.datatables.net/plug-ins/1.10.19/i18n/Russian.json',
                 },
@@ -26,46 +31,35 @@
 
                     },
                 ],
-                "columns": [
-                    {
-                        "className":      'details-control',
-                        "orderable":      false,
-                    },
-                    { "data": "name" },
-                    { "data": "position" },
-                    { "data": "office" },
-                    { "data": "salary" },
-                    { "data": "salary2" },
-                    { "data": "date", "visible": false },
-                ],
                 "order": [[ 1, "desc" ]],
                 "lengthMenu": [[10, 100, 500, 1000, -1], [10, 100, 500, 1000, "Все"]],
-                "pageLength": 100,
-                "initComplete": function(settings, json) {
-                    $('#log-body').slideDown();
-                }
+                "pageLength": 500,
+                // "initComplete": function(settings, json) {
+                // }
+                columns: [
+                    { data: "date", "className": "table-date" },
+                    { data: "user.full_name", "className": "table-user" },
+                    { data: "type", "className": "table-type" },
+                    { data: "channel", "className": "table-channel" },
+                    { data: "text", "className": "table-text" },
+                    { data: "data", "className": "table-data", "visible": false },
+                ],
+                // rowReorder: {
+                //     selector: 'td:nth-child(2)'
+                // },
+                responsive: true
             });
 
-            // table.rows().every(function(){
-            //     // If row has details collapsed
-            //     if(!this.child.isShown()){
-            //         // Open this row
-            //         this.child(format(this.data())).show();
-            //         $(this.node()).addClass('shown');
-            //     }
-            // });
 
-            $('#example tbody').on('click', 'td.details-control', function () {
+            $('#table-one tbody').on( 'click', 'tr', function () {
+                $(this).toggleClass('selected');
                 var tr = $(this).closest('tr');
                 var row = table.row( tr );
 
                 if ( row.child.isShown() ) {
-                    $(this).html('<i class="fa fa-plus"></i>');
                     row.child.hide();
                 }
                 else {
-                    // $(this).text('Свернуть');
-                    $(this).html('<i class="fa fa-minus"></i>');
                     row.child( format(row.data()) ).show();
                 }
             } );
@@ -80,130 +74,51 @@
             font-family: 'Source Code Pro', monospace;
         }
 
-        table#example {
+        table#table-one {
             width: 100%;
             font-size: 14px;
             font-family: 'Source Code Pro', monospace;
         }
 
-        .head.head-text {
-            min-width: 170px;
+        .table-date {
+            width: 20%;
         }
 
-        .head.head-data {
-            min-width: 170px;
+        .table-text {
+            width: 50%;
         }
 
-        #log-body {
-            display: none;
+        .table-wrapper {
+
         }
 
-        td.details-control {
-            cursor: pointer;
-            text-align: center;
-        }
-        tr.shown td.details-control {
+        table.dataTable tbody tr.selected {
+            background-color: #d8f3d1;
         }
     </style>
 
-    <table id="example" class="table table-bordered">
-        <thead>
+    <div class="table-wrapper">
+        <table id="table-one" class="table table-bordered">
+            <thead>
             <tr>
-                <th></th>
-                <th class="head head-date">Дата</th>
-                <th class="head head-user">Пользователь</th>
-                <th class="head head-type">Тип</th>
-                <th class="head head-channel">Канал</th>
-                <th class="head head-text">Текст</th>
-                <th class="head head-data">Данные</th>
+                <th>Дата</th>
+                <th>Пользователь</th>
+                <th>Тип</th>
+                <th>Канал</th>
+                <th>Текст</th>
+                <th>Данные</th>
             </tr>
-        </thead>
-        <tbody id="log-body">
-
-        {% for file in content %}
-            {% for data in file %}
-                <tr>
-                    <td>
-                        <i class="fa fa-plus"></i>
-                    </td>
-                    <td>
-                        {{ data.datetime.date|date('d/m/Y H:i:s') }}
-                    </td>
-                    <td>
-                        {% if data.message.result.chat is defined %}
-                            {% if data.message.result.chat.first_name is defined %}
-                                {{ data.message.result.chat.first_name }}
-                            {% endif %}
-
-                            {% if data.message.result.chat.last_name is defined %}
-                                {{ data.message.result.chat.last_name }}
-                            {% endif %}
-
-                            {% if data.message.result.chat.username is defined %}
-                                ({{ data.message.result.chat.username }})
-                            {% endif %}
-                        {% elseif data.message.callback_query.from is defined %}
-                            {% if data.message.callback_query.from.first_name is defined %}
-                                {{ data.message.callback_query.from.first_name }}
-                            {% endif %}
-                            {% if data.message.callback_query.from.last_name is defined %}
-                                {{ data.message.callback_query.from.last_name }}
-                            {% endif %}
-                            {% if data.message.callback_query.from.username is defined %}
-                                ({{ data.message.callback_query.from.username }})
-                            {% endif %}
-                        {% elseif data.message.message.from is defined %}
-                            {% if data.message.message.from.first_name is defined %}
-                                {{ data.message.message.from.first_name }}
-                            {% endif %}
-                            {% if data.message.message.from.last_name is defined %}
-                                {{ data.message.message.from.last_name }}
-                            {% endif %}
-                            {% if data.message.message.from.username is defined %}
-                                ({{ data.message.message.from.username }})
-                            {% endif %}
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if data.message.callback_query is defined %}
-                            callback
-                        {% else %}
-                            message
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if data.channel == 'telegram_request_in' %}
-                            in
-                        {% elseif data.channel == 'telegram_request_out' %}
-                            out
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if data.message.result.text is defined %}
-                            {{ data.message.result.text }}
-                        {% elseif data.message.message.text is defined %}
-                            {{ data.message.message.text }}
-                        {% elseif data.message.callback_query.message.text is defined %}
-                            {{ data.message.callback_query.message.text }}
-                        {% endif %}
-                    </td>
-                    <td>
-                        {{ data.message|json_encode(constant('JSON_UNESCAPED_UNICODE'))|raw }}
-                    </td>
-                </tr>
-            {% endfor %}
-        {% endfor %}
-        </tbody>
-        <tfoot>
-        <tr>
-            <th></th>
-            <th class="head head-date">Дата</th>
-            <th class="head head-user">Пользователь</th>
-            <th class="head head-type">Тип</th>
-            <th class="head head-channel">Канал</th>
-            <th class="head head-text">Текст</th>
-            <th class="head head-data">Данные</th>
-        </tr>
-        </tfoot>
-    </table>
+            </thead>
+            <tfoot>
+            <tr>
+                <th>Дата</th>
+                <th>Пользователь</th>
+                <th>Тип</th>
+                <th>Канал</th>
+                <th>Текст</th>
+                <th>Данные</th>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
 {% endblock %}
