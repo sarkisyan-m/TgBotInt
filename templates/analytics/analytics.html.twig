@@ -4,6 +4,7 @@
     <script src="//cdn.datatables.net/plug-ins/1.10.19/sorting/date-euro.js"></script>
     <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+    <script src="https://www.bubt.edu.bd/assets/backend/DataTables-1.10.13/DataTables-1.10.13/extensions/Buttons/js/dataTables.buttons.js"></script>
 
     <script>
         function format ( d ) {
@@ -11,12 +12,16 @@
         }
 
         $(document).ready(function() {
-            let table = $('#table-one').DataTable({
+            var table = $('#table-one').DataTable({
                 'processing': true,
                 "ajax": {
                     "url": "/analytics/data",
                     dataSrc: ""
                 },
+                deferRender: true,
+                rowId: 'extn',
+                select: true,
+                dom: 'Blfrtip',
                 'language': {
                     'url': '//cdn.datatables.net/plug-ins/1.10.19/i18n/Russian.json',
                 },
@@ -27,9 +32,17 @@
 
                     },
                 ],
+                buttons: [
+                    {
+                        text: 'Обновить данные',
+                        action: function () {
+                            table.ajax.reload();
+                        }
+                    }
+                ],
                 "order": [[ 0, "desc" ]],
-                "lengthMenu": [[10, 100, 500, 1000, -1], [10, 100, 500, 1000, "Все"]],
-                "pageLength": 500,
+                "lengthMenu": [[10, 50, 100, 500, 1000, -1], [10, 50, 100, 500, 1000, "Все"]],
+                "pageLength": 50,
                 // "initComplete": function(settings, json) {
                 // }
                 columns: [
@@ -40,8 +53,7 @@
                     { data: "text", "className": "table-text" },
                     { data: "data", "className": "table-data", "visible": false },
                 ],
-                responsive: true,
-                select: false,
+                responsive: true
             });
 
 
@@ -103,7 +115,7 @@
         }
 
         table.dataTable tbody tr.selected {
-            background-color: #d8f3d1;
+            background-color: #f1f1f1;
         }
 
         table.dataTable tbody tr:hover {
@@ -112,6 +124,10 @@
 
         .table-data-hide {
             cursor: default;
+        }
+
+        .dt-buttons {
+            margin-bottom: 20px;
         }
 
     </style>
