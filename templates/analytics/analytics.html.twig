@@ -53,7 +53,14 @@
                     { data: "text", "className": "table-text" },
                     { data: "data", "className": "table-data", "visible": false },
                 ],
-                responsive: true
+                responsive: true,
+                "createdRow": function( row, data, dataIndex){
+                    if (data.channel == 'in') {
+                        $(row).addClass('channel-in');
+                    } else if (data.channel == 'out') {
+                        $(row).addClass('channel-out');
+                    }
+                }
             });
 
 
@@ -124,16 +131,27 @@
 
         .table-data-hide {
             cursor: default;
+            background: #ffffff00;
+            padding: 5px;
+            border: 1px solid #d6d6d6;
         }
 
         .dt-buttons {
             margin-bottom: 20px;
         }
 
+        .channel-out {
+            background: #efefef !important;
+        }
+
+        .channel-in {
+            background: white !important;
+        }
+
     </style>
 
     <div class="table-wrapper">
-        <table id="table-one" class="table table-bordered">
+        <table id="table-one" class="table table-condensed">
             <thead>
             <tr>
                 <th>Дата</th>
