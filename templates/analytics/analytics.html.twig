@@ -5,9 +5,10 @@
     <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
     <script src="https://www.bubt.edu.bd/assets/backend/DataTables-1.10.13/DataTables-1.10.13/extensions/Buttons/js/dataTables.buttons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
 
     <script>
-        function format ( d ) {
+        function format (d) {
             return '<div class="table-data-hide">'+ d.data + '</div>';
         }
 
@@ -42,9 +43,12 @@
                 ],
                 "order": [[ 0, "desc" ]],
                 "lengthMenu": [[10, 50, 100, 500, 1000, -1], [10, 50, 100, 500, 1000, "Все"]],
-                "pageLength": 50,
-                // "initComplete": function(settings, json) {
-                // }
+                "pageLength": 100,
+                "initComplete": function(settings, json) {
+                    // setInterval(function () {
+                    //     table.ajax.reload(null, false);
+                    // }, 30000);
+                },
                 columns: [
                     { data: "date", "className": "table-date" },
                     { data: "user.full_name", "className": "table-user" },
@@ -64,13 +68,12 @@
             });
 
 
-            $('#table-one tbody').on( 'click', 'tr', function (e) {
+            $('#table-one tbody').on('click', 'tr', function () {
 
                 try {
                     var tr = $(this).closest('tr');
                     var row = table.row(tr);
-
-                    if ( row.child.isShown() ) {
+                    if (row.child.isShown()) {
                         row.child.hide();
                     }
                     else {
@@ -82,14 +85,10 @@
                     }
                     else {
                         table.row(table.$('tr.selected')).child.hide();
-
                         table.$('tr.selected').removeClass('selected');
                         $(this).addClass('selected');
                     }
-
-                } catch {
-
-                }
+                } catch {}
 
             } );
         });
