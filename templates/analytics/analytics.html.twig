@@ -7,11 +7,7 @@
 
     <script>
         function format ( d ) {
-            return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
-                '<tr>'+
-                '<td>'+d.data+'</td>'+
-                '</tr>'+
-                '</table>';
+            return '<div class="table-data-hide">'+ d.data + '</div>';
         }
 
         $(document).ready(function() {
@@ -19,7 +15,7 @@
                 'processing': true,
                 "ajax": {
                     "url": "/analytics/data",
-                    dataSrc:""
+                    dataSrc: ""
                 },
                 'language': {
                     'url': '//cdn.datatables.net/plug-ins/1.10.19/i18n/Russian.json',
@@ -44,24 +40,38 @@
                     { data: "text", "className": "table-text" },
                     { data: "data", "className": "table-data", "visible": false },
                 ],
-                // rowReorder: {
-                //     selector: 'td:nth-child(2)'
-                // },
-                responsive: true
+                responsive: true,
+                select: false,
             });
 
 
-            $('#table-one tbody').on( 'click', 'tr', function () {
-                $(this).toggleClass('selected');
-                var tr = $(this).closest('tr');
-                var row = table.row( tr );
+            $('#table-one tbody').on( 'click', 'tr', function (e) {
 
-                if ( row.child.isShown() ) {
-                    row.child.hide();
+                try {
+                    var tr = $(this).closest('tr');
+                    var row = table.row(tr);
+
+                    if ( row.child.isShown() ) {
+                        row.child.hide();
+                    }
+                    else {
+                        row.child(format(row.data())).show();
+                    }
+
+                    if ($(this).hasClass('selected')) {
+                        $(this).removeClass('selected');
+                    }
+                    else {
+                        table.row(table.$('tr.selected')).child.hide();
+
+                        table.$('tr.selected').removeClass('selected');
+                        $(this).addClass('selected');
+                    }
+
+                } catch {
+
                 }
-                else {
-                    row.child( format(row.data()) ).show();
-                }
+
             } );
         });
     </script>
@@ -95,6 +105,15 @@
         table.dataTable tbody tr.selected {
             background-color: #d8f3d1;
         }
+
+        table.dataTable tbody tr:hover {
+            cursor: pointer;
+        }
+
+        .table-data-hide {
+            cursor: default;
+        }
+
     </style>
 
     <div class="table-wrapper">
