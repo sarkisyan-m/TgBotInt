@@ -48,9 +48,9 @@
                 columns: [
                     { data: "date", "className": "table-date" },
                     { data: "user.full_name", "className": "table-user" },
+                    { data: "text", "className": "table-text" },
                     { data: "type", "className": "table-type" },
                     { data: "channel", "className": "table-channel" },
-                    { data: "text", "className": "table-text" },
                     { data: "data", "className": "table-data", "visible": false },
                 ],
                 responsive: true,
@@ -99,7 +99,7 @@
 
         td {
             word-break: break-word;
-            font-size: 11px;
+            font-size: 14px;
             font-family: 'Source Code Pro', monospace;
         }
 
@@ -118,7 +118,7 @@
         }
 
         .table-wrapper {
-
+            font-size: 14px;
         }
 
         table.dataTable tbody tr.selected {
@@ -151,14 +151,14 @@
     </style>
 
     <div class="table-wrapper">
-        <table id="table-one" class="table table-condensed">
+        <table id="table-one" class="table table-condensed" style="width: 100%">
             <thead>
             <tr>
                 <th>Дата</th>
                 <th>Пользователь</th>
+                <th>Текст</th>
                 <th>Тип</th>
                 <th>Канал</th>
-                <th>Текст</th>
                 <th>Данные</th>
             </tr>
             </thead>
@@ -166,9 +166,9 @@
             <tr>
                 <th>Дата</th>
                 <th>Пользователь</th>
+                <th>Текст</th>
                 <th>Тип</th>
                 <th>Канал</th>
-                <th>Текст</th>
                 <th>Данные</th>
             </tr>
             </tfoot>
