@@ -68,7 +68,7 @@ class Profile
             '%name%' => $bitrixUser->getName(),
             '%telegramId%' => $tgUser->getChatId(),
             '%phone%' => $tgUser->getPhone(),
-            '%email%' => $bitrixUser->getEmail()
+            '%email%' => $bitrixUser->getEmail(),
         ]);
 
         $keyboard = [];
@@ -227,8 +227,8 @@ class Profile
         $keyboard = [];
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
             'data' => [
-                'event_all' => !$subscription->getNotificationTelegram()
-            ]
+                'event_all' => !$subscription->getNotificationTelegram(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.all', [
@@ -237,8 +237,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
             'data' => [
-                'event_add' => !$subscription->getNotificationTelegramAdd()
-            ]
+                'event_add' => !$subscription->getNotificationTelegramAdd(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.add', [
@@ -247,8 +247,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
             'data' => [
-                'event_edit' => !$subscription->getNotificationTelegramEdit()
-            ]
+                'event_edit' => !$subscription->getNotificationTelegramEdit(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.edit', [
@@ -257,8 +257,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
             'data' => [
-                'event_delete' => !$subscription->getNotificationTelegramDelete()
-            ]
+                'event_delete' => !$subscription->getNotificationTelegramDelete(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.delete', [
@@ -267,8 +267,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
             'data' => [
-                'event_reminder' => !$subscription->getNotificationTelegramReminder()
-            ]
+                'event_reminder' => !$subscription->getNotificationTelegramReminder(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.reminder', [
@@ -322,8 +322,8 @@ class Profile
         $keyboard = [];
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
             'data' => [
-                'event_all' => !$subscription->getNotificationEmail()
-            ]
+                'event_all' => !$subscription->getNotificationEmail(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.all', [
@@ -332,8 +332,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
             'data' => [
-                'event_add' => !$subscription->getNotificationEmailAdd()
-            ]
+                'event_add' => !$subscription->getNotificationEmailAdd(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.add', [
@@ -342,8 +342,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
             'data' => [
-                'event_edit' => !$subscription->getNotificationEmailEdit()
-            ]
+                'event_edit' => !$subscription->getNotificationEmailEdit(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.edit', [
@@ -352,8 +352,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
             'data' => [
-                'event_delete' => !$subscription->getNotificationEmailDelete()
-            ]
+                'event_delete' => !$subscription->getNotificationEmailDelete(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.delete', [
@@ -362,8 +362,8 @@ class Profile
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
             'data' => [
-                'event_reminder' => !$subscription->getNotificationEmailReminder()
-            ]
+                'event_reminder' => !$subscription->getNotificationEmailReminder(),
+            ],
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.reminder', [

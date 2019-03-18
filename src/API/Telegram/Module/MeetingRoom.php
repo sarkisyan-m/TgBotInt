@@ -302,7 +302,7 @@ class MeetingRoom extends Module
 
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
-            $this->translate('meeting_room.event_name.selected', ['%eventName%' => $meetingRoomUser->getEventName()]) .
+            $this->translate('meeting_room.event_name.selected', ['%eventName%' => $meetingRoomUser->getEventName()]).
             $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]),
             'Markdown',
             true,
@@ -639,7 +639,7 @@ class MeetingRoom extends Module
         $members = null;
 
         if (!$meetingRoomUser->getEventMembers()) {
-            if (isset($data['callback_event']['members']) && $data['callback_event']['members'] == 'none') {
+            if (isset($data['callback_event']['members']) && 'none' == $data['callback_event']['members']) {
 //            if ($this->noCommandList($this->tgRequest->getText())) {
                 $meetingRoomUserData['users']['none'] = 'none';
             } else {
@@ -722,7 +722,7 @@ class MeetingRoom extends Module
                 $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
                 $this->tgDb->insert($meetingRoomUser);
 
-                if (!isset($data['callback_event']['members']) || !$data['callback_event']['members'] == 'none') {
+                if (!isset($data['callback_event']['members']) || 'none' == !$data['callback_event']['members']) {
                     $this->tgBot->sendMessage(
                         $this->tgRequest->getChatId(),
                         $this->translate('meeting_room.event_members.form.head'),
@@ -1211,7 +1211,7 @@ class MeetingRoom extends Module
         }
     }
 
-    public function googleVerifyDescription($event, $tgLink = true, &$goodHash = null)
+    public function googleVerifyDescription($event, $tgLink = true)
     {
         $textOrganizer = null;
         $textMembers = null;
@@ -2210,19 +2210,19 @@ class MeetingRoom extends Module
                 continue;
             }
 
-            if (strpos($state, self::EVENT_CREATED) !== false && !$subscription->getNotificationTelegramAdd()) {
+            if (false !== strpos($state, self::EVENT_CREATED) && !$subscription->getNotificationTelegramAdd()) {
                 continue;
             }
 
-            if (strpos($state, self::EVENT_CHANGED) !== false && !$subscription->getNotificationTelegramEdit()) {
+            if (false !== strpos($state, self::EVENT_CHANGED) && !$subscription->getNotificationTelegramEdit()) {
                 continue;
             }
 
-            if (strpos($state, self::EVENT_DELETED) !== false && !$subscription->getNotificationTelegramDelete()) {
+            if (false !== strpos($state, self::EVENT_DELETED) && !$subscription->getNotificationTelegramDelete()) {
                 continue;
             }
 
-            if (strpos($state, self::EVENT_REMINDER) !== false && !$subscription->getNotificationTelegramReminder()) {
+            if (false !== strpos($state, self::EVENT_REMINDER) && !$subscription->getNotificationTelegramReminder()) {
                 continue;
             }
 
@@ -2244,6 +2244,7 @@ class MeetingRoom extends Module
         }
 
         $state = str_replace('*', '', $state);
+        $state = trim($state);
         $textPlain = str_replace('*', '', $textPlain);
         $message = new \Swift_Message();
 
@@ -2275,25 +2276,25 @@ class MeetingRoom extends Module
                 continue;
             }
 
-            if (strpos($state, self::EVENT_CREATED) !== false && !$subscription->getNotificationEmailAdd()) {
+            if (false !== strpos($state, self::EVENT_CREATED) && !$subscription->getNotificationEmailAdd()) {
                 continue;
             }
 
-            if (strpos($state, self::EVENT_CHANGED) !== false && !$subscription->getNotificationEmailEdit()) {
+            if (false !== strpos($state, self::EVENT_CHANGED) && !$subscription->getNotificationEmailEdit()) {
                 continue;
             }
 
-            if (strpos($state, self::EVENT_DELETED) !== false && !$subscription->getNotificationEmailDelete()) {
+            if (false !== strpos($state, self::EVENT_DELETED) && !$subscription->getNotificationEmailDelete()) {
                 continue;
             }
 
-            if (strpos($state, self::EVENT_REMINDER) !== false && !$subscription->getNotificationEmailReminder()) {
+            if (false !== strpos($state, self::EVENT_REMINDER) && !$subscription->getNotificationEmailReminder()) {
                 continue;
             }
 
             $organizer = json_decode($meetingRoom->getEventMembers(), true)['users']['organizer'][0];
 
-            $subject = "{$state}: {$organizer['name']} - {$meetingRoom->getEventName()} - {$meetingRoom->getDate()}, {$meetingRoom->getTime()} ({$meetingRoom->getMeetingRoom()})";
+            $subject = "[{$state}] {$organizer['name']} - {$meetingRoom->getEventName()} - {$this->tgPluginCalendar->getDateRus($meetingRoom->getDate(), true)}, {$meetingRoom->getTime()} ({$meetingRoom->getMeetingRoom()})";
             $message
                 ->setSubject($subject)
                 ->setFrom([$this->mailerFrom => $this->mailerFromName])
@@ -2303,7 +2304,7 @@ class MeetingRoom extends Module
                         'emails/event.html.twig', [
                         'state' => $state,
                         'text' => $textHtml,
-                        'subscription_text_html' =>  $subscriptionTextHtml
+                        'subscription_text_html' => $subscriptionTextHtml,
                     ]),
                     'text/html'
                 )
@@ -2312,7 +2313,7 @@ class MeetingRoom extends Module
                         'emails/event.txt.twig', [
                         'state' => $state,
                         'text' => $textPlain,
-                        'subscription_text_plain' =>  $subscriptionTextPlain
+                        'subscription_text_plain' => $subscriptionTextPlain,
                     ]),
                     'text/plain'
                 )
@@ -2332,10 +2333,10 @@ class MeetingRoom extends Module
         foreach ($calendars as $calendar) {
             foreach ($calendar['listEvents'] as $event) {
                 if ($this->verifyHash($event['description'], $event['dateTimeStart'], $hash)) {
+                    $hash = $hash[0];
                     /**
                      * @var Verification
                      */
-                    $hash = $hash[0];
                     $diffHours = Helper::getDateDiffHoursDateTime((new \DateTime()), $hash->getDate());
                     $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $hash->getDate());
 

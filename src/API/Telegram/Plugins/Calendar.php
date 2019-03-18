@@ -71,7 +71,7 @@ class Calendar
         return $week;
     }
 
-    public function getDateRus($date)
+    public function getDateRus($date, $strToLower = false)
     {
         $monthRus = [
             '',
@@ -104,6 +104,10 @@ class Calendar
         $day = (int) date('d', strtotime($date));
 
         $format = "{$weekRus[$week]}, {$day} {$monthRus[$month]}";
+
+        if ($strToLower) {
+            $format = mb_strtolower($format);
+        }
 
         return $format;
     }

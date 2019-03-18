@@ -257,12 +257,12 @@ class TelegramController extends Controller
 
                     return $this->render(
                         'emails/event_unsubscribe.html.twig', [
-                        'text' => $this->translate('subscription.unsubscribed.success', ['%email%' => $subscription->getEmail()])
+                        'text' => $this->translate('subscription.unsubscribed.success', ['%email%' => $subscription->getEmail()]),
                     ]);
                 } else {
                     return $this->render(
                         'emails/event_unsubscribe.html.twig', [
-                        'text' => $this->translate('subscription.unsubscribed.failed', ['%email%' => $subscription->getEmail()])
+                        'text' => $this->translate('subscription.unsubscribed.failed', ['%email%' => $subscription->getEmail()]),
                     ]);
                 }
             }
@@ -589,38 +589,38 @@ class TelegramController extends Controller
         }
 
         if (isset($data['callback_event']['profile'])) {
-            if ($data['callback_event']['profile'] == 'come_back') {
+            if ('come_back' == $data['callback_event']['profile']) {
                 $this->tgModuleProfile->index($data);
 
                 return true;
             }
 
-            if ($data['callback_event']['profile'] == 'personal_info') {
+            if ('personal_info' == $data['callback_event']['profile']) {
                 $this->tgModuleProfile->personalInfo();
 
                 return true;
             }
 
-            if ($data['callback_event']['profile'] == 'notification' ||
-                $data['callback_event']['profile'] == 'notification_come_back') {
+            if ('notification' == $data['callback_event']['profile'] ||
+                'notification_come_back' == $data['callback_event']['profile']) {
                 $this->tgModuleProfile->settingNotification();
 
                 return true;
             }
 
-            if ($data['callback_event']['profile'] == 'notification_default') {
+            if ('notification_default' == $data['callback_event']['profile']) {
                 $this->tgModuleProfile->settingNotificationDefault();
 
                 return true;
             }
 
-            if ($data['callback_event']['profile'] == 'notification_telegram') {
+            if ('notification_telegram' == $data['callback_event']['profile']) {
                 $this->tgModuleProfile->settingNotificationTelegram($data);
 
                 return true;
             }
 
-            if ($data['callback_event']['profile'] == 'notification_email') {
+            if ('notification_email' == $data['callback_event']['profile']) {
                 $this->tgModuleProfile->settingNotificationEmail($data);
 
                 return true;

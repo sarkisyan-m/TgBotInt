@@ -22,7 +22,7 @@ class AnalyticsController extends Controller
         if ($request->get('auth')) {
             $hash = hash('sha256', $request->get('auth'));
 
-            if ($hash != 'ee1956c052582e534573d95c67493d21780a982368253de9e78503da67372253') {
+            if ('ee1956c052582e534573d95c67493d21780a982368253de9e78503da67372253' != $hash) {
                 return new Response('', Response::HTTP_FORBIDDEN);
             }
         }
@@ -47,7 +47,6 @@ class AnalyticsController extends Controller
     public function data(Request $request)
     {
         if ($request->isXmlHttpRequest() || true) {
-
             $paths = $this->getPaths();
 
             $content = [];
@@ -60,25 +59,21 @@ class AnalyticsController extends Controller
             $data = [];
             foreach ($content as $file) {
                 foreach ($file as $row) {
-
-                    /**
+                    /*
                      * Date
                      */
-
                     $date = new \DateTime($row['datetime']['date']);
                     $date = $date->format('d/m/Y H:i:s.v');
 
-                    /**
+                    /*
                      * User
                      */
-
                     $user = [
                         'first_name' => null,
                         'last_name' => null,
                         'username' => null,
                         'name' => null,
-                        'full_name' => null
-
+                        'full_name' => null,
                     ];
 
                     if (isset($row['message']['result']['chat'])) {
@@ -121,22 +116,21 @@ class AnalyticsController extends Controller
                         $user['full_name'] = $user['name'];
                     }
 
-                    /**
+                    /*
                      * Type
                      */
 
                     isset($row['message']['callback_query']) ? $type = 'callback' : $type = 'message';
 
-                    /**
+                    /*
                      * Channel
                      */
 
-                    $row['channel'] == 'telegram_request_in' ? $channel = 'in' : $channel = 'out';
+                    'telegram_request_in' == $row['channel'] ? $channel = 'in' : $channel = 'out';
 
-                    /**
+                    /*
                      * Text
                      */
-
                     $text = null;
 
                     if (isset($row['message']['result']['text'])) {
@@ -147,7 +141,7 @@ class AnalyticsController extends Controller
                         $text = $row['message']['callback_query']['message']['text'];
                     }
 
-                    /**
+                    /*
                      * Result
                      */
 
@@ -173,15 +167,15 @@ class AnalyticsController extends Controller
     public function getPaths()
     {
         $extension = 'log';
-        $path = $this->getParameter('kernel.project_dir') . '/var/log';
+        $path = $this->getParameter('kernel.project_dir').'/var/log';
 
         $exclude = [
-            'dump'
+            'dump',
         ];
 
         /**
-         * @param \SplFileInfo $file
-         * @param mixed $key
+         * @param \SplFileInfo                     $file
+         * @param mixed                            $key
          * @param \RecursiveCallbackFilterIterator $iterator
          *
          * @return bool True if you need to recurse or if the item is acceptable
@@ -208,9 +202,8 @@ class AnalyticsController extends Controller
         /**
          * @var $file \SplFileInfo
          */
-
         foreach ($rii as $file) {
-            if (!$file->isDir()){
+            if (!$file->isDir()) {
                 if ($file->getExtension() == $extension) {
                     $files[] = $file->getPathname();
                 }
@@ -228,7 +221,6 @@ class AnalyticsController extends Controller
 
         $contentLines = [];
         foreach ($contentArray as $contentLine) {
-
             $contentLine = json_decode($contentLine, true);
 
             if (!$contentLine['message']) {

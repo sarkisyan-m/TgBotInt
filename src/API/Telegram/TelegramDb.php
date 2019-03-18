@@ -298,10 +298,10 @@ class TelegramDb
 
     /**
      * @param TgUsers|null $tgUser
-     * @param string|null $email
-     * @param string|null $emailToken
+     * @param string|null  $email
+     * @param string|null  $emailToken
      *
-     * @return Subscription|Subscription[]|array|null|object[]
+     * @return Subscription|Subscription[]|array|object[]|null
      */
     public function getSubscription(TgUsers $tgUser = null, string $email = null, string $emailToken = null)
     {

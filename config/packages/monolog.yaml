@@ -6,14 +6,14 @@ monolog:
             path: '%kernel.logs_dir%/php/php-%kernel.environment%.log'
             level: error
             bubble: true
-            max_files: 10
+            max_files: 366
 
         telegram_request_in:
             type: rotating_file
             path: '%kernel.logs_dir%/tg/in/tg-in-%kernel.environment%.log'
             level: debug
             bubble: true
-            max_files: 10
+            max_files: 366
             channels: ['telegram_request_in']
             formatter: Monolog\Formatter\JsonFormatter
 
@@ -22,7 +22,7 @@ monolog:
             path: '%kernel.logs_dir%/tg/out/tg-out-%kernel.environment%.log'
             level: debug
             bubble: true
-            max_files: 10
+            max_files: 366
             channels: ['telegram_request_out']
             formatter: Monolog\Formatter\JsonFormatter
 
@@ -31,6 +31,6 @@ monolog:
             path: '%kernel.logs_dir%/dump/dump-%kernel.environment%.log'
             level: debug
             bubble: true
-            max_files: 10
+            max_files: 366
             channels: ['dump']
             formatter: Monolog\Formatter\JsonFormatter

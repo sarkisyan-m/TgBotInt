@@ -290,16 +290,16 @@ class TelegramAPI
 
     /**
      * @param $chat_id
-     * @param string $photo
+     * @param string      $photo
      * @param string|null $caption
      * @param string|null $parse_mode
-     * @param bool $disable_notification
-     * @param int|null $reply_to_message_id
-     * @param null $reply_markup
+     * @param bool        $disable_notification
+     * @param int|null    $reply_to_message_id
+     * @param null        $reply_markup
      *
      * @return mixed
      */
-    public function sendPhoto($chat_id, string $photo, string $caption = null, string $parse_mode  = null, bool $disable_notification = false, int $reply_to_message_id = null, $reply_markup = null)
+    public function sendPhoto($chat_id, string $photo, string $caption = null, string $parse_mode = null, bool $disable_notification = false, int $reply_to_message_id = null, $reply_markup = null)
     {
         $args = [
             'chat_id' => $chat_id,
