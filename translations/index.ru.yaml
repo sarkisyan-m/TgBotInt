@@ -1,11 +1,11 @@
 meta:
-    description: 'Описание .. 123 описание'
-    keywords: 'Слово, второе, третье'
+    description: ''
+    keywords: ''
 
 footer: 'Переговорка-бот 2018-%date%'
 
 index:
-    title: 'Главная'
+    title: 'Главная страница'
     lorem: 'Главная страница бота! Контент не предусмотрен!'
 
 auth:

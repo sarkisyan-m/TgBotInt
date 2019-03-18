@@ -1,6 +1,6 @@
 top_menu:
     items:
-        index: 'Главная'
+        index: 'Главная страница'
     is_auth:
         profile: 'Профиль'
     is_not_auth:

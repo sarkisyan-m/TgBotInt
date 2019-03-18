@@ -8,8 +8,5 @@ window.util = util;
 require('bootstrap');
 require('datatables');
 require('./main.js');
+require('./images.js');
 require('./ajax.js');
-
-require('../img/email/logo_bg.png');
-require('../img/email/logo_head.png');
-require('../img/email/logo_footer.png');

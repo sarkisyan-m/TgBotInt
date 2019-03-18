@@ -9,6 +9,7 @@
         <meta http-equiv="content-type" content="text/html; charset=utf-8">
         <meta name="keywords" content="{% block keywords %}{{ 'meta.keywords'|trans }}{% endblock %}">
         <meta name="description" content="{% block description %}{{ 'meta.description'|trans }}{% endblock %}">
+        <link rel="icon" href="{{ asset('build/images/favicon.ico') }}" type="image/x-icon">
         {% block header %}{% endblock %}
         <title>{% block title %}{{ 'index.title'|trans }}{% endblock %}</title>
     </head>
