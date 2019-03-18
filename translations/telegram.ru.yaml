@@ -88,18 +88,20 @@ admin:
         info:
             button: "Общая информация"
             head: "*Общая информация*\n\n"
-            google_service_account_head: "*Google Service Account* ([управление](https://console.developers.google.com/projectselector/iam-admin/serviceaccounts))\n"
-            google_service_account_body: "%googleServiceAccountEmail%\n\n"
-            google_calendar_head: "*Google Calendar* ([управление](https://www.google.com/calendar))\n"
-            google_calendar_body: "%calendarName% (%eventCount%)\n"
-            google_calendar_total_count: "*Всего событий: %totalCount%*\n\n"
-            bitrix24_head: "*Bitrix24* ([управление](%bitrix24BaseUrl%))\n"
-            bitrix24_body: "Активных сотрудников: %userActiveTrue%
+            google_service_account: "*Google Service Account* ([управление](https://console.developers.google.com/projectselector/iam-admin/serviceaccounts))
+            \n%googleServiceAccountEmail%\n\n"
+            google_calendar:
+                head: "*Google Calendar* ([управление](https://www.google.com/calendar))\n"
+                body: "%calendarName% (%eventCount%)\n"
+                total_count: "*Всего событий: %totalCount%*\n\n"
+            bitrix24: "*Bitrix24* ([управление](%bitrix24BaseUrl%))
+            \nАктивных сотрудников: %userActiveTrue%
             \nНе указан телефон: %userPhoneNotFound%
-            \nНе указан email: %userEmailNotFound%
-            \nЗарегистрировано в боте: %tgUsersCount%
             \nНеактивных сотрудников: %userActiveFalse%
             \n*Всего сотрудников: %userTotalCount%*\n\n"
+            telegram: "*Telegram*
+            \nЗарегистрировано: %tgUsersCount%
+            \nПолучают уведомления без регистрации: %tgSubscriptionCount%"
 
 # каждое слово через запятую
 no_command_word: "нет, 0, -, отсутствует, н, n, net"

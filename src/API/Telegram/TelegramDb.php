@@ -358,6 +358,9 @@ class TelegramDb
             }
         }
 
-        return [];
+        $repository = $this->entityManager->getRepository(Subscription::class);
+        $subscription = $repository->findBy([]);
+
+        return $subscription;
     }
 }

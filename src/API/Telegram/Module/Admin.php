@@ -115,29 +115,42 @@ class Admin extends Module
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['admin' => ['event_info' => 'confirm'], 'data' => ['ready' => 'back']]]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.back'), $callback);
         $this->tgDb->setCallbackQuery();
-
         $text = $this->translate('admin.event.info.head');
 
-        $text .= $this->translate('admin.event.info.google_service_account_head');
-        $text .= $this->translate('admin.event.info.google_service_account_body', ['%googleServiceAccountEmail%' => $this->googleServiceAccountEmail]);
+        /*
+         * GoogleServiceAccount
+         */
+
+        $text .= $this->translate('admin.event.info.google_service_account', [
+            '%googleServiceAccountEmail%' => $this->googleServiceAccountEmail
+        ]);
+
+        /*
+         * GoogleCalendar
+         */
 
         $calendars = $this->googleCalendar->getList();
         $totalCount = 0;
-        $text .= $this->translate('admin.event.info.google_calendar_head');
+        $text .= $this->translate('admin.event.info.google_calendar.head');
         foreach ($calendars as $calendar) {
             $eventCount = count($calendar['listEvents']);
             $totalCount += $eventCount;
-            $text .= $this->translate('admin.event.info.google_calendar_body', ['%calendarName%' => $calendar['calendarName'], '%eventCount%' => $eventCount]);
+            $text .= $this->translate('admin.event.info.google_calendar.body', [
+                '%calendarName%' => $calendar['calendarName'],
+                '%eventCount%' => $eventCount
+            ]);
         }
-        $text .= $this->translate('admin.event.info.google_calendar_total_count', ['%totalCount%' => $totalCount]);
+        $text .= $this->translate('admin.event.info.google_calendar.total_count', ['%totalCount%' => $totalCount]);
+
+        /*
+         * Bitrix24
+         */
 
         $bitrix24Users = $this->bitrix24->getUsers();
-
         $bitrix24UsersActiveTrue = 0;
         $bitrix24UsersActiveFalse = 0;
         $bitrix24UsersTotal = 0;
         $bitrix24UsersNotPhone = 0;
-        $bitrix24UsersNotEmail = 0;
         foreach ($bitrix24Users as $bitrix24User) {
             if ($bitrix24User->getActive()) {
                 ++$bitrix24UsersActiveTrue;
@@ -149,24 +162,36 @@ class Admin extends Module
                 if (!$bitrix24User->getFirstPhone()) {
                     ++$bitrix24UsersNotPhone;
                 }
-
-                if (!$bitrix24User->getEmail()) {
-                    ++$bitrix24UsersNotEmail;
-                }
             }
 
             ++$bitrix24UsersTotal;
         }
 
-        $tgUsers = $this->tgDb->getTgUsers([]);
-        $text .= $this->translate('admin.event.info.bitrix24_head', ['%bitrix24BaseUrl%' => $this->bitrix24BaseUrl]);
-        $text .= $this->translate('admin.event.info.bitrix24_body', [
+        $text .= $this->translate('admin.event.info.bitrix24', [
+            '%bitrix24BaseUrl%' => $this->bitrix24BaseUrl,
             '%userActiveTrue%' => $bitrix24UsersActiveTrue,
             '%userActiveFalse%' => $bitrix24UsersActiveFalse,
             '%userPhoneNotFound%' => $bitrix24UsersNotPhone,
-            '%userEmailNotFound%' => $bitrix24UsersNotEmail,
-            '%tgUsersCount%' => count($tgUsers),
             '%userTotalCount%' => $bitrix24UsersTotal,
+        ]);
+
+        /*
+         * Telegram
+         */
+
+        $tgUsers = $this->tgDb->getTgUsers([]);
+        $tgSubscription = $this->tgDb->getSubscription();
+
+        $tgSubscriptionNotRegister = 0;
+        foreach ($tgSubscription as $subscription) {
+            if (!$subscription->getTgUser()) {
+                ++$tgSubscriptionNotRegister;
+            }
+        }
+
+        $text .= $this->translate('admin.event.info.telegram', [
+            '%tgUsersCount%' => count($tgUsers),
+            '%tgSubscriptionCount%' => $tgSubscriptionNotRegister
         ]);
 
         $this->tgBot->editMessageText(
