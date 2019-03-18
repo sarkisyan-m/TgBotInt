@@ -2,6 +2,7 @@
 
 namespace App\API\Telegram\Module;
 
+use App\Analytics\AnalyticsMonitor;
 use App\API\Bitrix24\Bitrix24API;
 use App\API\Bitrix24\Model\BitrixUser;
 use App\API\GoogleCalendar\GoogleCalendarAPI;
@@ -43,6 +44,7 @@ class MeetingRoom extends Module
     private $notificationTelegram;
     private $notificationTime;
     private $baseUrl;
+    private $analyticsMonitor;
 
     const LIMIT_BYTES_MAX = 5500;
     const EVENT_CREATED = 'Событие создано';
@@ -71,7 +73,8 @@ class MeetingRoom extends Module
         $notificationMail,
         $notificationTelegram,
         $notificationTime,
-        $baseUrl
+        $baseUrl,
+        AnalyticsMonitor $analyticsMonitor
     ) {
         $this->tgBot = $tgBot;
         $this->tgDb = $tgDb;
@@ -93,6 +96,7 @@ class MeetingRoom extends Module
         $this->notificationTelegram = 'true' === $notificationTelegram ? true : false;
         $this->notificationTime = $notificationTime;
         $this->baseUrl = $baseUrl;
+        $this->analyticsMonitor = $analyticsMonitor;
     }
 
     public function request(TelegramRequest $request)
@@ -912,7 +916,12 @@ class MeetingRoom extends Module
                         $textNotificationState = $this->translate('meeting_room.confirm.data_notification_edit_event');
                         $textNotification .= $textNotificationState;
                     }
-                    // Если просто хотим добавить новое событие
+
+                    $this->analyticsMonitor->trigger(
+                        \App\Analytics\Trigger\MeetingRoom\Event::CHANGED,
+                        $attendees[0]['email']
+                    );
+                // Если просто хотим добавить новое событие
                 } else {
                     $this->googleCalendar->addEvent(
                         $calendarId,
@@ -925,6 +934,11 @@ class MeetingRoom extends Module
 
                     $textNotificationState = $this->translate('meeting_room.confirm.data_notification_add_event');
                     $textNotification .= $textNotificationState;
+
+                    $this->analyticsMonitor->trigger(
+                        \App\Analytics\Trigger\MeetingRoom\Event::CREATED,
+                        $attendees[0]['email']
+                    );
                 }
 
                 $this->tgDb->getMeetingRoomUser(true);
@@ -1850,7 +1864,7 @@ class MeetingRoom extends Module
                 $attendees = [];
                 foreach ($emailList as $key => $email) {
                     if (0 == $key) {
-                        $attendees[] = ['comment' => 'Организатор', 'email' => $email];
+                        $attendees[] = ['comment' => self::ORGANIZER, 'email' => $email];
                     } else {
                         $attendees[] = ['email' => $email];
                     }
@@ -1867,6 +1881,11 @@ class MeetingRoom extends Module
                     $meetingRoomDateTimeStart,
                     $meetingRoomDateTimeEnd,
                     $attendees
+                );
+
+                $this->analyticsMonitor->trigger(
+                    \App\Analytics\Trigger\MeetingRoom\Event::CANCEL_PARTICIPATION,
+                    $bitrixUser->getEmail()
                 );
 
                 $text .= $this->translate('event_list.cancel_participation.success');
@@ -1985,6 +2004,11 @@ class MeetingRoom extends Module
                 $text .= $this->translate('event_list.remove.success');
 
                 $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
+
+                $this->analyticsMonitor->trigger(
+                    \App\Analytics\Trigger\MeetingRoom\Event::DELETED,
+                    $event['attendees'][0]
+                );
 
                 $this->googleCalendarDescriptionConvertArrayToLtext(json_decode($meetingRoomUser->getEventMembers(), true), $emailList, $tgUsersId);
 
@@ -2335,7 +2359,7 @@ class MeetingRoom extends Module
                 if ($this->verifyHash($event['description'], $event['dateTimeStart'], $hash)) {
                     $hash = $hash[0];
                     /**
-                     * @var Verification
+                     * @var $hash Verification
                      */
                     $diffHours = Helper::getDateDiffHoursDateTime((new \DateTime()), $hash->getDate());
                     $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $hash->getDate());

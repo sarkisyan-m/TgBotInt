@@ -2,6 +2,7 @@
 
 namespace App\Tests;
 
+use App\Analytics\AnalyticsMonitor;
 use App\API\Bitrix24\Model\BitrixUser;
 use App\API\GoogleCalendar\GoogleCalendarAPI;
 use App\API\Telegram\Plugins\Calendar;
@@ -10,7 +11,6 @@ use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\Module\MeetingRoom;
 use App\API\Telegram\TelegramDb;
 use App\API\Telegram\TelegramRequest;
-use App\Service\Validator;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Cache\Simple\FilesystemCache;
 use Symfony\Component\HttpFoundation\Request;
@@ -226,6 +226,7 @@ class MeetingRoomTest extends WebTestCase
         $notificationTelegram = $container->getParameter('notification_telegram');
         $notificationTime = $container->getParameter('notification_time');
         $baseUrl = $container->getParameter('base_url');
+        $analyticsMonitor = new AnalyticsMonitor();
 
         $meetingRoom = new MeetingRoom(
             $tgBot,
@@ -247,7 +248,8 @@ class MeetingRoomTest extends WebTestCase
             $notificationMail,
             $notificationTelegram,
             $notificationTime,
-            $baseUrl
+            $baseUrl,
+            $analyticsMonitor
         );
 
         return $meetingRoom;

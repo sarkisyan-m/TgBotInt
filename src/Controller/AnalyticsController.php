@@ -30,13 +30,6 @@ class AnalyticsController extends Controller
         return $this->render('analytics/analytics.html.twig');
     }
 
-    public function sortPositionDistance($x, $y)
-    {
-        return $x['TOTAL_QUANTITY_LACKS'] > $y['TOTAL_QUANTITY_LACKS'] ||
-        $x['TOTAL_QUANTITY_LACKS'] == $y['TOTAL_QUANTITY_LACKS'] && $x['DISTANCE_DIFF'] > $y['DISTANCE_DIFF'] ? 1 :
-            ($x['TOTAL_QUANTITY_LACKS'] < $y['TOTAL_QUANTITY_LACKS'] ? -1 : 0);
-    }
-
     /**
      * @Route("/analytics/data", name="analytics_data")
      *
@@ -46,7 +39,7 @@ class AnalyticsController extends Controller
      */
     public function data(Request $request)
     {
-        if ($request->isXmlHttpRequest() || true) {
+        if ($request->isXmlHttpRequest()) {
             $paths = $this->getPaths();
 
             $content = [];
@@ -155,8 +148,6 @@ class AnalyticsController extends Controller
                     ];
                 }
             }
-
-//            $data = json_encode($data);
 
             return new JsonResponse($data);
         }
