@@ -70,7 +70,7 @@ parameters:
     notification_time: 30
 
     # cache
-    cache_time_google_calendar: 300
+    cache_time_google_calendar: 86400
     cache_google_calendar: 'cache_google_calendar'
     cache_time_bitrix24: 300
     cache_bitrix24: 'cache_bitrix24'
