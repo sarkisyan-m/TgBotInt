@@ -71,12 +71,17 @@ class Bitrix24API
 
         $result = [];
         do {
-            $fetchURL = $url.'?start='.($pagination * $process);
+            $fetchUrl = $url.'?start='.($pagination * $process);
 
             $multiCurl[$process] = curl_init();
-            curl_setopt($multiCurl[$process], CURLOPT_URL, $fetchURL);
-            curl_setopt($multiCurl[$process], CURLOPT_HEADER,0);
-            curl_setopt($multiCurl[$process], CURLOPT_RETURNTRANSFER,1);
+            $parameter = [
+                CURLOPT_URL => $fetchUrl,
+                CURLOPT_HEADER => false,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_TIMEOUT => 10,
+            ];
+            curl_setopt_array($multiCurl[$process], $parameter);
             curl_multi_add_handle($mh, $multiCurl[$process]);
 
             if ($process == 0) {
