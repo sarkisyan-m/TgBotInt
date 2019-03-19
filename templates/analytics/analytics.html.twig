@@ -54,10 +54,10 @@
                 columns: [
                     { data: "date", "className": "table-date" },
                     { data: "user.full_name", "className": "table-user" },
-                    { data: "text", "className": "table-text" },
-                    { data: "type", "className": "table-type" },
-                    { data: "channel", "className": "table-channel" },
-                    { data: "data", "className": "table-data", "visible": false },
+                    { data: "text", "className": "table-text", "orderable": false },
+                    { data: "type", "className": "table-type", "orderable": false },
+                    { data: "channel", "className": "table-channel", "orderable": false },
+                    { data: "data", "className": "table-data", "visible": false, "orderable": false },
                 ],
                 responsive: true,
                 "createdRow": function( row, data, dataIndex){
@@ -68,7 +68,6 @@
                     }
                 }
             });
-
 
             $('#table-one tbody').on('click', 'tr', function () {
 
