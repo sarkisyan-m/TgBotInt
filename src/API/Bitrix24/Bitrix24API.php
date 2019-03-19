@@ -38,6 +38,15 @@ class Bitrix24API
         $this->serializer = $serializer;
     }
 
+    public function deleteData()
+    {
+        try {
+            $this->cache->delete($this->cacheContainer);
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
+            error_log($e->getMessage());
+        }
+    }
+
     public function loadData()
     {
         try {
@@ -52,19 +61,53 @@ class Bitrix24API
 
         $method = 'user.get';
         $url = $this->bitrix24Url.$method.'/';
+
+        $multiCurl = [];
+        $mh = curl_multi_init();
+        $process = 0;
+
         $pagination = 50;
+        $totalPage = 0;
+
         $result = [];
+        do {
+            $fetchURL = $url.'?start='.($pagination * $process);
 
-//        $total = Helper::curl($url, ["ACTIVE" => true], true);
-        $total = Helper::curl($url, [], true);
-        $total = ceil($total['total'] / $pagination);
+            $multiCurl[$process] = curl_init();
+            curl_setopt($multiCurl[$process], CURLOPT_URL, $fetchURL);
+            curl_setopt($multiCurl[$process], CURLOPT_HEADER,0);
+            curl_setopt($multiCurl[$process], CURLOPT_RETURNTRANSFER,1);
+            curl_multi_add_handle($mh, $multiCurl[$process]);
 
-        for ($i = 0; $i < $total; ++$i) {
-            $page = $i * $pagination;
-//            $args = ["start" => $page, "ACTIVE" => true];
-            $args = ['start' => $page];
-            $result = array_merge($result, Helper::curl($url, $args, true)['result']);
+            if ($process == 0) {
+                $index = 0;
+                do {
+                    curl_multi_exec($mh,$index);
+                } while ($index > 0);
+
+                $result = json_decode(curl_multi_getcontent($multiCurl[$process]), true);
+                $totalPage = ceil($result['total'] / $pagination);
+                $result = $result['result'];
+
+                curl_multi_remove_handle($mh, $multiCurl[$process]);
+                unset($multiCurl[$process]);
+            }
+
+            $process++;
+        } while ($totalPage > $process);
+
+        $index = 0;
+        do {
+            curl_multi_exec($mh,$index);
+        } while ($index > 0);
+
+        foreach($multiCurl as $ch) {
+            $result = array_merge($result, json_decode(curl_multi_getcontent($ch), true)['result']);
+
+            curl_multi_remove_handle($mh, $ch);
         }
+
+        curl_multi_close($mh);
 
         foreach ($result as &$user) {
             $user = array_change_key_case($user, CASE_LOWER);
@@ -142,66 +185,6 @@ class Bitrix24API
 //        ];
 //        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
 //        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1001,
-//            'email' => 'testtestt_te@example.com',
-//            'name' => 'Иван Иванов',
-//            'first_name' => 'Иван',
-//            'last_name' => 'Иванов',
-//            "personal_phone" => "+71231231231",
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+71231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1002,
-//            'email' => 'test3@example.com',
-//            'name' => 'Петр Петров',
-//            'first_name' => 'Петр',
-//            'last_name' => 'Петров',
-//            'personal_phone' => '+73231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+73231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1003,
-//            'email' => 'test4_test@example.com',
-//            'name' => 'Петр Петров',
-//            'first_name' => 'Петр',
-//            'last_name' => 'Петров',
-//            'personal_phone' => '+74231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+74231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
-//
-//        $user = [
-//            'id' => 1004,
-//            'email' => 'test5@example.com',
-//            'name' => 'Петр Петров',
-//            'first_name' => 'Петр',
-//            'last_name' => 'Петров',
-//            'personal_phone' => '+75231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+75231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
-//        array_push($result, $user);
 
         //______________________________________________________________________
         //TEST
@@ -214,7 +197,7 @@ class Bitrix24API
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             error_log($e->getMessage());
 
-            return null;
+            return [];
         }
     }
 

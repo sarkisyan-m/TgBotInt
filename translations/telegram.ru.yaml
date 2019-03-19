@@ -13,7 +13,7 @@ anti_flood:
 
 bot_command:
     meeting_room_list: "\U0001F525 Забронировать переговорку"
-    profile: "\U0001F510 Мой профиль"
+    profile: "\U0001F464 Мой профиль"
     event_list: "\U0001F4C4 Мои события"
     events_list: "\U0001F4CB Все события"
     help: "\U00002049 Помощь"

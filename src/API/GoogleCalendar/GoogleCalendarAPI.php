@@ -133,6 +133,10 @@ class GoogleCalendarAPI
         $calendarListItems = unserialize($cacheItems['calendar_list_items']);
 
         foreach ($calendarListItems as $calendarListItem) {
+            if (array_search($calendarListItem->getSummary(), $this->meetingRoom) === false) {
+                continue;
+            }
+
             $startDateTime = (new \DateTime())->format(\DateTime::RFC3339);
             $endDateTime = (new \DateTime())->modify("+{$this->dateRange} day")->format(\DateTime::RFC3339);
 
