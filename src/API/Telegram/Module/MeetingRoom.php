@@ -963,6 +963,8 @@ class MeetingRoom extends Module
             true,
             $this->tgBot->inlineKeyboardMarkup($keyboard)
         );
+
+        $this->googleCalendar->loadData();
     }
 
     public function googleEventCurDayTimes()
@@ -1910,6 +1912,8 @@ class MeetingRoom extends Module
 
                 $this->sendTgNotification($textNotificationState, $tgUsersId, $textNotification);
                 $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
+
+                $this->googleCalendar->loadData();
             } elseif (isset($data['callback_event']['event']) && 'cancel_participation' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.cancel_participation.refuse');
                 $this->tgBot->editMessageText(
@@ -2023,6 +2027,8 @@ class MeetingRoom extends Module
 
                 $this->sendTgNotification($textNotificationState, $tgUsersId, $textNotification);
                 $this->sendMailNotification($textNotificationState, $textPlain, $textHtml, $emailList, $meetingRoomUser);
+
+                $this->googleCalendar->loadData();
             } elseif (isset($data['callback_event']['event']) && 'delete' == $data['callback_event']['event'] && 'no' == $data['data']['ready']) {
                 $text .= $this->translate('event_list.remove.cancel');
                 $this->tgBot->editMessageText(

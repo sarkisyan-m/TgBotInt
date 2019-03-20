@@ -231,7 +231,7 @@ class TelegramController extends Controller
         }
 
         // В противном случае говорим, что ничего не удовлетворило пользовательскому запросу
-        $this->tgModuleCommand->commandNotFound();
+//        $this->tgModuleCommand->commandNotFound();
 
         return new Response();
     }

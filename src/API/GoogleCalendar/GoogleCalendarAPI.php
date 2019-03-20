@@ -4,26 +4,15 @@ namespace App\API\GoogleCalendar;
 
 use App\Service\Helper;
 use Psr\SimpleCache\CacheInterface;
-use Google_Client;
-use Google_Service_Calendar;
-use Google_Service_Calendar_CalendarList;
-use Google_Service_Calendar_Event;
-use Google_Service_Calendar_CalendarListEntry;
-use Google_Service_Calendar_EventAttendee;
 
 class GoogleCalendarAPI
 {
     private $notificationGoogle;
     private $notificationTime;
-
     private $cache;
     private $cacheTime;
     private $cacheContainer;
-
-    private $googleClient;
-
     private $dateRange;
-
     private $meetingRoom;
     private $meetingRoomAutoAdd;
 
@@ -40,22 +29,24 @@ class GoogleCalendarAPI
         $this->cache = $cache;
         $this->cacheTime = $cacheTime;
         $this->cacheContainer = $cacheContainer;
-
-        $this->googleClient = new Google_Client();
-        $this->googleClient->addScope(Google_Service_Calendar::CALENDAR);
-
-        $this->googleClient->useApplicationDefaultCredentials();
-
-        if ($this->googleClient->isAccessTokenExpired()) {
-            $this->googleClient->fetchAccessTokenWithAssertion();
-        }
-
         $this->dateRange = $dateRange;
-
         $this->meetingRoom = explode(', ', $meetingRoom);
         $this->meetingRoomAutoAdd = 'true' === $meetingRoomAutoAdd ? true : false;
         $this->notificationGoogle = 'true' === $notificationGoogle ? true : false;
         $this->notificationTime = $notificationTime;
+    }
+
+    public function getClient()
+    {
+        $client = new \Google_Client();
+        $client->addScope(\Google_Service_Calendar::CALENDAR);
+        $client->useApplicationDefaultCredentials();
+
+        if ($client->isAccessTokenExpired()) {
+            $client->fetchAccessTokenWithAssertion();
+        }
+
+        return $client;
     }
 
     public function getFilters($filter)
@@ -111,19 +102,27 @@ class GoogleCalendarAPI
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             error_log($e->getMessage());
 
-            return null;
+            return [];
         }
 
+        $client = $this->getClient();
+
         /**
-         * @var Google_Service_Calendar
-         * @var $service                Google_Service_Calendar
-         * @var $calendarList           Google_Service_Calendar_CalendarList
-         * @var $calendarListItems      Google_Service_Calendar_CalendarListEntry
-         * @var $calendarListItem       Google_Service_Calendar_CalendarListEntry
+         * @var \Google_Service_Calendar
+         * @var $service                \Google_Service_Calendar
+         * @var $calendarList           \Google_Service_Calendar_CalendarList
+         * @var $calendarListItems      \Google_Service_Calendar_CalendarListEntry
+         * @var $calendarListItem       \Google_Service_Calendar_CalendarListEntry
          */
         $cacheItems = [];
 
-        $cacheItems['service'] = serialize(new Google_Service_Calendar($this->googleClient));
+        try {
+            $cacheItems['service'] = serialize(new \Google_Service_Calendar($client));
+        } catch (\Exception $e) {
+            $client = $this->getClient();
+            $cacheItems['service'] = serialize(new \Google_Service_Calendar($client));
+        }
+
         $service = unserialize($cacheItems['service']);
 
         $cacheItems['calendar_list'] = serialize($service->calendarList->listCalendarList());
@@ -159,8 +158,10 @@ class GoogleCalendarAPI
 
     public function removeAllEvents()
     {
+        $client = $this->getClient();
+
         $calendarList = $this->getList();
-        $service = new Google_Service_Calendar($this->googleClient);
+        $service = new \Google_Service_Calendar($client);
 
         foreach ($calendarList as $calendar) {
             foreach ($calendar['listEvents'] as $event) {
@@ -174,12 +175,12 @@ class GoogleCalendarAPI
     public function getList(array $filter = null)
     {
         /**
-         * @var Google_Service_Calendar
-         * @var $calendarList           Google_Service_Calendar_CalendarList
-         * @var $calendarListItems      Google_Service_Calendar_CalendarListEntry
-         * @var $calendarListItem       Google_Service_Calendar_CalendarListEntry
-         * @var $eventsListItems        Google_Service_Calendar_Event[]
-         * @var $member                 Google_Service_Calendar_EventAttendee
+         * @var \Google_Service_Calendar
+         * @var $calendarList           \Google_Service_Calendar_CalendarList
+         * @var $calendarListItems      \Google_Service_Calendar_CalendarListEntry
+         * @var $calendarListItem       \Google_Service_Calendar_CalendarListEntry
+         * @var $eventsListItems        \Google_Service_Calendar_Event[]
+         * @var $member                 \Google_Service_Calendar_EventAttendee
          */
         $data = $this->loadData();
 
@@ -385,9 +386,11 @@ class GoogleCalendarAPI
      */
     public function addEvent(string $calendarId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
     {
+        $client = $this->getClient();
+
         $this->eventBuilder($summary, $description, $startDateTime, $endDateTime, $attendees, $event, $params);
-        $event = new Google_Service_Calendar_Event($event);
-        $service = new Google_Service_Calendar($this->googleClient);
+        $event = new \Google_Service_Calendar_Event($event);
+        $service = new \Google_Service_Calendar($client);
         $service->events->insert($calendarId, $event, $params);
 
         $this->deleteData();
@@ -404,10 +407,12 @@ class GoogleCalendarAPI
      */
     public function editEvent(string $calendarId, string $eventId, string $summary = null, string $description = null, string $startDateTime = null, string $endDateTime = null, $attendees = null)
     {
-        $this->eventBuilder($summary, $description, $startDateTime, $endDateTime, $attendees, $event, $params);
-        $event = new Google_Service_Calendar_Event($event);
+        $client = $this->getClient();
 
-        $service = new Google_Service_Calendar($this->googleClient);
+        $this->eventBuilder($summary, $description, $startDateTime, $endDateTime, $attendees, $event, $params);
+        $event = new \Google_Service_Calendar_Event($event);
+
+        $service = new \Google_Service_Calendar($client);
         $service->events->update($calendarId, $eventId, $event, $params);
 
         $this->deleteData();
@@ -419,8 +424,10 @@ class GoogleCalendarAPI
      */
     public function removeEvent($calendarId = null, $eventId = null)
     {
+        $client = $this->getClient();
+
         $this->eventBuilder(null, null, null, null, null, $event, $params);
-        $service = new Google_Service_Calendar($this->googleClient);
+        $service = new \Google_Service_Calendar($client);
         $service->events->delete($calendarId, $eventId, $params);
 
         $this->deleteData();
