@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests;
+namespace App\Tests\Telegram;
 
 use App\API\Telegram\TelegramAPI;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;

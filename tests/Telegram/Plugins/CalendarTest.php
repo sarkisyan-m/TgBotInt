@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests;
+namespace App\Tests\Telegram\Plugins;
 
 use App\API\Telegram\Plugins\Calendar;
 use App\API\Telegram\TelegramAPI;

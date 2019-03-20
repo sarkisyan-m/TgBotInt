@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests;
+namespace App\Tests\Telegram\Module;
 
 use App\Analytics\AnalyticsMonitor;
 use App\API\Bitrix24\Model\BitrixUser;
@@ -19,6 +19,7 @@ class MeetingRoomTest extends WebTestCase
 {
     public function testIsGoogleCalendarBotEmail()
     {
+
         self::bootKernel();
 
         $container = self::$kernel->getContainer();
