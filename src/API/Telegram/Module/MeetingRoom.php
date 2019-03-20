@@ -8,6 +8,7 @@ use App\API\Bitrix24\Model\BitrixUser;
 use App\API\GoogleCalendar\GoogleCalendarAPI;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
+use App\API\Telegram\TelegramInterface;
 use App\API\Telegram\TelegramRequest;
 use App\API\Telegram\Plugins\Calendar as TelegramPluginCalendar;
 use App\Entity\Verification;
@@ -17,7 +18,7 @@ use Symfony\Component\Translation\TranslatorInterface;
 use Swift_Mailer;
 use Twig_Environment;
 
-class MeetingRoom extends Module
+class MeetingRoom implements TelegramInterface
 {
     private $tgBot;
     private $tgDb;

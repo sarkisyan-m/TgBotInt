@@ -6,12 +6,13 @@ use App\API\Bitrix24\Bitrix24API;
 use App\API\GoogleCalendar\GoogleCalendarAPI;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
+use App\API\Telegram\TelegramInterface;
 use App\API\Telegram\TelegramRequest;
 use App\Service\Helper;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Translation\TranslatorInterface;
 
-class Admin extends Module
+class Admin implements TelegramInterface
 {
     private $tgBot;
     private $tgDb;

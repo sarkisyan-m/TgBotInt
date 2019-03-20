@@ -5,10 +5,11 @@ namespace App\API\Telegram\Module;
 use App\API\Bitrix24\Bitrix24API;
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
+use App\API\Telegram\TelegramInterface;
 use App\API\Telegram\TelegramRequest;
 use Symfony\Component\Translation\TranslatorInterface;
 
-class Command extends Module
+class Command implements TelegramInterface
 {
     private $tgBot;
     private $tgDb;

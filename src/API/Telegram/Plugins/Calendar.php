@@ -4,11 +4,12 @@ namespace App\API\Telegram\Plugins;
 
 use App\API\Telegram\TelegramAPI;
 use App\API\Telegram\TelegramDb;
+use App\API\Telegram\TelegramInterface;
 use App\API\Telegram\TelegramRequest;
 use App\Service\Validator;
 use Symfony\Component\Translation\TranslatorInterface;
 
-class Calendar
+class Calendar implements TelegramInterface
 {
     protected $container;
     protected $tgBot;
@@ -26,6 +27,10 @@ class Calendar
         $this->tgDb = $tgDb;
         $this->tgRequest = $tgRequest;
         $this->translator = $translator;
+    }
+
+    public function request(TelegramRequest $request)
+    {
     }
 
     public function translate($key, array $params = [])
