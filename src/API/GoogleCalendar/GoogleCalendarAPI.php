@@ -315,7 +315,7 @@ class GoogleCalendarAPI
             return $data[0]['calendarId'];
         }
 
-        return [];
+        return null;
     }
 
     public function getCalendarNameList()
