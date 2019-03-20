@@ -109,10 +109,10 @@ class GoogleCalendarAPI
 
         /**
          * @var \Google_Service_Calendar
-         * @var $service                \Google_Service_Calendar
-         * @var $calendarList           \Google_Service_Calendar_CalendarList
-         * @var $calendarListItems      \Google_Service_Calendar_CalendarListEntry
-         * @var $calendarListItem       \Google_Service_Calendar_CalendarListEntry
+         * @var $service                 \Google_Service_Calendar
+         * @var $calendarList            \Google_Service_Calendar_CalendarList
+         * @var $calendarListItems       \Google_Service_Calendar_CalendarListEntry
+         * @var $calendarListItem        \Google_Service_Calendar_CalendarListEntry
          */
         $cacheItems = [];
 
@@ -126,7 +126,7 @@ class GoogleCalendarAPI
         $calendarListItems = unserialize($cacheItems['calendar_list_items']);
 
         foreach ($calendarListItems as $calendarListItem) {
-            if (array_search($calendarListItem->getSummary(), $this->meetingRoom) === false) {
+            if (false === array_search($calendarListItem->getSummary(), $this->meetingRoom)) {
                 continue;
             }
 
@@ -141,13 +141,11 @@ class GoogleCalendarAPI
 
         try {
             $this->cache->set($this->cacheContainer, $cacheItems, $this->cacheTime);
-
-            return $this->cache->get($this->cacheContainer);
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             error_log($e->getMessage());
-
-            return null;
         }
+
+        return $cacheItems;
     }
 
     public function removeAllEvents()
@@ -166,20 +164,20 @@ class GoogleCalendarAPI
         return $calendarList;
     }
 
-    public function getList(array $filter = null)
+    public function getList(array $filter = [])
     {
         /**
          * @var \Google_Service_Calendar
-         * @var $calendarList           \Google_Service_Calendar_CalendarList
-         * @var $calendarListItems      \Google_Service_Calendar_CalendarListEntry
-         * @var $calendarListItem       \Google_Service_Calendar_CalendarListEntry
-         * @var $eventsListItems        \Google_Service_Calendar_Event[]
-         * @var $member                 \Google_Service_Calendar_EventAttendee
+         * @var $calendarList            \Google_Service_Calendar_CalendarList
+         * @var $calendarListItems       \Google_Service_Calendar_CalendarListEntry
+         * @var $calendarListItem        \Google_Service_Calendar_CalendarListEntry
+         * @var $eventsListItems         \Google_Service_Calendar_Event[]
+         * @var $member                  \Google_Service_Calendar_EventAttendee
          */
         $data = $this->loadData();
 
         if (!$data) {
-            return null;
+            return [];
         }
 
         $filter = $this->getFilters($filter);
@@ -317,7 +315,7 @@ class GoogleCalendarAPI
             return $data[0]['calendarId'];
         }
 
-        return null;
+        return [];
     }
 
     public function getCalendarNameList()

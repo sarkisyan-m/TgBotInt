@@ -2365,7 +2365,7 @@ class MeetingRoom extends Module
                 if ($this->verifyHash($event['description'], $event['dateTimeStart'], $hash)) {
                     $hash = $hash[0];
                     /**
-                     * @var $hash Verification
+                     * @var Verification
                      */
                     $diffHours = Helper::getDateDiffHoursDateTime((new \DateTime()), $hash->getDate());
                     $diffMinutes = Helper::getDateDiffMinutesDateTime((new \DateTime()), $hash->getDate());

@@ -191,7 +191,7 @@ class AnalyticsController extends Controller
         $files = [];
 
         /**
-         * @var $file \SplFileInfo
+         * @var \SplFileInfo[]
          */
         foreach ($rii as $file) {
             if (!$file->isDir()) {

@@ -56,7 +56,7 @@ class Bitrix24API
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             error_log($e->getMessage());
 
-            return null;
+            return [];
         }
 
         $method = 'user.get';
@@ -84,10 +84,10 @@ class Bitrix24API
             curl_setopt_array($multiCurl[$process], $parameter);
             curl_multi_add_handle($mh, $multiCurl[$process]);
 
-            if ($process == 0) {
+            if (0 == $process) {
                 $index = 0;
                 do {
-                    curl_multi_exec($mh,$index);
+                    curl_multi_exec($mh, $index);
                 } while ($index > 0);
 
                 $result = json_decode(curl_multi_getcontent($multiCurl[$process]), true);
@@ -98,15 +98,15 @@ class Bitrix24API
                 unset($multiCurl[$process]);
             }
 
-            $process++;
+            ++$process;
         } while ($totalPage > $process);
 
         $index = 0;
         do {
-            curl_multi_exec($mh,$index);
+            curl_multi_exec($mh, $index);
         } while ($index > 0);
 
-        foreach($multiCurl as $ch) {
+        foreach ($multiCurl as $ch) {
             $result = array_merge($result, json_decode(curl_multi_getcontent($ch), true)['result']);
 
             curl_multi_remove_handle($mh, $ch);
@@ -197,13 +197,11 @@ class Bitrix24API
 
         try {
             $this->cache->set($this->cacheContainer, $result, $this->cacheTime);
-
-            return $this->cache->get($this->cacheContainer);
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             error_log($e->getMessage());
-
-            return [];
         }
+
+        return $result;
     }
 
     public function getFilters($filter)
@@ -257,10 +255,6 @@ class Bitrix24API
          * @var BitrixUser[]
          */
         $bitrixUsers = $this->loadData();
-
-        if (!$bitrixUsers) {
-            return null;
-        }
 
         $users = [];
         if ($filter) {
@@ -353,6 +347,6 @@ class Bitrix24API
             return $users;
         }
 
-        return $this->loadData();
+        return $bitrixUsers;
     }
 }

@@ -13,8 +13,13 @@ class TelegramAPI
     protected $translator;
     protected $tgLogger;
 
-    public function __construct($tgUrl, $tgToken, array $proxy, TranslatorInterface $translator = null, $tgLogger = null)
-    {
+    public function __construct(
+        $tgUrl,
+        $tgToken,
+        array $proxy,
+        TranslatorInterface $translator = null,
+        Logger $tgLogger = null
+    ) {
         $this->tgToken = $tgToken;
         $this->proxy = $proxy;
         $this->tgUrl = "{$tgUrl}{$this->tgToken}/";

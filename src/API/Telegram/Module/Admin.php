@@ -122,7 +122,7 @@ class Admin extends Module
          */
 
         $text .= $this->translate('admin.event.info.google_service_account', [
-            '%googleServiceAccountEmail%' => $this->googleServiceAccountEmail
+            '%googleServiceAccountEmail%' => $this->googleServiceAccountEmail,
         ]);
 
         /*
@@ -137,7 +137,7 @@ class Admin extends Module
             $totalCount += $eventCount;
             $text .= $this->translate('admin.event.info.google_calendar.body', [
                 '%calendarName%' => $calendar['calendarName'],
-                '%eventCount%' => $eventCount
+                '%eventCount%' => $eventCount,
             ]);
         }
         $text .= $this->translate('admin.event.info.google_calendar.total_count', ['%totalCount%' => $totalCount]);
@@ -191,7 +191,7 @@ class Admin extends Module
 
         $text .= $this->translate('admin.event.info.telegram', [
             '%tgUsersCount%' => count($tgUsers),
-            '%tgSubscriptionCount%' => $tgSubscriptionNotRegister
+            '%tgSubscriptionCount%' => $tgSubscriptionNotRegister,
         ]);
 
         $this->tgBot->editMessageText(

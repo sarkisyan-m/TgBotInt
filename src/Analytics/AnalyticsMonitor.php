@@ -11,8 +11,7 @@ class AnalyticsMonitor
 
     public function __construct(
         EntityManagerInterface $entityManager = null
-    )
-    {
+    ) {
         $this->entityManager = $entityManager;
     }
 
