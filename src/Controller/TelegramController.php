@@ -154,9 +154,9 @@ class TelegramController extends Controller
             $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
         }
 
-        if ($tgUser && !$bitrixUser) {
-            $this->tgDb->userDelete();
-        }
+//        if ($tgUser && !$bitrixUser) {
+//            $this->tgDb->userDelete();
+//        }
 
         // Если пользователь найден, то не предлагаем ему регистрацию.
         if ($tgUser && $bitrixUser) {
