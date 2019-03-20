@@ -116,13 +116,7 @@ class GoogleCalendarAPI
          */
         $cacheItems = [];
 
-        try {
-            $cacheItems['service'] = serialize(new \Google_Service_Calendar($client));
-        } catch (\Exception $e) {
-            $client = $this->getClient();
-            $cacheItems['service'] = serialize(new \Google_Service_Calendar($client));
-        }
-
+        $cacheItems['service'] = serialize(new \Google_Service_Calendar($client));
         $service = unserialize($cacheItems['service']);
 
         $cacheItems['calendar_list'] = serialize($service->calendarList->listCalendarList());
