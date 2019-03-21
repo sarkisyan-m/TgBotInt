@@ -401,7 +401,7 @@ class TelegramAPI
     public function answerInlineQuery(string $inline_query_id, $results, int $cache_time = null, bool $is_personal = false, string $next_offset = null, string $switch_pm_text = null, string $switch_pm_parameter = null){
         $args = [
             'inline_query_id' => $inline_query_id,
-            'results' => $results,
+            'results' => json_encode($results),
             'cache_time' => $cache_time,
             'is_personal' => $is_personal,
             'next_offset' => $next_offset,
