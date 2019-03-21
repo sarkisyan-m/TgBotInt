@@ -99,6 +99,8 @@ class AnalyticsController extends Controller
                         if (isset($row['message']['message']['from']['username'])) {
                             $user['username'] = $row['message']['message']['from']['username'];
                         }
+                    } elseif (isset($row['message']['ok']) && !$row['message']['ok']) {
+                        $user['first_name'] = 'Error';
                     }
 
                     $user['name'] = implode(' ', array_filter([$user['first_name'], $user['last_name']]));
@@ -132,6 +134,8 @@ class AnalyticsController extends Controller
                         $text = $row['message']['message']['text'];
                     } elseif (isset($row['message']['callback_query']['message']['text'])) {
                         $text = $row['message']['callback_query']['message']['text'];
+                    } elseif (isset($row['message']['ok']) && !$row['message']['ok']) {
+                        $text = "[Error {$row['message']['error_code']}] {$row['message']['description']}";
                     }
 
                     /*
