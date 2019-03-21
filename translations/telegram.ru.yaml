@@ -142,10 +142,10 @@ keyboard:
 
 meeting_room:
     meeting_room:
-        info: "\U0001F4AC Список доступных переговорок"
+        info: "\U0001F4AC Выберите комнату"
         selected: "Выбрана комната *%meetingRoom%*. Укажите дату."
     date:
-        info: "Доступны даты в промежутке *[%getDate%-%dateRange%]*"
+        info: "*Доступны даты в промежутке*\n%getDate% - %dateRange%"
         validate_failed: "\U000026A0 _Дата %date% не подходит._\nНадо попасть в промежуток *[%getDate%-%dateRange%]*"
         error: "Необходимо выбрать дату"
     google_event:

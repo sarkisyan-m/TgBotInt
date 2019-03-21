@@ -176,19 +176,19 @@ class Bitrix24API
         //TEST
         //______________________________________________________________________
 
-//        $user = [
-//            'id' => 1000,
-//            'email' => 'test2_test@example.com',
-//            'name' => 'Иван Иванов',
-//            'first_name' => 'Иван',
-//            'last_name' => 'Иванов',
-//            'personal_phone' => '+72231231231',
-//            'personal_mobile' => null,
-//            'work_phone' => null,
-//            'first_phone' => '+72231231231',
-//            'active' => true,
-//        ];
-//        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
+        $user = [
+            'id' => 1000,
+            'email' => 'test2_test@example.com',
+            'name' => 'Иван Иванов',
+            'first_name' => 'Иван',
+            'last_name' => 'Иванов',
+            'personal_phone' => '+72231231231',
+            'personal_mobile' => null,
+            'work_phone' => null,
+            'first_phone' => '+72231231231',
+            'active' => true,
+        ];
+        $user = $this->serializer->deserialize(json_encode($user), BitrixUser::class, 'json');
 //        array_push($result, $user);
 
         //______________________________________________________________________

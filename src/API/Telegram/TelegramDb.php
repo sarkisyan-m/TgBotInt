@@ -116,7 +116,7 @@ class TelegramDb
         return false;
     }
 
-    public function getCallbackQuery()
+    public function getCallbackQuery($refresh = false)
     {
         if (!$this->entityManager) {
             return null;
@@ -125,7 +125,16 @@ class TelegramDb
         $repository = $this->entityManager->getRepository(CallbackQuery::class);
         $callbackQuery = $repository->findBy(['tg_user' => $this->getTgUser()]);
 
-        if ($callbackQuery) {
+        if (!$callbackQuery || $refresh) {
+            if ($refresh && $callbackQuery) {
+                $this->delete($callbackQuery);
+            }
+
+            $callbackQuery = new CallbackQuery();
+            $callbackQuery->setTgUser($this->getTgUser());
+            $callbackQuery->setCreated(new \DateTime());
+            $this->insert($callbackQuery);
+        } elseif ($callbackQuery) {
             $callbackQuery = $callbackQuery[0];
 
             return json_decode($callbackQuery->getData(), true);

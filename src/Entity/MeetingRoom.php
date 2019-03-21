@@ -67,6 +67,11 @@ class MeetingRoom
      */
     private $created;
 
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $lastMessageId;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -176,6 +181,18 @@ class MeetingRoom
     public function setOldValues(?string $oldValues): self
     {
         $this->oldValues = $oldValues;
+
+        return $this;
+    }
+
+    public function getLastMessageId(): ?string
+    {
+        return $this->lastMessageId;
+    }
+
+    public function setLastMessageId(?string $lastMessageId): self
+    {
+        $this->lastMessageId = $lastMessageId;
 
         return $this;
     }

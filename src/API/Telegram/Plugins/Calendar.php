@@ -76,8 +76,18 @@ class Calendar implements TelegramInterface
         return $week;
     }
 
-    public function getDateRus($date, $strToLower = false)
+    public function getDateRus($date, $strToLower = false, $format = 'w, d m')
     {
+        $weekRus = [
+            'Воскресенье',
+            'Понедельник',
+            'Вторник',
+            'Среда',
+            'Четверг',
+            'Пятница',
+            'Суббота',
+        ];
+
         $monthRus = [
             '',
             'января',
@@ -94,27 +104,23 @@ class Calendar implements TelegramInterface
             'декабря',
         ];
 
-        $weekRus = [
-            'Воскресенье',
-            'Понедельник',
-            'Вторник',
-            'Среда',
-            'Четверг',
-            'Пятница',
-            'Суббота',
-        ];
-
         $week = (int) date('w', strtotime($date));
-        $month = (int) date('m', strtotime($date));
         $day = (int) date('d', strtotime($date));
+        $month = (int) date('m', strtotime($date));
 
-        $format = "{$weekRus[$week]}, {$day} {$monthRus[$month]}";
-
-        if ($strToLower) {
-            $format = mb_strtolower($format);
+        if ($format == 'w, d m') {
+            $text = "{$weekRus[$week]}, {$day} {$monthRus[$month]}";
+        } elseif ($format == 'd m') {
+            $text = "{$day} {$monthRus[$month]}";
+        } else {
+            return null;
         }
 
-        return $format;
+        if ($strToLower) {
+            $text = mb_strtolower($text);
+        }
+
+        return $text;
     }
 
     public function getYear(int $day = 0, int $month = 0, int $year = 0)

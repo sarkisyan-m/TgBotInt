@@ -158,12 +158,22 @@ class MeetingRoom implements TelegramInterface
 
         $keyboard = $this->tgPluginCalendar->keyboard();
         $this->meetingRoomDate($keyboard);
-        $this->tgBot->sendMessage(
+
+        $lastMessage = $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
-            $this->translate('meeting_room.date.info', ['%getDate%' => $this->tgPluginCalendar->getDate(), '%dateRange%' => $this->tgPluginCalendar->getDate('-'.$this->dateRange)]),
+            $this->translate('meeting_room.date.info', [
+                '%getDate%' => $this->tgPluginCalendar->getDateRus($this->tgPluginCalendar->getDate(), true, 'd m'),
+                '%dateRange%' => $this->tgPluginCalendar->getDateRus($this->tgPluginCalendar->getDate('-'.$this->dateRange), true, 'd m')
+            ]),
             'Markdown',
             true
         );
+
+        if ($lastMessage['ok']) {
+            $lastMessageId = $lastMessage['result']['message_id'];
+            $meetingRoomUser->setLastMessageId($lastMessageId);
+            $this->tgDb->insert($meetingRoomUser);
+        }
     }
 
     public function meetingRoomDate($keyboard)
@@ -196,7 +206,7 @@ class MeetingRoom implements TelegramInterface
             $this->tgBot->editMessageText(
                 $this->translate('meeting_room.date.validate_failed', ['%date%' => $date, '%getDate%' => $this->tgPluginCalendar->getDate(), '%dateRange%' => $this->tgPluginCalendar->getDate('-'.$this->dateRange)]),
                 $this->tgRequest->getChatId(),
-                $this->tgRequest->getMessageId() + 1,
+                $meetingRoomUser->getLastMessageId(),
                 null,
                 'Markdown',
                 true
@@ -638,12 +648,14 @@ class MeetingRoom implements TelegramInterface
     {
         // Счетчик для message_id. Он один раз будет равен 1, когда пользователь только получил сообщение, потом всегда 0
         // message_id используется в основном для редактирования сообещний
-        $preMessage = 0;
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
         $members = null;
 
         if (!$meetingRoomUser->getEventMembers()) {
+            $meetingRoomUser->setLastMessageId(null);
+            $this->tgDb->insert($meetingRoomUser);
+
             if (isset($data['callback_event']['members']) && 'none' == $data['callback_event']['members']) {
 //            if ($this->noCommandList($this->tgRequest->getText())) {
                 $meetingRoomUserData['users']['none'] = 'none';
@@ -725,10 +737,10 @@ class MeetingRoom implements TelegramInterface
                 $meetingRoomUserData['users']['organizer'][] = $this->membersFormat($bitrixUser);
 
                 $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
-                $this->tgDb->insert($meetingRoomUser);
+
 
                 if (!isset($data['callback_event']['members']) || 'none' == !$data['callback_event']['members']) {
-                    $this->tgBot->sendMessage(
+                    $lastMessage = $this->tgBot->sendMessage(
                         $this->tgRequest->getChatId(),
                         $this->translate('meeting_room.event_members.form.head'),
                         'Markdown',
@@ -736,13 +748,17 @@ class MeetingRoom implements TelegramInterface
                     );
 
                     // для редактирование будущего сообщения, единожды
-                    $preMessage = 1;
+                    if ($lastMessage['ok']) {
+                        $meetingRoomUser->setLastMessageId($lastMessage['result']['message_id']);
+                    }
                 }
+
+                $this->tgDb->insert($meetingRoomUser);
             }
         }
 
         // Определяем заранее messageId для редактирования сообщений
-        $messageId = $this->tgRequest->getMessageId() + $preMessage;
+        $messageId = $meetingRoomUser->getLastMessageId() ? $meetingRoomUser->getLastMessageId() : $this->tgRequest->getMessageId();
 
         // Сразу же смотрим, добавились ли участники
         if ($meetingRoomUser->getEventMembers()) {
@@ -1085,7 +1101,7 @@ class MeetingRoom implements TelegramInterface
         $this->tgBot->editMessageText(
             $text,
             $this->tgRequest->getChatId(),
-            $this->tgRequest->getMessageId() + 1,
+            $meetingRoomUser->getLastMessageId(),
             null,
             'Markdown',
             true

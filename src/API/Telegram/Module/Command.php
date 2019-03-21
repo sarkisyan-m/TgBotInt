@@ -67,6 +67,7 @@ class Command implements TelegramInterface
     public function deleteSession()
     {
         $this->tgDb->getMeetingRoomUser(true);
+        $this->tgDb->getCallbackQuery(true);
         // .. еще какая-то функция, которая обнуляет уже другую таблицу
         // и т.д.
     }
@@ -125,6 +126,10 @@ class Command implements TelegramInterface
 
     public function commandNotFound()
     {
+        if ($this->tgRequest->getType() == $this->tgRequest::TYPE_CALLBACK_QUERY) {
+            return;
+        }
+
         $this->tgBot->sendMessage(
             $this->tgRequest->getChatId(),
             $this->translate('request.error'),

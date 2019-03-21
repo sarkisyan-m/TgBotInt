@@ -382,4 +382,33 @@ class TelegramAPI
 
         return $this->curlTgProxy(__FUNCTION__, $args);
     }
+
+    /*
+    * __________________________Inline Query__________________________
+    */
+
+    /**
+     * @param string $inline_query_id
+     * @param $results
+     * @param int|null $cache_time
+     * @param bool $is_personal
+     * @param string|null $next_offset
+     * @param string|null $switch_pm_text
+     * @param string|null $switch_pm_parameter
+     *
+     * @return mixed
+     */
+    public function answerInlineQuery(string $inline_query_id, $results, int $cache_time = null, bool $is_personal = false, string $next_offset = null, string $switch_pm_text = null, string $switch_pm_parameter = null){
+        $args = [
+            'inline_query_id' => $inline_query_id,
+            'results' => $results,
+            'cache_time' => $cache_time,
+            'is_personal' => $is_personal,
+            'next_offset' => $next_offset,
+            'switch_pm_text' => $switch_pm_text,
+            'switch_pm_parameter' => $switch_pm_parameter,
+        ];
+
+        return $this->curlTgProxy(__FUNCTION__, $args);
+    }
 }
