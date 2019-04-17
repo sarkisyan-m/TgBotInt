@@ -14,6 +14,9 @@ use Symfony\Component\Translation\TranslatorInterface;
 
 class Profile implements TelegramInterface
 {
+    const YES = 'да';
+    const NO = 'нет';
+
     private $tgBot;
     private $tgDb;
 
@@ -233,7 +236,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.all', [
-                '%notification%' => self::booleanToText(!$subscription->getNotificationTelegram()),
+                '%notification%' => self::booleanToText($subscription->getNotificationTelegram()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
@@ -243,7 +246,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.add', [
-                '%notificationAdd%' => self::booleanToText(!$subscription->getNotificationTelegramAdd()),
+                '%notificationAdd%' => self::booleanToText($subscription->getNotificationTelegramAdd()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
@@ -253,7 +256,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.edit', [
-                '%notificationEdit%' => self::booleanToText(!$subscription->getNotificationTelegramEdit()),
+                '%notificationEdit%' => self::booleanToText($subscription->getNotificationTelegramEdit()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
@@ -263,7 +266,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.delete', [
-                '%notificationDelete%' => self::booleanToText(!$subscription->getNotificationTelegramDelete()),
+                '%notificationDelete%' => self::booleanToText($subscription->getNotificationTelegramDelete()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
@@ -273,7 +276,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.reminder', [
-                '%notificationReminder%' => self::booleanToText(!$subscription->getNotificationTelegramReminder()),
+                '%notificationReminder%' => self::booleanToText($subscription->getNotificationTelegramReminder()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_come_back']]);
@@ -328,7 +331,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.all', [
-                '%notification%' => self::booleanToText(!$subscription->getNotificationEmail()),
+                '%notification%' => self::booleanToText($subscription->getNotificationEmail()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
@@ -338,7 +341,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.add', [
-                '%notificationAdd%' => self::booleanToText(!$subscription->getNotificationEmailAdd()),
+                '%notificationAdd%' => self::booleanToText($subscription->getNotificationEmailAdd()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
@@ -348,7 +351,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.edit', [
-                '%notificationEdit%' => self::booleanToText(!$subscription->getNotificationEmailEdit()),
+                '%notificationEdit%' => self::booleanToText($subscription->getNotificationEmailEdit()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
@@ -358,7 +361,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.delete', [
-                '%notificationDelete%' => self::booleanToText(!$subscription->getNotificationEmailDelete()),
+                '%notificationDelete%' => self::booleanToText($subscription->getNotificationEmailDelete()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
@@ -368,7 +371,7 @@ class Profile implements TelegramInterface
         ]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton(
             $this->translate('profile.notification.event.reminder', [
-                '%notificationReminder%' => self::booleanToText(!$subscription->getNotificationEmailReminder()),
+                '%notificationReminder%' => self::booleanToText($subscription->getNotificationEmailReminder()),
             ]), $callback
         );
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_come_back']]);
@@ -424,9 +427,9 @@ class Profile implements TelegramInterface
     public static function booleanToText($boolean)
     {
         if ($boolean) {
-            return 'вкл';
+            return self::YES;
         }
 
-        return 'выкл';
+        return self::NO;
     }
 }

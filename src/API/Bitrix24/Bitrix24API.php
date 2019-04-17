@@ -195,10 +195,12 @@ class Bitrix24API
         //TEST
         //______________________________________________________________________
 
-        try {
-            $this->cache->set($this->cacheContainer, $result, $this->cacheTime);
-        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
-            error_log($e->getMessage());
+        if ($result) {
+            try {
+                $this->cache->set($this->cacheContainer, $result, $this->cacheTime);
+            } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
+                error_log($e->getMessage());
+            }
         }
 
         return $result;

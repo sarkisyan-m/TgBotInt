@@ -905,7 +905,10 @@ class MeetingRoom implements TelegramInterface
                     $event = $this->googleCalendar->getList($filter);
 
                     // Если в том же календаре хотим менять, то редактируем
-                    if ($event['calendarName'] == $meetingRoomName) {
+                    // (!) Если перенос по времени, то пересоздаем событие, т.к. гугл не хочет добавлять заново коммент к адресам
+                    if ($event['calendarName'] == $meetingRoomName &&
+                        $event['dateTimeStart'] == $meetingRoomDateTimeStart && $event['dateTimeEnd'] == $meetingRoomDateTimeEnd
+                    ) {
                         $this->googleCalendar->editEvent(
                             $calendarId,
                             $event['eventId'],

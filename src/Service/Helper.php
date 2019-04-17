@@ -123,7 +123,7 @@ class Helper
 
     public static function rusLetterFix($text)
     {
-        return str_replace('Ё', 'Е', str_replace('ё', 'е', $text));
+        return trim(str_replace('Ё', 'Е', str_replace('ё', 'е', $text)));
     }
 
     public static function markDownReplace($text)
@@ -134,6 +134,7 @@ class Helper
         $text = str_replace('\\', '/', $text);
         $text = str_replace('[', '(', $text);
         $text = str_replace(']', ')', $text);
+        $text = str_replace('#', '"', $text);
 //        $text = preg_replace('/[^\pL\pM[:ascii:]]+/g', '', $text);
 
         return $text;

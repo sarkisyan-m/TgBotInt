@@ -119,8 +119,12 @@ class TelegramAPI
      *
      * @return string
      */
-    public function replyKeyboardMarkup(array $keyboard, bool $resize_keyboard = false, bool $one_time_keyboard = false, bool $selective = false)
-    {
+    public function replyKeyboardMarkup(
+        array $keyboard,
+        bool $resize_keyboard = false,
+        bool $one_time_keyboard = false,
+        bool $selective = false
+    ) {
         return json_encode([
             'keyboard' => $keyboard,
             'resize_keyboard' => $resize_keyboard,
@@ -135,8 +139,10 @@ class TelegramAPI
      *
      * @return string
      */
-    public function replyKeyboardRemove(bool $remove_keyboard = true, bool $selective = false)
-    {
+    public function replyKeyboardRemove(
+        bool $remove_keyboard = true,
+        bool $selective = false
+    ) {
         return json_encode([
             'remove_keyboard' => $remove_keyboard,
             'selective' => $selective,
@@ -149,8 +155,10 @@ class TelegramAPI
      *
      * @return string
      */
-    public function forceReply(bool $force_reply = true, bool $selective = false)
-    {
+    public function forceReply(
+        bool $force_reply = true,
+        bool $selective = false
+    ) {
         return json_encode([
             'force_reply' => $force_reply,
             'selective' => $selective,
@@ -172,8 +180,15 @@ class TelegramAPI
      *
      * @return array
      */
-    public function inlineKeyboardButton(string $text, $callback_data = null, string $url = null, string $switch_inline_query = null, string $switch_inline_query_current_chat = null, $callback_game = null, bool $pay = false)
-    {
+    public function inlineKeyboardButton(
+        string $text,
+        $callback_data = null,
+        string $url = null,
+        string $switch_inline_query = null,
+        string $switch_inline_query_current_chat = null,
+        $callback_game = null,
+        bool $pay = false
+    ) {
         if (is_string($callback_data)) {
             $callback_data = explode(' ', $callback_data);
         }
@@ -192,8 +207,11 @@ class TelegramAPI
         ];
     }
 
-    public function keyboardButton(string $text, bool $request_contact = false, bool $request_location = false)
-    {
+    public function keyboardButton(
+        string $text,
+        bool $request_contact = false,
+        bool $request_location = false
+    ) {
         return [
             'text' => $text,
             'request_contact' => $request_contact,
@@ -225,8 +243,12 @@ class TelegramAPI
      *
      * @return mixed
      */
-    public function getUpdates(int $offset = null, int $limit = null, int $timeout = null, array $allowed_updates = null)
-    {
+    public function getUpdates(
+        int $offset = null,
+        int $limit = null,
+        int $timeout = null,
+        array $allowed_updates = null
+    ) {
         $args = [
             'offset' => $offset,
             'limit' => $limit,
@@ -245,8 +267,12 @@ class TelegramAPI
      *
      * @return mixed
      */
-    public function setWebHook(string $url, $certificate = null, int $max_connections = null, array $allowed_updates = null)
-    {
+    public function setWebHook(
+        string $url,
+        $certificate = null,
+        int $max_connections = null,
+        array $allowed_updates = null
+    ) {
         $args = [
             'url' => "{$url}?{$this->tgToken}",
             'certificate' => $certificate,
@@ -278,8 +304,15 @@ class TelegramAPI
      *
      * @return mixed
      */
-    public function sendMessage($chat_id, string $text, string $parse_mode = null, bool $disable_web_page_preview = false, bool $disable_notification = false, int $reply_to_message_id = null, $reply_markup = null)
-    {
+    public function sendMessage(
+        $chat_id,
+        string $text,
+        string $parse_mode = null,
+        bool $disable_web_page_preview = false,
+        bool $disable_notification = false,
+        int $reply_to_message_id = null,
+        $reply_markup = null
+    ) {
         $args = [
             'chat_id' => $chat_id,
             'text' => $text,
@@ -304,8 +337,15 @@ class TelegramAPI
      *
      * @return mixed
      */
-    public function sendPhoto($chat_id, string $photo, string $caption = null, string $parse_mode = null, bool $disable_notification = false, int $reply_to_message_id = null, $reply_markup = null)
-    {
+    public function sendPhoto(
+        $chat_id,
+        string $photo,
+        string $caption = null,
+        string $parse_mode = null,
+        bool $disable_notification = false,
+        int $reply_to_message_id = null,
+        $reply_markup = null
+    ) {
         $args = [
             'chat_id' => $chat_id,
             'photo' => $photo,
@@ -328,8 +368,13 @@ class TelegramAPI
      *
      * @return mixed
      */
-    public function answerCallbackQuery(string $callback_query_id, string $text = null, bool $show_alert = false, string $url = null, int $cache_time = null)
-    {
+    public function answerCallbackQuery(
+        string $callback_query_id,
+        string $text = null,
+        bool $show_alert = false,
+        string $url = null,
+        int $cache_time = null
+    ) {
         $args = [
             'callback_query_id' => $callback_query_id,
             'text' => $text,
@@ -352,8 +397,15 @@ class TelegramAPI
      *
      * @return mixed
      */
-    public function editMessageText(string $text, $chat_id = null, int $message_id = null, string $inline_message_id = null, string $parse_mode = null, bool $disable_web_page_preview = false, $reply_markup = null)
-    {
+    public function editMessageText(
+        string $text,
+        $chat_id = null,
+        int $message_id = null,
+        string $inline_message_id = null,
+        string $parse_mode = null,
+        bool $disable_web_page_preview = false,
+        $reply_markup = null
+    ) {
         $args = [
             'text' => $text,
             'chat_id' => $chat_id,
@@ -398,7 +450,14 @@ class TelegramAPI
      *
      * @return mixed
      */
-    public function answerInlineQuery(string $inline_query_id, $results, int $cache_time = null, bool $is_personal = false, string $next_offset = null, string $switch_pm_text = null, string $switch_pm_parameter = null){
+    public function answerInlineQuery(
+        string $inline_query_id, $results,
+        int $cache_time = null,
+        bool $is_personal = false,
+        string $next_offset = null,
+        string $switch_pm_text = null,
+        string $switch_pm_parameter = null
+    ) {
         $args = [
             'inline_query_id' => $inline_query_id,
             'results' => json_encode($results),
