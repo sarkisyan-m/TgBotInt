@@ -315,20 +315,20 @@ class Profile implements TelegramInterface
 
         if ($data) {
             if (isset($data['data']['event_all'])) {
+                if (!$data['data']['event_all']) {
+                    $subscription->setNotificationEmailAdd(false);
+                    $subscription->setNotificationEmailEdit(false);
+                    $subscription->setNotificationEmailDelete(false);
+                    $subscription->setNotificationEmailReminder(false);
+                } else {
+                    $subscription->setNotificationEmailAdd(true);
+                    $subscription->setNotificationEmailEdit(true);
+                    $subscription->setNotificationEmailDelete(true);
+                    $subscription->setNotificationEmailReminder(true);
+                }
+
                 $subscription->setNotificationEmail($data['data']['event_all']);
                 $this->tgDb->insert($subscription);
-            }
-
-            if (!$data['data']['event_all']) {
-                $subscription->setNotificationEmailAdd(false);
-                $subscription->setNotificationEmailEdit(false);
-                $subscription->setNotificationEmailDelete(false);
-                $subscription->setNotificationEmailReminder(false);
-            } else {
-                $subscription->setNotificationEmailAdd(true);
-                $subscription->setNotificationEmailEdit(true);
-                $subscription->setNotificationEmailDelete(true);
-                $subscription->setNotificationEmailReminder(true);
             }
 
             if (isset($data['data']['event_add'])) {
