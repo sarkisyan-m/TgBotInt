@@ -311,7 +311,7 @@ class TelegramController extends Controller
             return true;
         }
 
-        if ($this->tgModuleCommand->isBotCommand('/meetingroomlist')) {
+        if ($this->tgModuleCommand->isBotCommand('/meetingroom')) {
             $this->tgModuleMeetingRoom->meetingRoomList();
 
             return true;
@@ -323,14 +323,14 @@ class TelegramController extends Controller
             return true;
         }
 
-        if ($this->tgModuleCommand->isBotCommand('/eventslist')) {
-            $this->tgModuleMeetingRoom->googleEventsCurDay();
+        if ($this->tgModuleCommand->isBotCommand('/events')) {
+            $this->tgModuleMeetingRoom->userMeetingRoomList();
 
             return true;
         }
 
-        if ($this->tgModuleCommand->isBotCommand('/eventlist')) {
-            $this->tgModuleMeetingRoom->userMeetingRoomList();
+        if ($this->tgModuleCommand->isBotCommand('/eventsall')) {
+            $this->tgModuleMeetingRoom->googleEventsCurDay();
 
             return true;
         }

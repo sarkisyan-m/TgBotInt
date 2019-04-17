@@ -34,12 +34,12 @@ class Command implements TelegramInterface
         $this->translator = $translator;
 
         $this->botCommands = [
-            '/meetingroomlist' => $this->translate('bot_command.meeting_room_list'),
+            '/meetingroom' => $this->translate('bot_command.meeting_room_list'),
             '/profile' => $this->translate('bot_command.profile'),
-            '/eventlist' => $this->translate('bot_command.event_list'),
-            '/eventslist' => $this->translate('bot_command.events_list'),
-            '/help' => $this->translate('bot_command.help'),
-            '/exit' => $this->translate('bot_command.exit'),
+            '/events' => $this->translate('bot_command.event_list'),
+            '/eventsall' => $this->translate('bot_command.events_list'),
+            '/help' => '',
+            '/exit' => '',
             '/reload' => '',
             '/helpmore' => '',
             '/contacts' => '',

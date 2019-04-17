@@ -205,6 +205,17 @@ class Profile implements TelegramInterface
 
         if ($data) {
             if (isset($data['data']['event_all'])) {
+                if (!$data['data']['event_all']) {
+                    $subscription->setNotificationTelegramAdd(false);
+                    $subscription->setNotificationTelegramEdit(false);
+                    $subscription->setNotificationTelegramDelete(false);
+                    $subscription->setNotificationTelegramReminder(false);
+                } else {
+                    $subscription->setNotificationTelegramAdd(true);
+                    $subscription->setNotificationTelegramEdit(true);
+                    $subscription->setNotificationTelegramDelete(true);
+                    $subscription->setNotificationTelegramReminder(true);
+                }
                 $subscription->setNotificationTelegram($data['data']['event_all']);
                 $this->tgDb->insert($subscription);
             }
@@ -239,46 +250,50 @@ class Profile implements TelegramInterface
                 '%notification%' => self::booleanToText($subscription->getNotificationTelegram()),
             ]), $callback
         );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
-            'data' => [
-                'event_add' => !$subscription->getNotificationTelegramAdd(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.add', [
-                '%notificationAdd%' => self::booleanToText($subscription->getNotificationTelegramAdd()),
-            ]), $callback
-        );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
-            'data' => [
-                'event_edit' => !$subscription->getNotificationTelegramEdit(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.edit', [
-                '%notificationEdit%' => self::booleanToText($subscription->getNotificationTelegramEdit()),
-            ]), $callback
-        );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
-            'data' => [
-                'event_delete' => !$subscription->getNotificationTelegramDelete(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.delete', [
-                '%notificationDelete%' => self::booleanToText($subscription->getNotificationTelegramDelete()),
-            ]), $callback
-        );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
-            'data' => [
-                'event_reminder' => !$subscription->getNotificationTelegramReminder(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.reminder', [
-                '%notificationReminder%' => self::booleanToText($subscription->getNotificationTelegramReminder()),
-            ]), $callback
-        );
+
+        if ($subscription->getNotificationTelegram()) {
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
+                'data' => [
+                    'event_add' => !$subscription->getNotificationTelegramAdd(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.add', [
+                    '%notificationAdd%' => self::booleanToText($subscription->getNotificationTelegramAdd()),
+                ]), $callback
+            );
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
+                'data' => [
+                    'event_edit' => !$subscription->getNotificationTelegramEdit(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.edit', [
+                    '%notificationEdit%' => self::booleanToText($subscription->getNotificationTelegramEdit()),
+                ]), $callback
+            );
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
+                'data' => [
+                    'event_delete' => !$subscription->getNotificationTelegramDelete(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.delete', [
+                    '%notificationDelete%' => self::booleanToText($subscription->getNotificationTelegramDelete()),
+                ]), $callback
+            );
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_telegram'],
+                'data' => [
+                    'event_reminder' => !$subscription->getNotificationTelegramReminder(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.reminder', [
+                    '%notificationReminder%' => self::booleanToText($subscription->getNotificationTelegramReminder()),
+                ]), $callback
+            );
+        }
+
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_come_back']]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.come_back'), $callback);
         $this->tgDb->setCallbackQuery();
@@ -303,6 +318,19 @@ class Profile implements TelegramInterface
                 $subscription->setNotificationEmail($data['data']['event_all']);
                 $this->tgDb->insert($subscription);
             }
+
+            if (!$data['data']['event_all']) {
+                $subscription->setNotificationEmailAdd(false);
+                $subscription->setNotificationEmailEdit(false);
+                $subscription->setNotificationEmailDelete(false);
+                $subscription->setNotificationEmailReminder(false);
+            } else {
+                $subscription->setNotificationEmailAdd(true);
+                $subscription->setNotificationEmailEdit(true);
+                $subscription->setNotificationEmailDelete(true);
+                $subscription->setNotificationEmailReminder(true);
+            }
+
             if (isset($data['data']['event_add'])) {
                 $subscription->setNotificationEmailAdd($data['data']['event_add']);
                 $this->tgDb->insert($subscription);
@@ -334,46 +362,50 @@ class Profile implements TelegramInterface
                 '%notification%' => self::booleanToText($subscription->getNotificationEmail()),
             ]), $callback
         );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
-            'data' => [
-                'event_add' => !$subscription->getNotificationEmailAdd(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.add', [
-                '%notificationAdd%' => self::booleanToText($subscription->getNotificationEmailAdd()),
-            ]), $callback
-        );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
-            'data' => [
-                'event_edit' => !$subscription->getNotificationEmailEdit(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.edit', [
-                '%notificationEdit%' => self::booleanToText($subscription->getNotificationEmailEdit()),
-            ]), $callback
-        );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
-            'data' => [
-                'event_delete' => !$subscription->getNotificationEmailDelete(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.delete', [
-                '%notificationDelete%' => self::booleanToText($subscription->getNotificationEmailDelete()),
-            ]), $callback
-        );
-        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
-            'data' => [
-                'event_reminder' => !$subscription->getNotificationEmailReminder(),
-            ],
-        ]);
-        $keyboard[][] = $this->tgBot->inlineKeyboardButton(
-            $this->translate('profile.notification.event.reminder', [
-                '%notificationReminder%' => self::booleanToText($subscription->getNotificationEmailReminder()),
-            ]), $callback
-        );
+
+        if ($subscription->getNotificationEmail()) {
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
+                'data' => [
+                    'event_add' => !$subscription->getNotificationEmailAdd(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.add', [
+                    '%notificationAdd%' => self::booleanToText($subscription->getNotificationEmailAdd()),
+                ]), $callback
+            );
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
+                'data' => [
+                    'event_edit' => !$subscription->getNotificationEmailEdit(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.edit', [
+                    '%notificationEdit%' => self::booleanToText($subscription->getNotificationEmailEdit()),
+                ]), $callback
+            );
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
+                'data' => [
+                    'event_delete' => !$subscription->getNotificationEmailDelete(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.delete', [
+                    '%notificationDelete%' => self::booleanToText($subscription->getNotificationEmailDelete()),
+                ]), $callback
+            );
+            $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_email'],
+                'data' => [
+                    'event_reminder' => !$subscription->getNotificationEmailReminder(),
+                ],
+            ]);
+            $keyboard[][] = $this->tgBot->inlineKeyboardButton(
+                $this->translate('profile.notification.event.reminder', [
+                    '%notificationReminder%' => self::booleanToText($subscription->getNotificationEmailReminder()),
+                ]), $callback
+            );
+        }
+
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'notification_come_back']]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.come_back'), $callback);
         $this->tgDb->setCallbackQuery();
