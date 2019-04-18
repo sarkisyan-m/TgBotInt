@@ -12,7 +12,6 @@ use App\API\Telegram\TelegramInterface;
 use App\API\Telegram\TelegramRequest;
 use App\API\Telegram\Plugins\Calendar as TelegramPluginCalendar;
 use App\Entity\Verification;
-use App\Service\Hash;
 use App\Service\Helper;
 use Symfony\Component\Translation\TranslatorInterface;
 use Swift_Mailer;
@@ -889,7 +888,7 @@ class MeetingRoom implements TelegramInterface
                     }
                 }
 
-                $hash = Hash::sha256($textMembers, $meetingRoomDateTimeStart);
+                $hash = hash('sha256', $meetingRoomName.$textMembers.$meetingRoomDateTimeStart);
                 $this->tgDb->setHash($hash, (new \DateTime($meetingRoomDateTimeStart)));
 
                 $tgUser = $this->tgDb->getTgUser();
@@ -1252,7 +1251,9 @@ class MeetingRoom implements TelegramInterface
         $textOrganizer = null;
         $textMembers = null;
 
-        if ($this->verifyHash($event['description'], $event['dateTimeStart'])) {
+        // hashedit
+        if ($this->verifyHash($event['calendarName'].$event['description'].$event['dateTimeStart'])) {
+            $this->tgBot->sendMessage($this->tgRequest->getChatId(), 'VERIFY HASH OK: ' . __FUNCTION__);
             $description = $this->googleCalendarDescriptionConvertLtextToText($event['description'], false, $tgLink);
             if ($description['found']) {
                 $textMembers = $description['found'];
@@ -1292,15 +1293,15 @@ class MeetingRoom implements TelegramInterface
     }
 
     /**
-     * @param $text
-     * @param $salt
+     * @param $data
      * @param null $hash
      *
      * @return bool
      */
-    public function verifyHash($text, $salt, &$hash = null)
+    public function verifyHash($data, &$hash = null)
     {
-        $hash = Hash::sha256($text, $salt);
+        $hash = hash('sha256', $data);
+
         $hash = $this->tgDb->getHash(['hash' => $hash]);
 
         if ($hash) {
@@ -1892,7 +1893,7 @@ class MeetingRoom implements TelegramInterface
                     }
                 }
 
-                $hash = Hash::sha256($textMembers, $meetingRoomDateTimeStart);
+                $hash = hash('sha256', $meetingRoomUser->getMeetingRoom().$textMembers.$meetingRoomDateTimeStart);
                 $this->tgDb->setHash($hash, (new \DateTime($meetingRoomDateTimeStart)));
 
                 $this->googleCalendar->editEvent(
@@ -2382,7 +2383,7 @@ class MeetingRoom implements TelegramInterface
 
         foreach ($calendars as $calendar) {
             foreach ($calendar['listEvents'] as $event) {
-                if ($this->verifyHash($event['description'], $event['dateTimeStart'], $hash)) {
+                if ($this->verifyHash($event['calendarName'].$event['description'].$event['dateTimeStart'], $hash)) {
                     $hash = $hash[0];
                     /**
                      * @var Verification
