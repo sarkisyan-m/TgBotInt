@@ -324,7 +324,7 @@ class TelegramController extends Controller
         }
 
         if ($this->tgModuleCommand->isBotCommand('/events')) {
-            $this->tgModuleMeetingRoom->userMeetingRoomList();
+            $this->tgModuleMeetingRoom->userMeetingRoomList($this->tgModuleCommand->getGlobalButtons());
 
             return true;
         }

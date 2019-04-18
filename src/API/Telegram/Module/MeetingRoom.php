@@ -1666,7 +1666,7 @@ class MeetingRoom implements TelegramInterface
         return $text;
     }
 
-    public function userMeetingRoomList()
+    public function userMeetingRoomList($globalButtons = null)
     {
         $tgUser = $this->tgDb->getTgUser();
         $bitrixUser = $this->bitrix24->getUsers(['id' => $tgUser->getBitrixId()]);
@@ -1776,7 +1776,10 @@ class MeetingRoom implements TelegramInterface
             $this->tgRequest->getChatId(),
             implode('', $textPart),
             'Markdown',
-            true
+            true,
+            false,
+            null,
+            $this->tgBot->replyKeyboardMarkup($globalButtons, true)
         );
     }
 
