@@ -1251,9 +1251,7 @@ class MeetingRoom implements TelegramInterface
         $textOrganizer = null;
         $textMembers = null;
 
-        // hashedit
         if ($this->verifyHash($event['calendarName'].$event['description'].$event['dateTimeStart'])) {
-            $this->tgBot->sendMessage($this->tgRequest->getChatId(), 'VERIFY HASH OK: ' . __FUNCTION__);
             $description = $this->googleCalendarDescriptionConvertLtextToText($event['description'], false, $tgLink);
             if ($description['found']) {
                 $textMembers = $description['found'];
