@@ -441,6 +441,15 @@ class TelegramController extends Controller
             return false;
         }
 
+        // Вывод кнопок-комманд
+        if (isset($data['callback_event']['command'])) {
+            if ($data['callback_event']['command'] == 'help') {
+                $this->tgModuleCommand->commandHelp($data);
+
+                return true;
+            }
+        }
+
         // Вывод кнопок для списка переговорок
         if (isset($data['callback_event']['meetingRoom']) && 'list' == $data['callback_event']['meetingRoom']) {
             $this->tgModuleMeetingRoom->meetingRoomListCallback($data);

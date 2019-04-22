@@ -129,12 +129,14 @@ keyboard:
     remove: "Удалить"
     clear: "Очистить"
     refuse: "Отказаться"
+    end: "Завершить"
     yes: "Да"
     no: "Нет"
     event_edit:
         change_room_time: "Изменить комнату и время"
         change_event_name: "Изменить название события"
         change_event_members: "Изменить список участников"
+        event_end: "Завершить досрочно"
     event_members:
         not_on_list: "Нет в списке"
         no_members: "Нет участников"
@@ -222,7 +224,12 @@ event_list:
         success: "\n*Вы отказались от участия*"
         refuse: "\n*Действие отменено*"
     event_not_found: "Событие не найдено"
-
+    end:
+        info: "Вы уверены, что хотите завершить это событие?"
+        error: "Действие недоступно, т.к. событие еще не началось.
+        \nОднако, вы можете его удалить /d\\_%args%"
+        success: "Событие завершено"
+        cancel: "Завершение отменено"
 event_info:
     room: "*Комната:* %room%\n"
     date: "*Дата:* %date%\n"
@@ -328,3 +335,5 @@ profile:
         \nTelegramID: %telegramId%
         \n\n*Временные данные на сервере*
         \nОбрабатываемая информация из Bitrix24 (в кеше, логах и бд)"
+    help:
+        button: 'Помощь'

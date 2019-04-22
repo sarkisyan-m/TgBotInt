@@ -81,7 +81,8 @@ class Profile implements TelegramInterface
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('profile.notification.button'), $callback);
         $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['profile' => 'personal_info']]);
         $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('profile.personal_info.button'), $callback);
-
+        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['command' => 'help']]);
+        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('profile.help.button'), $callback);
         $this->tgDb->setCallbackQuery();
 
         if ($data) {

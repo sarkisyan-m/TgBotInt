@@ -85,17 +85,28 @@ class Command implements TelegramInterface
         );
     }
 
-    public function commandHelp()
+    public function commandHelp($data = null)
     {
-        $this->tgBot->sendMessage(
-            $this->tgRequest->getChatId(),
-            $this->translate('command.help'),
-            'Markdown',
-            true,
-            false,
-            null,
-            $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
-        );
+        if ($data) {
+            $this->tgBot->editMessageText(
+                $this->translate('command.help'),
+                $this->tgRequest->getChatId(),
+                $this->tgRequest->getMessageId(),
+                null,
+                'Markdown',
+                true
+            );
+        } else {
+            $this->tgBot->sendMessage(
+                $this->tgRequest->getChatId(),
+                $this->translate('command.help'),
+                'Markdown',
+                true,
+                false,
+                null,
+                $this->tgBot->replyKeyboardMarkup($this->getGlobalButtons(), true)
+            );
+        }
     }
 
     public function commandHelpMore()

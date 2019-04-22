@@ -2171,6 +2171,94 @@ class MeetingRoom implements TelegramInterface
                         );
 
                         return;
+                    } elseif ('eventEnd' == $data['data']['obj']) {
+                        if (isset($data['data']['ready'])) {
+                            if ($data['data']['ready'] == 'yes') {
+                                if ((new \DateTime($event['dateTimeStart']))->getTimestamp() >= (new \DateTime())->getTimestamp()) {
+                                    $this->tgBot->editMessageText(
+                                        $this->translate('event_list.end.error', ['%args%' => $args]),
+                                        $this->tgRequest->getChatId(),
+                                        $this->tgRequest->getMessageId(),
+                                        null,
+                                        'Markdown',
+                                        true,
+                                        null
+                                    );
+
+                                    return;
+                                } elseif ((new \DateTime($event['dateTimeEnd']))->getTimestamp() < (new \DateTime())->getTimestamp()) {
+                                    return;
+                                }
+
+                                $attendees = [];
+                                foreach ($event['attendees'] as $email) {
+                                    if ($bitrixUser->getEmail() == $email) {
+                                        $attendees[] = ['comment' => self::ORGANIZER, 'email' => $email];
+                                    } else {
+                                        $attendees[] = ['email' => $email];
+                                    }
+                                }
+
+                                $this->googleCalendar->removeEvent($event['calendarId'], $event['eventId']);
+                                $this->googleCalendar->addEvent(
+                                    $event['calendarId'],
+                                    $event['calendarEventName'],
+                                    $event['description'],
+                                    $event['dateTimeStart'],
+                                    (new \DateTime('-1 minutes'))->format(\DateTime::RFC3339),
+                                    $attendees
+                                );
+
+                                $this->tgBot->editMessageText(
+                                    $this->translate('event_list.end.success'),
+                                    $this->tgRequest->getChatId(),
+                                    $this->tgRequest->getMessageId(),
+                                    null,
+                                    'Markdown',
+                                    true,
+                                    null
+                                );
+
+                                return;
+                            } elseif ($data['data']['ready'] == 'no') {
+                                $this->tgBot->editMessageText(
+                                    $this->translate('event_list.end.cancel'),
+                                    $this->tgRequest->getChatId(),
+                                    $this->tgRequest->getMessageId(),
+                                    null,
+                                    'Markdown',
+                                    true,
+                                    null
+                                );
+
+                                return;
+                            }
+
+                            return;
+                        }
+
+                        $meetingRoom->setEventId($args);
+                        $this->tgDb->insert($meetingRoom);
+
+                        $keyboard = [];
+                        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventEnd', 'args' => $args, 'ready' => 'yes']]);
+                        $ln = 0;
+                        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.end'), $callback);
+                        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventEnd', 'args' => $args, 'ready' => 'no']]);
+                        $keyboard[$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.cancel'), $callback);
+                        $this->tgDb->setCallbackQuery();
+
+                        $this->tgBot->editMessageText(
+                            $this->translate('event_list.end.info'),
+                            $this->tgRequest->getChatId(),
+                            $this->tgRequest->getMessageId(),
+                            null,
+                            'Markdown',
+                            true,
+                            $this->tgBot->inlineKeyboardMarkup($keyboard)
+                        );
+
+                        return;
                     }
                 } elseif ($dataMessage) {
                     if ('meetingRoom' == $dataMessage) {
@@ -2207,6 +2295,8 @@ class MeetingRoom implements TelegramInterface
                 $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_name'), $callback);
                 $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventMembers', 'args' => $args]]);
                 $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_members'), $callback);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventEnd', 'args' => $args]]);
+                $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.event_end'), $callback);
                 $this->tgDb->setCallbackQuery();
 
                 $text .= $this->googleEventFormat($event);
