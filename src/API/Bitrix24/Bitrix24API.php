@@ -254,7 +254,7 @@ class Bitrix24API
         $filter = $this->getFilters($filter);
 
         /**
-         * @var BitrixUser[]
+         * @var $bitrixUsers BitrixUser[]
          */
         $bitrixUsers = $this->loadData();
 
@@ -289,20 +289,31 @@ class Bitrix24API
                     }
 
                     if ('name' == $filterKey) {
-                        $fullName1 = "{$user->getFirstName()} {$user->getLastName()}";
-                        $fullName2 = "{$user->getLastName()} {$user->getFirstName()}";
+                        $userFirstName = Helper::textToNeutral($user->getFirstName());
+                        $userLastName = Helper::textToNeutral($user->getLastName());
+                        $userContact = "{$user->getPersonalPhone()} {$user->getWorkPhone()} {$user->getPersonalMobile()} {$user->getEmail()}";
+                        $fullName1 = "{$userFirstName} {$userLastName}";
+                        $fullName2 = "{$userLastName} {$userFirstName}";
+
+                        $fullName1 = Helper::textToNeutral($fullName1);
+                        $fullName2 = Helper::textToNeutral($fullName2);
+
+                        $filterValue = Helper::textToNeutral($filterValue);
+
                         if (is_array($filterValue)) {
-                            if (false !== ($position = array_search($fullName1, $filterValue)) ||
-                                false !== ($position = array_search($fullName2, $filterValue)) ||
-                                false !== ($position = array_search($user->getFirstName(), $filterValue)) ||
-                                false !== ($position = array_search($user->getLastName(), $filterValue))) {
+                            if (
+                                false !== ($position = strpos($userContact, $filterValue)) ||
+                                false !== ($position = strpos($fullName1, $filterValue)) ||
+                                false !== ($position = strpos($fullName2, $filterValue))
+                            ) {
                                 $users[(int) $position] = $user;
                             }
                         } else {
-                            if ($fullName1 == $filterValue ||
-                                $fullName2 == $filterValue ||
-                                $user->getFirstName() == $filterValue ||
-                                $user->getLastName() == $filterValue) {
+                            if (
+                                false !== (strpos($userContact, $filterValue)) ||
+                                false !== (strpos($fullName1, $filterValue)) ||
+                                false !== (strpos($fullName2, $filterValue))
+                            ) {
                                 $users[] = $user;
                             }
                         }

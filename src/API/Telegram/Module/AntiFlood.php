@@ -63,18 +63,21 @@ class AntiFlood implements TelegramInterface
             $this->tgDb->insert($antiFlood);
         } elseif ($timeDiff->i < 1) {
             if ($antiFlood->getMessagesCount() >= $allowedMessagesNumber) {
-                $reverseDiff = 60 - $timeDiff->s;
-                $text = $this->translate('anti_flood.message_small', ['%reverseDiff%' => $reverseDiff]);
+//                $reverseDiff = 60 - $timeDiff->s;
+//                $text = $this->translate('anti_flood.message_small', ['%reverseDiff%' => $reverseDiff]);
+//                sleep(1.2);
+//                $this->tgBot->sendMessage(
+//                    $this->tgRequest->getChatId(),
+//                    $text,
+//                    'Markdown'
+//                );
+//
+//                return true;
+                sleep(1);
 
-                sleep(1.2);
-
-                $this->tgBot->sendMessage(
-                    $this->tgRequest->getChatId(),
-                    $text,
-                    'Markdown'
-                );
-
-                return true;
+                $antiFlood->setMessagesCount(1);
+                $antiFlood->setDate(new \DateTime());
+                $this->tgDb->insert($antiFlood);
             }
 
             $antiFlood->setMessagesCount($antiFlood->getMessagesCount() + 1);

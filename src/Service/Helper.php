@@ -290,4 +290,13 @@ class Helper
     {
         return unserialize(json_decode($value));
     }
+
+
+    public static function textToNeutral($text)
+    {
+        $text = mb_strtolower($text);
+        $text = trim(str_replace('Ё', 'Е', str_replace('ё', 'е', $text)));
+
+        return $text;
+    }
 }

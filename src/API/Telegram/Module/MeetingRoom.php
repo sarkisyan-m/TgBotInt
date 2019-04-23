@@ -337,7 +337,8 @@ class MeetingRoom implements TelegramInterface
 
         foreach ($meetingRoomUserData['users']['duplicate'] as $id => $memberDuplicate) {
             $keyboard = [];
-            $bitrixUsers = $this->bitrix24->getUsers(['name' => $memberDuplicate['name'], 'active' => true]);
+            $bitrixUsers = $this->bitrix24->getUsers(['name' => str_replace('-', '_', $memberDuplicate['name']), 'active' => true]);
+            $bitrixUsers = array_slice($bitrixUsers, 0, 32);
 
             if (!$bitrixUsers) {
                 return false;
@@ -650,6 +651,7 @@ class MeetingRoom implements TelegramInterface
         $meetingRoomUser = $this->tgDb->getMeetingRoomUser();
         $meetingRoomUserData = json_decode($meetingRoomUser->getEventMembers(), true);
         $members = null;
+        $membersOriginal = null;
 
         if (!$meetingRoomUser->getEventMembers()) {
             $meetingRoomUser->setLastMessageId(null);
@@ -688,12 +690,14 @@ class MeetingRoom implements TelegramInterface
                 $membersDuplicate = [];
                 $membersNotFound = [];
                 foreach ($members as $memberId => $member) {
-                    $bitrixUser = $this->bitrix24->getUsers(['name' => $member, 'active' => true]);
+                    $bitrixUser = $this->bitrix24->getUsers(['name' => str_replace('-', '_', $member), 'active' => true]);
                     if ($bitrixUser) {
                         if (count($bitrixUser) > 1) {
                             $membersDuplicate[] = ['data' => $bitrixUser, 'name' => $member, 'count' => count($bitrixUser)];
                         } elseif (1 == count($bitrixUser)) {
-                            if ($member == $bitrixUser[0]->getName() || $member == "{$bitrixUser[0]->getLastName()} {$bitrixUser[0]->getFirstName()}") {
+                            if ($member == $bitrixUser[0]->getName() ||
+                                $member == "{$bitrixUser[0]->getLastName()} {$bitrixUser[0]->getFirstName()}"
+                            ) {
                                 if (isset($meetingRoomUserData['users']['found'])) {
                                     foreach ($meetingRoomUserData['users']['found'] as $dataKey => $dataValue) {
                                         if ($dataValue['bitrix_id'] == $bitrixUser[0]->getId()) {
