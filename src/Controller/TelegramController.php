@@ -278,6 +278,12 @@ class TelegramController extends Controller
             return false;
         }
 
+        // Поддержка старых комманд для обновлеия глобальных кнопок
+        $botCommandsOld = $this->tgModuleCommand->getBotCommandsOld();
+        if (array_search($this->tgRequest->getText(), $botCommandsOld) !== false) {
+            return false;
+        }
+
         if ($this->tgModuleCommand->isBotCommand('/help') ||
             $this->tgModuleCommand->isBotCommand('/start')) {
             $this->tgModuleCommand->commandHelp();

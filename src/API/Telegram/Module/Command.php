@@ -21,6 +21,7 @@ class Command implements TelegramInterface
     private $translator;
     private $bitrix24;
     private $botCommands;
+    private $botCommandsOld;
 
     public function __construct(
         TelegramAPI $tgBot,
@@ -49,6 +50,12 @@ class Command implements TelegramInterface
             '/cp' => '',
             '/start' => '',
         ];
+
+        $this->botCommandsOld = [
+            "⁉ Помощь",
+            "⁉️ Помощь",
+            "🚀 Завершить сеанс"
+        ];
     }
 
     public function request(TelegramRequest $request)
@@ -70,6 +77,11 @@ class Command implements TelegramInterface
         $this->tgDb->getCallbackQuery(true);
         // .. еще какая-то функция, которая обнуляет уже другую таблицу
         // и т.д.
+    }
+
+    public function getBotCommandsOld()
+    {
+        return $this->botCommandsOld;
     }
 
     public function commandReload()
