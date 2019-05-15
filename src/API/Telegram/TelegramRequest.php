@@ -77,6 +77,15 @@ class TelegramRequest
         return null;
     }
 
+    public function getPhoneNumberUser()
+    {
+        if (isset($this->requestData[$this->getType()]['contact']['user_id'])) {
+            return $this->requestData[$this->getType()]['contact']['user_id'];
+        }
+
+        return null;
+    }
+
     public function getText()
     {
         if (isset($this->requestData[$this->getType()]['text'])) {
