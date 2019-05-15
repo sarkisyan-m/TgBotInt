@@ -66,7 +66,7 @@ class Bitrix24Users implements TelegramInterface
         if ($this->tgRequest->getChatId() != $this->tgRequest->getPhoneNumberUser()) {
             $this->tgBot->sendMessage(
                 $this->tgRequest->getChatId(),
-                $this->translate('user.registration.cancel')
+                $this->translate('user.registration.info')
             );
 
             return false;
