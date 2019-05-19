@@ -132,6 +132,26 @@ class AnalyticsController extends Controller
                         $text = $row['message']['result']['text'];
                     } elseif (isset($row['message']['message']['text'])) {
                         $text = $row['message']['message']['text'];
+                    } elseif (isset($row['message']['message']['contact'])) {
+                        $firstName = null;
+                        $lastName = null;
+                        if (isset ($row['message']['message']['contact']['first_name'])) {
+                            $firstName = $row['message']['message']['contact']['first_name'];
+                        }
+                        if (isset ($row['message']['message']['contact']['last_name'])) {
+                            $lastName = $row['message']['message']['contact']['last_name'];
+                        }
+                        $name = array_filter([$lastName, $firstName]);
+                        if ($name) {
+                            $name = implode(' ', $name);
+                            $name = "({$name})";
+                        } else {
+                            $name = 'Неизвестный';
+                        }
+                        if ($row['message']['message']['contact']['user_id'] != $row['message']['message']['from']['id']) {
+                            $text = 'TelegramID контакта не совпадает с аккаунтом пользователя! ';
+                        }
+                        $text .= "Попытка регистрации: {$row['message']['message']['contact']['phone_number']} {$name}";
                     } elseif (isset($row['message']['callback_query']['message']['text'])) {
                         $text = $row['message']['callback_query']['message']['text'];
                     } elseif (isset($row['message']['ok']) && !$row['message']['ok']) {
@@ -164,8 +184,14 @@ class AnalyticsController extends Controller
         $extension = 'log';
         $path = $this->getParameter('kernel.project_dir').'/var/log';
 
-        $exclude = [
+        $excludeAlways = [
             'dump',
+            'php',
+        ];
+
+        $sortFolders = [
+            'in',
+            'out'
         ];
 
         /**
@@ -175,37 +201,62 @@ class AnalyticsController extends Controller
          *
          * @return bool True if you need to recurse or if the item is acceptable
          */
-        $filter = function ($file, $key, $iterator) use ($exclude) {
-            if ($iterator->hasChildren() && !in_array($file->getFilename(), $exclude)) {
-                return true;
-            }
+        $result = [];
+        foreach ($sortFolders as $sortFolder) {
+            $sortFolder = array_merge([$sortFolder], $excludeAlways);
+            $filter = function ($file, $key, $iterator) use ($sortFolder) {
+                if ($iterator->hasChildren() && !in_array($file->getFilename(), $sortFolder)) {
+                    return true;
+                }
 
-            return $file->isFile();
-        };
+                return $file->isFile();
+            };
 
-        $rii = new \RecursiveDirectoryIterator(
-            $path,
-            \RecursiveDirectoryIterator::SKIP_DOTS
-        );
+            $rii = new \RecursiveDirectoryIterator(
+                $path,
+                \RecursiveDirectoryIterator::SKIP_DOTS
+            );
 
-        $rii = new \RecursiveIteratorIterator(
-            new \RecursiveCallbackFilterIterator($rii, $filter)
-        );
+            $rii = new \RecursiveIteratorIterator(
+                new \RecursiveCallbackFilterIterator($rii, $filter)
+            );
 
-        $files = [];
+            $files = [];
 
-        /**
-         * @var \SplFileInfo[]
-         */
-        foreach ($rii as $file) {
-            if (!$file->isDir()) {
-                if ($file->getExtension() == $extension) {
-                    $files[] = $file->getPathname();
+            /**
+             * @var \SplFileInfo[]
+             */
+            foreach ($rii as $file) {
+                if (!$file->isDir()) {
+                    if ($file->getExtension() == $extension) {
+                        if (strpos( $file->getPathname(), 'test') !== false) {
+                            continue;
+                        }
+
+                        $files[] = $file->getPathname();
+                    }
                 }
             }
+
+            usort($files, function($a, $b) {
+                $a = substr($a, -14, -4);
+                $b = substr($b, -14, -4);
+                $a = (new \DateTime($a))->getTimestamp();
+                $b = (new \DateTime($b))->getTimestamp();
+
+                if ($a == $b) {
+                    return 0;
+                }
+
+                return ($a < $b) ? -1 : 1;
+            });
+
+            $files = array_slice($files, -15);
+
+            $result = array_merge($result, $files);
         }
 
-        return $files;
+        return $result;
     }
 
     public function getContent($path)
