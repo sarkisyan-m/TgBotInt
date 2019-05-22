@@ -229,7 +229,7 @@ class AnalyticsController extends Controller
             foreach ($rii as $file) {
                 if (!$file->isDir()) {
                     if ($file->getExtension() == $extension) {
-                        if (strpos( $file->getPathname(), 'test') !== false) {
+                        if (strpos( $file->getPathname(), '-test-') !== false) {
                             continue;
                         }
 

@@ -2011,9 +2011,34 @@ class MeetingRoom implements TelegramInterface
             $meetingRoomUser->setEventName(mb_substr($event['calendarEventName'], 0, (int) $this->eventNameLen));
             $meetingRoomUser->setEventMembers(json_encode($this->googleCalendarDescriptionConvertLtextToText($event['description'], true)));
             $meetingRoomUser->setMeetingRoom($event['calendarName']);
-            $meetingRoomUser->setStatus('delete');
             $meetingRoomUser->setOldValues(Helper::objectToJsonEncodeSerialize($meetingRoomUser));
             $meetingRoomUser->setCreated(new \DateTime());
+
+            if ((new \DateTime($event['dateTimeStart']))->getTimestamp() < (new \DateTime())->getTimestamp() &&
+                (new \DateTime($event['dateTimeEnd']))->getTimestamp() >= (new \DateTime())->getTimestamp()
+            ) {
+                $meetingRoomUser->setStatus('edit');
+                $this->tgDb->insert($meetingRoomUser);
+
+                $keyboard = [];
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventEnd', 'args' => $args]]);
+                $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.event_end'), $callback);
+                $this->tgDb->setCallbackQuery();
+
+                $this->tgBot->sendMessage(
+                    $this->tgRequest->getChatId(),
+                    $this->translate('event_list.remove.error'),
+                    'Markdown',
+                    true,
+                    false,
+                    null,
+                    $this->tgBot->inlineKeyboardMarkup($keyboard)
+                );
+
+                return;
+            }
+
+            $meetingRoomUser->setStatus('delete');
             $this->tgDb->insert($meetingRoomUser);
 
             $text = null;
@@ -2176,21 +2201,23 @@ class MeetingRoom implements TelegramInterface
 
                         return;
                     } elseif ('eventEnd' == $data['data']['obj']) {
+                        if ((new \DateTime($event['dateTimeStart']))->getTimestamp() >= (new \DateTime())->getTimestamp()) {
+                            $this->tgBot->editMessageText(
+                                $this->translate('event_list.end.error', ['%args%' => $args]),
+                                $this->tgRequest->getChatId(),
+                                $this->tgRequest->getMessageId(),
+                                null,
+                                'Markdown',
+                                true,
+                                null
+                            );
+
+                            return;
+                        }
+
                         if (isset($data['data']['ready'])) {
                             if ($data['data']['ready'] == 'yes') {
-                                if ((new \DateTime($event['dateTimeStart']))->getTimestamp() >= (new \DateTime())->getTimestamp()) {
-                                    $this->tgBot->editMessageText(
-                                        $this->translate('event_list.end.error', ['%args%' => $args]),
-                                        $this->tgRequest->getChatId(),
-                                        $this->tgRequest->getMessageId(),
-                                        null,
-                                        'Markdown',
-                                        true,
-                                        null
-                                    );
-
-                                    return;
-                                } elseif ((new \DateTime($event['dateTimeEnd']))->getTimestamp() < (new \DateTime())->getTimestamp()) {
+                                if ((new \DateTime($event['dateTimeEnd']))->getTimestamp() < (new \DateTime())->getTimestamp()) {
                                     return;
                                 }
 
