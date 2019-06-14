@@ -375,7 +375,7 @@ class MeetingRoom implements TelegramInterface
                     if ($data['data']['bitrix_id'] == $bitrixUser->getId()) {
                         if (isset($meetingRoomUserData['users']['found'])) {
                             foreach ($meetingRoomUserData['users']['found'] as $data) {
-                                if ($data['bitrix_id'] == $bitrixUser->getId()) {
+                                if (isset($data['bitrix_id']) && $data['bitrix_id'] == $bitrixUser->getId()) {
                                     unset($meetingRoomUserData['users']['duplicate'][$id]);
                                     unset($data);
                                     $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
@@ -738,6 +738,36 @@ class MeetingRoom implements TelegramInterface
             if ($bitrixUser) {
                 $bitrixUser = $bitrixUser[0];
                 $meetingRoomUserData['users']['organizer'][] = $this->membersFormat($bitrixUser);
+
+                if ($meetingRoomUser->getStatusField() == 'eventMembersAdd') {
+                    /**
+                     * @var $meetingRoomUserOldValues \App\Entity\MeetingRoom
+                     */
+                    $meetingRoomUserOldValues = Helper::jsonEncodeSerializeToObject($meetingRoomUser->getOldValues());
+                    $meetingRoomUserOldValuesData = json_decode($meetingRoomUserOldValues->getEventMembers(), true);
+
+                    if (isset($meetingRoomUserOldValuesData['users']['found']) && $meetingRoomUserOldValuesData['users']['found']) {
+                        if (isset($meetingRoomUserData['users']['found']) && $meetingRoomUserData['users']['found']) {
+                            $meetingRoomUserData['users']['found'] = array_merge($meetingRoomUserData['users']['found'], $meetingRoomUserOldValuesData['users']['found']);
+
+                            $duplicateBitrixId = [];
+                            foreach ($meetingRoomUserData['users']['found'] as $userKey => $userData) {
+                                if (!isset($userData['bitrix_id'])) {
+                                    continue;
+                                }
+
+                                if (array_search($userData['bitrix_id'], $duplicateBitrixId) !== false) {
+                                    unset($meetingRoomUserData['users']['found'][$userKey]);
+                                } else {
+                                    $duplicateBitrixId[] = $userData['bitrix_id'];
+                                }
+                            }
+
+                        } else {
+                            $meetingRoomUserData['users']['found'] = $meetingRoomUserOldValuesData['users']['found'];
+                        }
+                    }
+                }
 
                 $meetingRoomUser->setEventMembers(json_encode($meetingRoomUserData));
 
@@ -2200,6 +2230,28 @@ class MeetingRoom implements TelegramInterface
                         );
 
                         return;
+                    } elseif ('eventMembersAdd' == $data['data']['obj']) {
+                        $meetingRoom->setStatusField('eventMembersAdd');
+                        $meetingRoom->setEventMembers('');
+                        $meetingRoom->setEventId($args);
+                        $this->tgDb->insert($meetingRoom);
+
+                        $keyboard = [];
+                        $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['members' => 'none']]);
+                        $keyboard[][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_members.no_members'), $callback);
+                        $this->tgDb->setCallbackQuery();
+
+                        $this->tgBot->editMessageText(
+                            $this->translate('meeting_room.event_members.info', ['%noCommandList%' => $this->noCommandList(null, true)]),
+                            $this->tgRequest->getChatId(),
+                            $this->tgRequest->getMessageId(),
+                            null,
+                            'Markdown',
+                            true,
+                            $this->tgBot->inlineKeyboardMarkup($keyboard)
+                        );
+
+                        return;
                     } elseif ('eventEnd' == $data['data']['obj']) {
                         if ((new \DateTime($event['dateTimeStart']))->getTimestamp() >= (new \DateTime())->getTimestamp()) {
                             $this->tgBot->editMessageText(
@@ -2326,6 +2378,8 @@ class MeetingRoom implements TelegramInterface
                 $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_name'), $callback);
                 $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventMembers', 'args' => $args]]);
                 $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_members'), $callback);
+                $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventMembersAdd', 'args' => $args]]);
+                $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.change_event_members_add'), $callback);
                 $callback = $this->tgDb->prepareCallbackQuery(['callback_event' => ['event' => 'edit'], 'data' => ['obj' => 'eventEnd', 'args' => $args]]);
                 $keyboard[++$ln][] = $this->tgBot->inlineKeyboardButton($this->translate('keyboard.event_edit.event_end'), $callback);
                 $this->tgDb->setCallbackQuery();

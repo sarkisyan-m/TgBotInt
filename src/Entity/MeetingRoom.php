@@ -72,6 +72,11 @@ class MeetingRoom
      */
     private $lastMessageId;
 
+    /**
+     * @ORM\Column(type="string", length=1024, nullable=true)
+     */
+    private $status_field;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -205,6 +210,18 @@ class MeetingRoom
     public function setCreated(\DateTimeInterface $created): self
     {
         $this->created = $created;
+
+        return $this;
+    }
+
+    public function getStatusField(): ?string
+    {
+        return $this->status_field;
+    }
+
+    public function setStatusField(?string $status_field): self
+    {
+        $this->status_field = $status_field;
 
         return $this;
     }
