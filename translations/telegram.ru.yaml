@@ -132,7 +132,7 @@ keyboard:
         change_room_time: "Изменить комнату и время"
         change_event_name: "Изменить название события"
         change_event_members: "Изменить список участников"
-        change_event_members_add: "Добавить еще участников"
+        change_event_members_add: "Добавить участника(ов) в список"
         event_end: "Завершить досрочно"
     event_members:
         not_on_list: "Нет в списке"
