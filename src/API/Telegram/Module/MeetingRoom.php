@@ -2273,6 +2273,9 @@ class MeetingRoom implements TelegramInterface
                                     return;
                                 }
 
+                                $this->tgDb->prepareCallbackQuery([]);
+                                $this->tgDb->setCallbackQuery();
+
                                 $attendees = [];
                                 foreach ($event['attendees'] as $email) {
                                     if ($bitrixUser->getEmail() == $email) {
