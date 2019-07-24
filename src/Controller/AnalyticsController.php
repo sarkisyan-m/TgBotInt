@@ -22,12 +22,12 @@ class AnalyticsController extends Controller
         if ($request->get('auth')) {
             $hash = hash('sha256', $request->get('auth'));
 
-            if ('ee1956c052582e534573d95c67493d21780a982368253de9e78503da67372253' != $hash) {
-                return new Response('', Response::HTTP_FORBIDDEN);
+            if ('ee1956c052582e534573d95c67493d21780a982368253de9e78503da67372253' == $hash) {
+                return $this->render('analytics/analytics.html.twig');
             }
         }
 
-        return $this->render('analytics/analytics.html.twig');
+        return new Response('', Response::HTTP_FORBIDDEN);
     }
 
     /**
