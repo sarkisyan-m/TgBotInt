@@ -887,8 +887,13 @@ class MeetingRoom implements TelegramInterface
             $times = $this->googleEventCurDayTimes();
             $time = explode('-', $meetingRoomUser->getTime());
             $validateTime = isset($time[0]) && isset($time[1]) && $this->tgPluginCalendar->validateAvailableTimes($times, $time[0], $time[1]);
+            $meetingRoomTimeStamp = (new \DateTime($meetingRoomUser->getDate()))->getTimestamp();
+            $currentTimeStamp = (new \DateTime((new \DateTime())->format('d.m.Y')))->getTimestamp();
 
-            if ('yes' == $data['data']['ready'] && strtotime($time[1]) < strtotime(Helper::getTime(time())) && $meetingRoomUser->getDate() == $this->tgPluginCalendar->getDate()) {
+            if ('yes' == $data['data']['ready'] &&
+                (strtotime($time[1]) < strtotime(Helper::getTime(time()))
+                && $meetingRoomTimeStamp == $currentTimeStamp || $meetingRoomTimeStamp < $currentTimeStamp)
+            ) {
                 $text .= "\n{$this->translate('meeting_room.time.expired')}";
                 $keyboard = null;
                 $this->tgDb->getMeetingRoomUser(true);

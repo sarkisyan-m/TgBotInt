@@ -169,7 +169,8 @@ meeting_room:
         incorrect_time: "*Некорректно введено время*
         \n\nНеобходимо указать в промежутке *%workTimeStart%-%workTimeEnd%*"
         past: "*Нельзя указывать прошедшее время*"
-        expired: "*Время этого события уже просрочено*"
+        expired: "*Отмена бронирования*
+        \nВремя этого события уже просрочено"
     event_name:
         text: "*Введите название события*"
         selected: "*Название события:* %eventName%\n\n"
@@ -196,8 +197,10 @@ meeting_room:
         data_notification_edit_event: "\n*Событие изменено*"
         data_notification_remove_event: "\n*Событие удалено*"
         data_notification_before_beginning: "\n*Событие скоро начнется*"
-        data_cancel: "*Отмена бронирования.* Изменения не сохранены"
-        data_failed: "*Ошибка бронирования.* Кто-то опередил вас и занял переговорку в это же время"
+        data_cancel: "*Отмена бронирования*
+        \nИзменения не сохранены"
+        data_failed: "*Ошибка бронирования*
+        \nКто-то опередил вас и занял переговорку в это же время"
 
 event_list:
     room: "\n\U0001F4AC *%calendarName%*\n"
