@@ -1185,8 +1185,7 @@ class MeetingRoom implements TelegramInterface
         $text = $this->translate('event_list.date', ['%date%' => $dateText]);
         $times = [];
 
-        $limitBytes = $this->getLimitBytes();
-
+        $limitBytes = $this->getLimitBytes(false, $calendarList);
         foreach ($calendarList as $calendar) {
             $text .= $this->translate('event_list.room', ['%calendarName%' => $calendar['calendarName']]);
 
@@ -1198,6 +1197,7 @@ class MeetingRoom implements TelegramInterface
                 $text .= "\n";
             }
 
+            $limitElementsCount = 0;
             foreach ($calendar['listEvents'] as $event) {
                 $timeStart = Helper::getTimeStr($event['dateTimeStart']);
                 $timeEnd = Helper::getTimeStr($event['dateTimeEnd']);
@@ -1229,10 +1229,16 @@ class MeetingRoom implements TelegramInterface
                 }
 
                 if (strlen($text) > $limitBytes) {
-                    break;
+                    ++$limitElementsCount;
+
+                    continue;
                 }
 
                 $text .= "*{$timeStart}-{$timeEnd}* {$textTime}\n";
+            }
+
+            if ($limitElementsCount) {
+                $text .= "\n*Не отображено событий*: {$limitElementsCount}\n";
             }
         }
 
@@ -2608,7 +2614,7 @@ class MeetingRoom implements TelegramInterface
         return;
     }
 
-    public function getLimitBytes($diffMaxBytesReserve = false)
+    public function getLimitBytes($diffMaxBytesReserve = false, $calendarList = [])
     {
         $reserveByte = 100;
 
@@ -2619,6 +2625,18 @@ class MeetingRoom implements TelegramInterface
         }
 
         $calendarCount = count($this->googleCalendar->getCalendarNameList());
+
+        if ($calendarList) {
+            $emptyCalendarCount = 0;
+            foreach ($calendarList as $calendar) {
+                if (!$calendar['listEvents']) {
+                    ++$emptyCalendarCount;
+                }
+            }
+
+            $calendarCount -= $emptyCalendarCount;
+        }
+
         $limitBytes = (self::LIMIT_BYTES_MAX - ($calendarCount * $reserveByte)) / $calendarCount;
 
         return $limitBytes;
